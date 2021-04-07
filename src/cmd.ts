@@ -41,19 +41,13 @@ cmd.parse(process.argv);
 
 // This works for ES module 
 import knex, { Knex } from 'knex';
+import {toNestedDict} from './db-utils.js';
 
-let knex_conn: Knex;
-export async function connect(connection: Record<string, string>, client = "pg") {
-    let conn = {
-        client,
-        connection
-    }
-    knex_conn = knex(conn);
-    return knex_conn;
-}
-
-function handle(cmd: string, target: string, candidate: string, options: any) {
+async function handle(cmd: string, target: string, candidate: string, options: any) {
     console.log("handle: " + cmd, target, candidate, options);
-    //let 
+    let tgt_o = await toNestedDict(target);
+    let cand_o = await toNestedDict(candidate);
+    console.log("tgt_o", tgt_o);
+    console.log("cand_o", cand_o);
 }
 

@@ -17,8 +17,10 @@ export async function slurpSchema(conn: Knex): Promise<Record<string, any>> {
     return null;
 }
 
-import { slurpFile } from "./file-utils";
+import { slurpFile } from "./file-utils.js";
 export async function toNestedDict(file_or_db: string): Promise<Record<string, any>> {
+    if( !file_or_db ) return null;
+
     let conn_info: Record<string, string>;
     if (file_or_db == "@") {
         // Accept it as a DB specifier / link
