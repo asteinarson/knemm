@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { load } from 'js-yaml';
 
-export function slurpFile(file: string): string | number | object {
+export function slurpFile(file: string): string | number | any[] | Record<string,any> {
     if (existsSync(file)) {
         let s = readFileSync(file);
         let ejs = file.slice(-5);

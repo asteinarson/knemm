@@ -13,26 +13,26 @@ export async function connect(connection: Record<string, string>, client = "pg")
 }
 
 
-export function slurpSchema(conn: Knex): object {
+export async function slurpSchema(conn: Knex): Promise<Record<string, any>> {
     return null;
 }
 
-import {slurpFile} from "./file-utils";
-export async function toNestedDict(file_or_db: string): Promise<string | number | object> {
+import { slurpFile } from "./file-utils";
+export async function toNestedDict(file_or_db: string): Promise<Record<string, any>> {
     let conn_info: Record<string, string>;
     if (file_or_db == "@") {
-        // Accept it as a file / link
+        // Accept it as a DB specifier / link
         let r = slurpFile("./@");
         if (typeof r == "object") conn_info = r as Record<string, string>;
     }
     if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file
-        let r = slurpFile(file_or_db.slice(3));
+        let r = slurpFile(file_or_db);
         if (typeof r == "object") conn_info = r as Record<string, string>;
     }
     if (file_or_db == "-") {
         // Use ENV vars
-        let conn_info = {
+        conn_info = {
             host: process.env.HOST,
             user: process.env.USER,
             password: process.env.PASSWORD,
@@ -41,13 +41,23 @@ export async function toNestedDict(file_or_db: string): Promise<string | number 
     }
     if (conn_info) {
         let client = conn_info.client ? conn_info.client : "pg";
-        let connection = conn_info.connection ? conn_info.connection as any as Record<string, string> : conn_info;
-        return slurpSchema(await connect(connection, client));
+        if (conn_info.connection) conn_info = conn_info.connection as any as Record<string, string>;
+        let connection = await connect(conn_info, client);
+        let r = await slurpSchema(connection);
+        if (r) {
+            // Keep the connection object here - it allows later knowing it is attached to a DB
+            r["*connection"] = connection;
+            return r;
+        }
     }
 
     // See if it is a file
     let r = slurpFile(file_or_db);
     if (!r) console.log("toNestedDict - file not found: " + file_or_db);
-    return r;
+    else {
+        if (typeof r == "object" && !Array.isArray(r)) {
+            return r;
+        }
+    }
 }
 
