@@ -1,0 +1,7 @@
+tables:
+  person:
+    id: pk_int
+    name: text
+    age: integer
+  
+
