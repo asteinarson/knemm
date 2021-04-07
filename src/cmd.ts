@@ -44,7 +44,7 @@ import knex, { Knex } from 'knex';
 
 
 let knex_conn: Knex;
-async function connect(connection: Record<string, string>, client = "pg") {
+export async function connect(connection: Record<string, string>, client = "pg") {
     let conn = {
         client,
         connection
@@ -53,18 +53,14 @@ async function connect(connection: Record<string, string>, client = "pg") {
     return knex_conn;
 }
 
-let connection = {
-    host: 'localhost',
-    user: 'directus',
-    password: 'psql1234',
-    database: 'dir_acct'
-};
-
-function slurpSchema(conn: Knex): object {
+export function slurpSchema(conn: Knex): object {
     return null;
 }
 
-function slurpFile(file: string): string | number | object {
+import { existsSync, readFileSync } from 'fs';
+import { load } from 'js-yaml';
+
+export function slurpFile(file: string): string | number | object {
     if (existsSync(file)) {
         let s = readFileSync(file);
         let ejs = file.slice(-5);
@@ -75,22 +71,29 @@ function slurpFile(file: string): string | number | object {
             if (ejs == ".yaml" || ejs == ".YAML") {
                 return load(s.toString());
             }
+            // No extension match, try the two formats 
+            let r = JSON.parse(s.toString());
+            if(r) return r;
+            r = load(s.toString());
+            if(r) return r;
         } catch (e) {
-            console.log("slurpFile, exception: " + e.toString());
+            console.log(`slurpFile ${file}, exception: ${e.toString()}`);
         }
     }
     return null;
 }
 
 
-import { existsSync, readFileSync } from 'fs';
-import { load } from 'js-yaml';
-async function toNestedDict(file_or_db: string): Promise<string | number | object> {
+export async function toNestedDict(file_or_db: string): Promise<string | number | object> {
     let conn_info: Record<string, string>;
+    if (file_or_db == "@") {
+        // Accept it as a file / link
+        let r = slurpFile("./@");
+        if (typeof r == "object") conn_info = r as Record<string, string>;
+    }
     if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file
-        let path = file_or_db.slice(3);
-        let r = slurpFile(path);
+        let r = slurpFile(file_or_db.slice(3));
         if (typeof r == "object") conn_info = r as Record<string, string>;
     }
     if (file_or_db == "-") {
@@ -101,9 +104,6 @@ async function toNestedDict(file_or_db: string): Promise<string | number | objec
             password: process.env.PASSWORD,
             database: process.env.DATABASE,
         }
-    }
-    if (file_or_db == "@") {
-        conn_info = connection;
     }
     if (conn_info) {
         let client = conn_info.client ? conn_info.client : "pg";
