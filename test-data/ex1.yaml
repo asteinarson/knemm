@@ -1,7 +1,6 @@
 tables:
   person:
     id: pk_int
-    name: text
-    age: integer
+    name: VARCHAR(16)
   
 
