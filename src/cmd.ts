@@ -62,6 +62,9 @@ async function handle(cmd: string, target: string|string[], candidate: string, o
     if( cmd=="join" ){
         let tree:Record<string,any> = {};
         if( Array.isArray(target) ){
+            // !! Here we should sort the files, according to dependencies 
+            // and also look for additional dependencies. Unless a flag not 
+            // to auto load deps. 
             for( let f of target ){
                 let r = await toNestedDict(f);
                 if(r) {
