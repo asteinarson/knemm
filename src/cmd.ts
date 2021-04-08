@@ -1,6 +1,15 @@
 import { Command } from "commander";
 let cmd = new Command();
 
+cmd.command("join <claim1...>")
+    .description(
+        "Join together all input claims and print out"
+    )
+    .action((claims, options) => {
+        console.log("join");
+        handle("join", claims, null, options);
+    });
+
 cmd.command("fulfills <target> <candidate>")
     .description(
         "See if <candidate> fulfills <target>"
@@ -40,14 +49,32 @@ cmd.parse(process.argv);
 
 
 // This works for ES module 
-import knex, { Knex } from 'knex';
 import {toNestedDict} from './db-utils.js';
+import { dump as yamlDump } from 'js-yaml';
+import pkg from 'lodash';
+const { merge: ldMerge } = pkg;
 
-async function handle(cmd: string, target: string, candidate: string, options: any) {
+async function handle(cmd: string, target: string|string[], candidate: string, options: any) {
     console.log("handle: " + cmd, target, candidate, options);
-    let tgt_o = await toNestedDict(target);
-    let cand_o = await toNestedDict(candidate);
-    console.log("tgt_o", tgt_o);
-    console.log("cand_o", cand_o);
+    //console.log("cwd: "+process.cwd());
+    //console.log("tgt_o", tgt_o);
+    //console.log("cand_o", cand_o);
+    if( cmd=="join" ){
+        let tree:Record<string,any> = {};
+        if( Array.isArray(target) ){
+            for( let f of target ){
+                let r = await toNestedDict(f);
+                if(r) {
+                    r = ldMerge(tree,r);
+                }
+            }
+        }
+        console.log( yamlDump(tree) );
+    } else {
+        if( typeof target=="string" ){
+            let tgt_o = await toNestedDict(target);
+            let cand_o = await toNestedDict(candidate);
+        } 
+    }
 }
 
