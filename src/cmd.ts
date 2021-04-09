@@ -53,7 +53,7 @@ import {toNestedDict} from './db-utils.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 const { merge: ldMerge } = pkg;
-//import {merge as ldMerge} from 'lodash-es';
+//import {merge as ldMerge} from 'lodash-es'; // This is slowish 
 
 async function handle(cmd: string, target: string|string[], candidate: string, options: any) {
     console.log("handle: " + cmd, target, candidate, options);
@@ -68,12 +68,12 @@ async function handle(cmd: string, target: string|string[], candidate: string, o
             // to auto load deps. 
             for( let f of target ){
                 let r = await toNestedDict(f);
-                if(r) {
-                    r = ldMerge(tree,r);
+                if( r ) {
+                    r = ldMerge(tree);
                 }
             }
         }
-        console.log( yamlDump(tree) );
+        console.log( yamlDump(tree.content) );
     } else {
         if( typeof target=="string" ){
             let tgt_o = await toNestedDict(target);

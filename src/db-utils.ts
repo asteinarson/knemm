@@ -38,9 +38,17 @@ let column_remap = {
 };
 
 import schemaInspector from 'knex-schema-inspector';
-export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], excludes?: (string | RegExp)[]):
-    Promise<Record<string, any>> {
-    let sI = schemaInspector(conn);
+import {} from 'knex-schema-inspector';
+export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
+    : Promise<Record<string, any>> {
+    // Workaround for ESM import 
+    let sI:any;
+    if( typeof schemaInspector!="function" ){
+        sI = (schemaInspector as any).default(conn);        
+    } else {
+        sI = schemaInspector(conn);
+    }
+    console.log("si-log: ", typeof sI, sI );
 
     if (!excludes) {
         excludes = ["directus_"];
@@ -52,7 +60,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     for (let tn of tables) {
         let do_exclude = false;
         for (let e of excludes) {
-            if ((typeof e == "string" && tn.indexOf(e)) ||
+            if ((typeof e == "string" && tn.indexOf(e)>=0) ||
                 (e instanceof RegExp && tn.match(e))) {
                 do_exclude = true;
                 break;
@@ -67,7 +75,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
             for (let c of columns) {
                 if (c.name && c.data_type) {
                     // See if there is anything apart from type in it 
-                    let cnt = Object.values(c).reduce((cnt, e) => (e ? cnt + 1 : cnt), 0);
+                    let cnt = Object.values(c).reduce((cnt:number, e) => (e ? cnt + 1 : cnt), 0);
                     if (cnt <= 2)
                         t[c.name] = c.data_type;
                     else
@@ -80,6 +88,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
 
     return r;
 }
+
 
 import { slurpFile } from "./file-utils.js";
 export async function toNestedDict(file_or_db: string): Promise<Record<string, any>> {
@@ -105,23 +114,29 @@ export async function toNestedDict(file_or_db: string): Promise<Record<string, a
             database: process.env.DATABASE,
         }
     }
+
+    let r:Record<string,any> = {};
+    // Get our dict from DB conn ? 
     if (conn_info) {
         let client = conn_info.client ? conn_info.client : "pg";
         if (conn_info.connection) conn_info = conn_info.connection as any as Record<string, string>;
         let connection = await connect(conn_info, client);
-        let r = await slurpSchema(connection);
-        if (r) {
+        let rs = await slurpSchema(connection);
+        if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
-            r["*connection"] = connection;
+            r.source = connection;
+            r.content = rs;
             return r;
         }
     }
 
-    // See if it is a file
-    let r = slurpFile(file_or_db);
-    if (!r) console.log("toNestedDict - file not found: " + file_or_db);
+    // Then it should be a file 
+    let rf = slurpFile(file_or_db);
+    if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
     else {
-        if (typeof r == "object" && !Array.isArray(r)) {
+        if (typeof rf == "object" && !Array.isArray(rf)) {
+            r.source = file_or_db;
+            r.content = rf;
             return r;
         }
     }
