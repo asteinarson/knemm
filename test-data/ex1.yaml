@@ -1,3 +1,6 @@
+id: 
+  name: base_person
+  step: 1  
 tables:
   person:
     id: pk_int

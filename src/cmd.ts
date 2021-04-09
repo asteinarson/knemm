@@ -3,7 +3,7 @@ let cmd = new Command();
 
 cmd.command("join <claim1...>")
     .description(
-        "Join together all input claims and print out"
+        "Join together all input claims and print them out"
     )
     .action((claims, options) => {
         console.log("join");
@@ -28,18 +28,18 @@ cmd.command("diff <target> <candidate>")
         handle("apply", target, candidate, options);
     });
 
-cmd.command("apply <target> <DB>")
+cmd.command("apply <claim> <DB>")
     .description(
-        "Apply target on DB"
+        "Apply the claim on DB"
     )
     .action((target, DB, options) => {
         console.log("apply");
         handle("apply", target, DB, options);
     });
 
-cmd.command("reverse <target> <DB>")
+cmd.command("reverse <claim> <DB>")
     .description(
-        "Apply target on DB"
+        "Reverse the claim from DB"
     )
     .action((target, DB, options) => {
         console.log("reverse");
@@ -53,6 +53,7 @@ import {toNestedDict} from './db-utils.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 const { merge: ldMerge } = pkg;
+//import {merge as ldMerge} from 'lodash-es';
 
 async function handle(cmd: string, target: string|string[], candidate: string, options: any) {
     console.log("handle: " + cmd, target, candidate, options);

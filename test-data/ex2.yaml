@@ -1,3 +1,6 @@
+id:
+  name: base_person
+  step: 2
 tables:
   person:
     name: text
