@@ -38,7 +38,6 @@ let column_remap = {
 };
 
 import schemaInspector from 'knex-schema-inspector';
-import {} from 'knex-schema-inspector';
 export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
     // Workaround for ESM import 
@@ -74,6 +73,11 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
             let columns = await sI.columnInfo(tn);
             for (let c of columns) {
                 if (c.name && c.data_type) {
+                    // Simplifications 
+                    if( c.data_type=='integer' && c.numeric_precision==32 ) 
+                        delete c.numeric_precision; 
+                    if( c.is_primary_key && c.is_unique )
+                        delete c.is_unique;
                     // See if there is anything apart from type in it 
                     let cnt = Object.values(c).reduce((cnt:number, e) => (e ? cnt + 1 : cnt), 0);
                     if (cnt <= 2)
