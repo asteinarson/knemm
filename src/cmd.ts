@@ -69,7 +69,7 @@ async function handle(cmd: string, target: string|string[], candidate: string, o
             for( let f of target ){
                 let r = await toNestedDict(f);
                 if( r ) {
-                    r = ldMerge(tree);
+                    r = ldMerge(tree,r);
                 }
             }
         }

@@ -48,7 +48,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     } else {
         sI = schemaInspector(conn);
     }
-    console.log("si-log: ", typeof sI, sI );
+    //console.log("si-log: ", typeof sI, sI );
 
     if (!excludes) {
         excludes = ["directus_"];
