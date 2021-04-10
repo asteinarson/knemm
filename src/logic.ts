@@ -1,4 +1,35 @@
-import { Dict, remap } from './utils';
+import { Dict } from './utils.js';
+import pkg from 'lodash';
+const { invert: ldInvert } = pkg;
+
+let s = "\\(abc"
+let re_enc_needed = /[_ \(\)]/;
+let re_dec_needed = /([_]|\\\(|\\\))/;
+
+// Encode: 
+let encode_pairs: Dict<string> = {
+    "_": "__",
+    " ": "_",
+    "(": "\\(",
+    ")": "\\)"
+};
+let decode_pairs = ldInvert(encode_pairs);
+
+function string_arg_encode(s: string) {
+    if (s.match(re_enc_needed)) {
+        for (let k in encode_pairs)
+            s = s.replace(k, encode_pairs[k]);
+    }
+    return s;
+}
+
+function string_arg_decode(s: string) {
+    if (s.match(re_dec_needed)) {
+        for (let k in decode_pairs)
+            s = s.replace(k, decode_pairs[k]);
+    }
+    return s;
+}
 
 // Remap of column info given by schemaInspector 
 let column_remap = {
@@ -15,16 +46,79 @@ let column_remap = {
     numeric_scale: "scale",
 };
 
+// short form boolean flags 
+let column_words: Dict<string> = {
+    is_primary_key: "pk",
+    has_auto_increment: "auto",
+    is_nullable: "nullable",
+    is_unique: "unique",
+};
+
+// These are tucked as args on the data_type 
+let type_args: Array<string> = ["max_length", "numeric_precision", "numeric_scale"];
+
+// Flatten any nested data to strings
 function formatHrCompact(content: Dict<any>): Dict<any> {
-    return content;
+    let r: Dict<any> = {};
+    for (let t in content) {
+        // This is a table  
+        let table: Dict<any> = content[t];
+        for (let col_name in table) {
+            let col: string | Dict<any> = table[col_name];
+            if (typeof col == "object") {
+                // We try to flatten it down to a string 
+                let words: string[] = [];
+                // The type of the column first 
+                words.push(col.data_type);
+                let done: Dict<number> = { data_type: 1 };
+                // Simple boolean flags 
+                for (let w in column_words) {
+                    if (col[w]) {
+                        words.push(column_words[w]);
+                        done[w] = 1;
+                    }
+                }
+                // Do any length/precision modifiers 
+                let type_nums: number[] = [];
+                for (let c of type_args) {
+                    if (col[c]) {
+                        type_nums.push(col[c]);
+                        done[c] = 1;
+                    }
+                }
+                if (type_nums.length) {
+                    words[0] += `(${type_nums.join(",")})`;
+                }
+                // Handle case of default value 
+                let dv = col.default_value
+                if (dv) {
+                    if (typeof dv == "string") {
+                        dv = string_arg_encode(dv);
+                    }
+                    words.push(`default(${dv})`);
+                    done.default_value = 1;
+                }
+                table[col_name] = words.join(" ");
+
+                // See if we have any unhandled columns - and warn 
+                let unhandled = Object.keys(col).filter(prop => !done[prop]);
+                if( unhandled.length>0 ){
+                    // Maybe should take other approach here... 
+                    console.log(`formatHrCompact(${col_name}) - unhandled: ${unhandled}` );
+                }
+            }
+        }
+    }
+    return r;
 }
 
+// Expand any nested data flattened to a string  
 function formatInternal(content: Dict<any>): Dict<any> {
     return content;
 }
 
 export function reformat(content: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
-    return format=="internal" ? formatInternal(content) : formatHrCompact(content);
+    return format == "internal" ? formatInternal(content) : formatHrCompact(content);
 }
 
 import { slurpFile } from "./file-utils.js";
