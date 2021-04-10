@@ -6,14 +6,14 @@ cmd.command("join <claim1...>")
         "Join together all input claims and print them out"
     )
     .action((claims, options) => {
-        handle("join", claims, null, options);
+        handleList("join", claims, options);
     });
 
 cmd.command("possible <claim> <target> ")
     .description(
         "See if <claim> can be applied on <target>"
     )
-    .action((claim,target,  options) => {
+    .action((claim, target, options) => {
         handle("possible", claim, target, options);
     });
 
@@ -50,41 +50,50 @@ cmd.command("reverse <claim> <DB>")
     });
 cmd.parse(process.argv);
 
-
 // This works for ES module 
-import {toNestedDict, reformat} from './logic.js';
+import { toNestedDict, reformat } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This is slowish 
 
-async function handle(cmd: string, target: string|string[], candidate: string, options: any) {
-    //console.log("handle: " + cmd, target, candidate, options);
+async function handleList(cmd: string, files: string[], options: any) {
+    //console.log("handleList: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
-    //console.log("tgt_o", tgt_o);
-    //console.log("cand_o", cand_o);
-    let rc = 0;
-    if( cmd=="join" ){
-        let tree:Record<string,any> = {};
-        if( Array.isArray(target) ){
-            // !! Here we should sort the files, according to dependencies 
-            // and also look for additional dependencies. Unless a flag not 
-            // to auto load deps. 
-            for( let f of target ){
-                let r = await toNestedDict(f);
-                if( r ) {
-                    r = ldMerge(tree,r);
-                }
+    let rc = 1000;
+    if (cmd == "join") {
+        let tree: Record<string, any> = {};
+        // !! Here we should sort the files, according to dependencies 
+        // and also look for additional dependencies. Unless a flag not 
+        // to auto load deps. 
+        for (let f of files) {
+            let r = await toNestedDict(f);
+            if (r) {
+                r = ldMerge(tree, r);
             }
         }
-        let hr_content = reformat(tree.content,"hr-compact");
-        console.log( yamlDump(hr_content) );
-    } else {
-        if( typeof target=="string" ){
-            let tgt_o = await toNestedDict(target);
-            let cand_o = await toNestedDict(candidate);
-        } 
+        let hr_content = reformat(tree.content, "hr-compact");
+        console.log(yamlDump(hr_content));
+        rc = 0;
     }
-    process.exit(0);
+    process.exit(rc);
 }
 
+async function handle(cmd: string, target: string | string[], candidate: string, options: any) {
+    //console.log("handle: " + cmd, target, candidate, options);
+    //console.log("cwd: "+process.cwd());
+    let rc = 1000;
+    switch (cmd) {
+        case "possible":
+            break;
+        case "fulfills":
+            break;
+        case "diff":
+            break;
+        case "apply":
+            break;
+        case "reverse":
+            break;
+    }
+    process.exit(rc);
+}
