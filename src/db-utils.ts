@@ -89,6 +89,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
                                 delete c[k];
                         }
                     }
+                    // Primary keys are always unique
                     if (c.is_primary_key && c.is_unique)
                         delete c.is_unique;
                     // Delete properties set to null or false 
@@ -102,6 +103,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
                         if (c.foreign_key_schema == "public")
                             delete c.foreign_key_schema;
                     }
+                    // It is a child node, prune these too
                     delete c.table;
                     t[c.name] = c;
                     delete c.name;
