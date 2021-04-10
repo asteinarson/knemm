@@ -80,7 +80,7 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
                         done[w] = 1;
                     }
                 }
-                
+
                 // Do any length/precision modifiers 
                 let type_nums: number[] = [];
                 for (let c of type_args) {
@@ -95,7 +95,7 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
 
                 // Do foreign key 
                 let fkt = col.foreign_key_table, fkc = col.foreign_key_column;
-                if( fkt || fkc ){
+                if (fkt || fkc) {
                     words.push(`foreign_key(${fkt},${fkc})`);
                     done.foreign_key_table = done.foreign_key_column = 1;
                 }
@@ -113,9 +113,13 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
 
                 // See if we have any unhandled columns - and warn 
                 let unhandled = Object.keys(col).filter(prop => !done[prop]);
-                if( unhandled.length>0 ){
-                    // Maybe should take other approach here... 
-                    console.log(`formatHrCompact(${col_name}) - unhandled: ${unhandled}` );
+                if (unhandled.length > 0) {
+                    console.warn(`formatHrCompact(${col_name}) - unhandled: ${unhandled}`);
+                    // We make a subtree, but keep the default line in key "*" 
+                    let small_node: Dict<string> = { "*": table[col_name] };
+                    for (let k of unhandled)
+                        small_node[k] = col[k];
+                    table[col_name] = small_node;
                 }
             }
         }
