@@ -59,7 +59,7 @@ let type_args: Array<string> = ["max_length", "numeric_precision", "numeric_scal
 
 // Flatten any nested data to strings
 function formatHrCompact(content: Dict<any>): Dict<any> {
-    let r: Dict<any> = {};
+    //let r: Dict<any> = {};
     for (let t in content) {
         // This is a table  
         let table: Dict<any> = content[t];
@@ -109,7 +109,7 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
             }
         }
     }
-    return r;
+    return content;
 }
 
 // Expand any nested data flattened to a string  
