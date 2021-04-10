@@ -68,9 +68,11 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
             if (typeof col == "object") {
                 // We try to flatten it down to a string 
                 let words: string[] = [];
+
                 // The type of the column first 
                 words.push(col.data_type);
                 let done: Dict<number> = { data_type: 1 };
+
                 // Simple boolean flags 
                 for (let w in column_words) {
                     if (col[w]) {
@@ -78,6 +80,7 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
                         done[w] = 1;
                     }
                 }
+                
                 // Do any length/precision modifiers 
                 let type_nums: number[] = [];
                 for (let c of type_args) {
@@ -89,6 +92,14 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
                 if (type_nums.length) {
                     words[0] += `(${type_nums.join(",")})`;
                 }
+
+                // Do foreign key 
+                let fkt = col.foreign_key_table, fkc = col.foreign_key_column;
+                if( fkt || fkc ){
+                    words.push(`foreign_key(${fkt},${fkc})`);
+                    done.foreign_key_table = done.foreign_key_column = 1;
+                }
+
                 // Handle case of default value 
                 let dv = col.default_value
                 if (dv) {
