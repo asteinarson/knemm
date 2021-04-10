@@ -49,7 +49,7 @@ cmd.parse(process.argv);
 
 
 // This works for ES module 
-import {toNestedDict} from './db-utils.js';
+import {toNestedDict} from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 const { merge: ldMerge } = pkg;
