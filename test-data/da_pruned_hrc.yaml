@@ -1,0 +1,74 @@
+account_type:
+  id: int pk auto
+  type: text
+company:
+  id: int pk auto
+  user_created: uuid nullable
+  date_created: timestamp_tz nullable
+  user_updated: uuid nullable
+  date_updated: timestamp_tz nullable
+  name: varchar
+  url: varchar default(NULL)
+serie:
+  id: int pk auto
+  date_created: timestamp_tz nullable
+  next: int default(1)
+  entity_type: varchar nullable
+  letter: varchar default(A)
+account:
+  id: int pk auto
+  status: varchar default(draft)
+  user_created: uuid nullable
+  date_created: timestamp_tz nullable
+  user_updated: uuid nullable
+  date_updated: timestamp_tz nullable
+  number: varchar unique
+  description: varchar nullable
+  type: int nullable
+  year: int nullable
+  balance_start: real
+  balance: real nullable
+verification_row:
+  id: int pk auto
+  user_updated: uuid nullable
+  date_updated: timestamp_tz nullable
+  credit: real
+  debet: real
+  verification_id: int nullable
+  account_id: int nullable
+party_type:
+  id: int pk auto
+  name: varchar
+party:
+  id: int pk auto
+  user_created: uuid nullable
+  date_created: timestamp_tz nullable
+  user_updated: uuid nullable
+  date_updated: timestamp_tz nullable
+  name: varchar
+  email: varchar default(NULL)
+  url: varchar nullable
+  party_type_id: int foreign_key(party_type,id)
+  company_id: int nullable foreign_key(company,id)
+tlog:
+  date: timestamp nullable
+  msg: text nullable
+config:
+  id: int pk auto
+  status: varchar default(draft)
+  date_created: timestamp_tz nullable
+  date_updated: timestamp_tz nullable
+  key: varchar unique
+  value: text nullable
+  comment: text nullable
+verification:
+  id: int pk auto
+  user_created: uuid nullable
+  date_created: timestamp_tz nullable
+  user_updated: uuid nullable
+  date_updated: timestamp_tz nullable
+  description: varchar nullable
+  number: varchar nullable unique default(NULL)
+  date: date nullable
+  amount: real nullable
+

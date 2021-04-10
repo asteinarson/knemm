@@ -1,0 +1,207 @@
+account_type:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  type:
+    data_type: text
+company:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  user_created:
+    data_type: uuid
+    is_nullable: true
+  date_created:
+    data_type: timestamp_tz
+    is_nullable: true
+  user_updated:
+    data_type: uuid
+    is_nullable: true
+  date_updated:
+    data_type: timestamp_tz
+    is_nullable: true
+  name:
+    data_type: varchar
+  url:
+    data_type: varchar
+    default_value: 'NULL'
+serie:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  date_created:
+    data_type: timestamp_tz
+    is_nullable: true
+  next:
+    data_type: int
+    default_value: 1
+  entity_type:
+    data_type: varchar
+    is_nullable: true
+  letter:
+    data_type: varchar
+    default_value: A
+account:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  status:
+    data_type: varchar
+    default_value: draft
+  user_created:
+    data_type: uuid
+    is_nullable: true
+  date_created:
+    data_type: timestamp_tz
+    is_nullable: true
+  user_updated:
+    data_type: uuid
+    is_nullable: true
+  date_updated:
+    data_type: timestamp_tz
+    is_nullable: true
+  number:
+    data_type: varchar
+    is_unique: true
+  description:
+    data_type: varchar
+    is_nullable: true
+  type:
+    data_type: int
+    is_nullable: true
+  year:
+    data_type: int
+    is_nullable: true
+  balance_start:
+    data_type: real
+  balance:
+    data_type: real
+    is_nullable: true
+verification_row:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  user_updated:
+    data_type: uuid
+    is_nullable: true
+  date_updated:
+    data_type: timestamp_tz
+    is_nullable: true
+  credit:
+    data_type: real
+  debet:
+    data_type: real
+  verification_id:
+    data_type: int
+    is_nullable: true
+  account_id:
+    data_type: int
+    is_nullable: true
+party_type:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  name:
+    data_type: varchar
+party:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  user_created:
+    data_type: uuid
+    is_nullable: true
+  date_created:
+    data_type: timestamp_tz
+    is_nullable: true
+  user_updated:
+    data_type: uuid
+    is_nullable: true
+  date_updated:
+    data_type: timestamp_tz
+    is_nullable: true
+  name:
+    data_type: varchar
+  email:
+    data_type: varchar
+    default_value: 'NULL'
+  url:
+    data_type: varchar
+    is_nullable: true
+  party_type_id:
+    data_type: int
+    foreign_key_column: id
+    foreign_key_table: party_type
+  company_id:
+    data_type: int
+    is_nullable: true
+    foreign_key_column: id
+    foreign_key_table: company
+tlog:
+  date:
+    data_type: timestamp
+    is_nullable: true
+  msg:
+    data_type: text
+    is_nullable: true
+config:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  status:
+    data_type: varchar
+    default_value: draft
+  date_created:
+    data_type: timestamp_tz
+    is_nullable: true
+  date_updated:
+    data_type: timestamp_tz
+    is_nullable: true
+  key:
+    data_type: varchar
+    is_unique: true
+  value:
+    data_type: text
+    is_nullable: true
+  comment:
+    data_type: text
+    is_nullable: true
+verification:
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  user_created:
+    data_type: uuid
+    is_nullable: true
+  date_created:
+    data_type: timestamp_tz
+    is_nullable: true
+  user_updated:
+    data_type: uuid
+    is_nullable: true
+  date_updated:
+    data_type: timestamp_tz
+    is_nullable: true
+  description:
+    data_type: varchar
+    is_nullable: true
+  number:
+    data_type: varchar
+    default_value: 'NULL'
+    is_nullable: true
+    is_unique: true
+  date:
+    data_type: date
+    is_nullable: true
+  amount:
+    data_type: real
+    is_nullable: true
+
