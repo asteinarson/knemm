@@ -2,7 +2,6 @@ import { Dict } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
-let s = "\\(abc"
 let re_enc_needed = /[_ \(\)]/;
 let re_dec_needed = /([_]|\\\(|\\\))/;
 
@@ -30,21 +29,6 @@ function string_arg_decode(s: string) {
     }
     return s;
 }
-
-// Remap of column info given by schemaInspector 
-let column_remap = {
-    data_type: "type",
-    default_value: "default",
-    foreign_key_table: "fk_table",
-    foreign_key_column: "fk_column",
-    is_nullable: "nullable",
-    is_primary_key: "pk",
-    is_unique: "unique",
-    has_auto_increment: "auto_inc",
-    max_length: "",
-    numeric_precision: "precision",
-    numeric_scale: "scale",
-};
 
 // short form boolean flags 
 let column_words: Dict<string> = {
