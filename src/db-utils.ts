@@ -12,6 +12,11 @@ export async function connect(connection: Record<string, string>, client = "pg")
     return knex_conn;
 }
 
+
+// column props that are by default true 
+import {Dict} from "./utils.js";
+const default_true_props:Dict<boolean> = {}; 
+
 import schemaInspector from 'knex-schema-inspector';
 export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
@@ -53,12 +58,17 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
                         delete c.numeric_precision; 
                     if( c.is_primary_key && c.is_unique )
                         delete c.is_unique;
-                    // See if there is anything apart from type in it 
-                    let cnt = Object.values(c).reduce((cnt:number, e) => (e ? cnt + 1 : cnt), 0);
-                    if (cnt <= 2)
-                        t[c.name] = c.data_type;
-                    else
-                        t[c.name] = remap(c, column_remap);
+                    // Delete properties set to null or false 
+                    for( let k in c ){
+                        if( c[k]==null || (c[k]==false && !default_true_props[k]) )
+                            delete c[k];
+                    }
+                    // Delete the schema property ? 
+                    if( conn.client.config.client=="pg" && c.schema=="public" )
+                        delete c.schema;
+                    delete c.table;
+                    t[c.name] = c;
+                    delete c.name;
                 } else
                     console.log("slurpSchema - column lacks name or datatype: ", c);
             }
