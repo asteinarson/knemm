@@ -44,7 +44,7 @@ cmd.parse(process.argv);
 
 
 // This works for ES module 
-import {toNestedDict} from './logic.js';
+import {toNestedDict, reformat} from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 const { merge: ldMerge } = pkg;
@@ -69,7 +69,8 @@ async function handle(cmd: string, target: string|string[], candidate: string, o
                 }
             }
         }
-        console.log( yamlDump(tree.content) );
+        let hr_content = reformat(tree.content,"hr-compact");
+        console.log( yamlDump(hr_content) );
     } else {
         if( typeof target=="string" ){
             let tgt_o = await toNestedDict(target);
