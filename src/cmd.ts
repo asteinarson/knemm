@@ -9,20 +9,28 @@ cmd.command("join <claim1...>")
         handle("join", claims, null, options);
     });
 
-cmd.command("fulfills <target> <candidate>")
+cmd.command("possible <claim> <target> ")
     .description(
-        "See if <candidate> fulfills <target>"
+        "See if <claim> can be applied on <target>"
     )
-    .action((target, candidate, options) => {
-        handle("fulfills", target, candidate, options);
+    .action((claim,target,  options) => {
+        handle("possible", claim, target, options);
     });
 
-cmd.command("diff <target> <candidate>")
+cmd.command("fulfills <claim> <target>")
     .description(
-        "Show diff beteen <candidate> and <target>"
+        "See if <claim> fulfills <target>"
     )
-    .action((target, candidate, options) => {
-        handle("apply", target, candidate, options);
+    .action((claim, target, options) => {
+        handle("fulfills", claim, target, options);
+    });
+
+cmd.command("diff <claim> <target> ")
+    .description(
+        "Show diff from <target> to <claim>"
+    )
+    .action((claim, target, options) => {
+        handle("diff", claim, target, options);
     });
 
 cmd.command("apply <claim> <DB>")
