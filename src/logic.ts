@@ -1,3 +1,4 @@
+import { Dict, remap } from './utils';
 
 // Remap of column info given by schemaInspector 
 let column_remap = {
@@ -14,12 +15,24 @@ let column_remap = {
     numeric_scale: "scale",
 };
 
-import { Dict, remap } from './utils';
+function formatHrCompact(content: Dict<any>): Dict<any> {
+    return content;
+}
+
+function formatInternal(content: Dict<any>): Dict<any> {
+    return content;
+}
+
+export function reformat(content: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
+    return format=="internal" ? formatInternal(content) : formatHrCompact(content);
+}
+
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
 
-export async function toNestedDict(file_or_db: string): Promise<Dict<any>> {
+export async function toNestedDict(file_or_db: string, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
     if (!file_or_db) return null;
+    if (!format) format = "internal";
 
     let conn_info: Dict<string>;
     if (file_or_db == "@") {
@@ -54,19 +67,26 @@ export async function toNestedDict(file_or_db: string): Promise<Dict<any>> {
             r.source = connection;
             r.format = "internal";
             r.content = rs;
-            return r;
         }
     }
 
-    // Then it should be a file 
-    let rf = slurpFile(file_or_db);
-    if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
-    else {
-        if (typeof rf == "object" && !Array.isArray(rf)) {
-            r.source = file_or_db;
-            r.content = rf;
-            return r;
+    if (!r.content) {
+        // Then it should be a file 
+        let rf = slurpFile(file_or_db);
+        if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
+        else {
+            if (typeof rf == "object" && !Array.isArray(rf)) {
+                r.source = file_or_db;
+                r.content = rf;
+                r.format = "?";
+            }
         }
+    }
+    if (r.content) {
+        if (r.format != format) {
+            r.content = reformat(r.content, format);
+        }
+        return r;
     }
 }
 
