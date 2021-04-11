@@ -113,7 +113,8 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
     return content;
 }
 
-let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/
+let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
+import { isNumeric, isString } from './db-props.js';
 
 // Expand any nested data flattened to a string  
 function formatInternal(content: Dict<any>): Dict<any> {
@@ -135,10 +136,19 @@ function formatInternal(content: Dict<any>): Dict<any> {
                 let words = s.split(" ");
                 if( words && words.length ){
                     let type = words[0];
-                    let r = type.match(re_get_args);
-                    if( r ){
-                        
-                    } else col.data_type = type;
+                    let md = type.match(re_get_args);
+                    if( md ){
+                        type = md[1];
+                        if( isNumeric(type) ){
+                            col.numeric_precision = md[2];
+                            if( md[3] ) col.numeric_scale = md[3];
+                        }
+                        else if( isString(type) ) 
+                            col.max_length = md[2];
+                        else 
+                            console.warn(`formatHrCompact(${col_name}) - unknown type args: ${md[0]}`);
+                    }
+                    col.data_type = type;
                 } 
                 else console.warn(`formatHrCompact(${col_name}) - no string value: ${s}`);
             }
