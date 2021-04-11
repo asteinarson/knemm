@@ -95,6 +95,8 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
                 }
                 table[col_name] = words.join(" ");
 
+                // ! We have not yet done the comment 
+
                 // See if we have any unhandled columns - and warn 
                 let unhandled = Object.keys(col).filter(prop => !done[prop]);
                 if (unhandled.length > 0) {
@@ -111,8 +113,37 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
     return content;
 }
 
+let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/
+
 // Expand any nested data flattened to a string  
 function formatInternal(content: Dict<any>): Dict<any> {
+    for (let t in content) {
+        // This is a table  
+        let table: Dict<any> = content[t];
+        for (let col_name in table) {
+            let col: Dict<any>;
+            let s:string;
+            if (typeof table[col_name] == "object") {
+                col = table[col_name];
+                s = col["*"];
+            } else { 
+                s = table[col_name];
+                col = {};
+            }
+            // Have a string to expand ? 
+            if( s ){
+                let words = s.split(" ");
+                if( words && words.length ){
+                    let type = words[0];
+                    let r = type.match(re_get_args);
+                    if( r ){
+                        
+                    } else col.data_type = type;
+                } 
+                else console.warn(`formatHrCompact(${col_name}) - no string value: ${s}`);
+            }
+        }
+    }
     return content;
 }
 
