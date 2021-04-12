@@ -116,4 +116,10 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     return r;
 }
 
+// Apply schema changes on DB. 
+// It is assumed here that any changes passed in the 'tables' arg 
+// can be applied, i.e. that we have verified before that these are
+// valid changes that can be applied, without collisions. 
+function modifySchema(conn: Knex, tables:Dict<any>){
 
+}
