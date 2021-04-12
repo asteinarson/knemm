@@ -1,4 +1,4 @@
-import { Dict } from './utils.js';
+import { Dict, toLut } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
@@ -123,34 +123,64 @@ function formatInternal(content: Dict<any>): Dict<any> {
         let table: Dict<any> = content[t];
         for (let col_name in table) {
             let col: Dict<any>;
-            let s:string;
+            let s: string;
             if (typeof table[col_name] == "object") {
                 col = table[col_name];
                 s = col["*"];
-            } else { 
+            } else {
                 s = table[col_name];
                 col = {};
             }
             // Have a string to expand ? 
-            if( s ){
+            if (s) {
                 let words = s.split(" ");
-                if( words && words.length ){
+                if (words && words.length) {
+                    // Do the type and its args 
                     let type = words[0];
                     let md = type.match(re_get_args);
-                    if( md ){
+                    if (md) {
                         type = md[1];
-                        if( isNumeric(type) ){
+                        if (isNumeric(type)) {
                             col.numeric_precision = md[2];
-                            if( md[3] ) col.numeric_scale = md[3];
+                            if (md[3]) col.numeric_scale = md[3];
                         }
-                        else if( isString(type) ) 
+                        else if (isString(type))
                             col.max_length = md[2];
-                        else 
-                            console.warn(`formatHrCompact(${col_name}) - unknown type args: ${md[0]}`);
+                        else
+                            console.warn(`formatInternal(${col_name}) - unknown type args: ${md[0]}`);
                     }
                     col.data_type = type;
-                } 
-                else console.warn(`formatHrCompact(${col_name}) - no string value: ${s}`);
+                    // Access remaining words as dictionary 
+                    let word_lut = toLut(words, 1);
+
+                    // Iterate remaining words 
+                    for (let ix = 1; ix < words.length; ix++) {
+                        let w = words[ix];
+                        // Bpoolean flag ?
+                        if (column_words[w]) col[w] = true;
+                        else {
+                            if (w.indexOf("foreign_key(") == 0) {
+                                let md = w.match(re_get_args);
+                                if (md && md[2] && md[4]) {
+                                    col.foreign_key_table = md[2];
+                                    col.foreign_key_column = md[4];
+                                } else console.warn(`formatInternal(${col_name}) - foreign key syntax bad: ${w}`);
+                            }
+                            else if (w.indexOf("default(") == 0) {
+                                let md = w.match(re_get_args);
+                                if (md && md[2] && md[4]) {
+                                    col.foreign_key_table = md[2];
+                                    col.foreign_key_column = md[4];
+                                } else console.warn(`formatInternal(${col_name}) - foreign key syntax bad: ${w}`);
+                            }
+                            else {
+                                console.warn(`formatInternal(${col_name}) - unknown word: ${w}`);
+                            }
+                        }
+                    }
+                    table[col_name] = col;
+                }
+                else console.warn(`formatInternal(${col_name}) - no string value: ${s}`);
             }
         }
     }
