@@ -14,7 +14,7 @@ company:
     data_type: uuid
     is_nullable: true
   date_created:
-    data_type: timestamp_tz
+    data_type: timestamp_tz 
     is_nullable: true
   user_updated:
     data_type: uuid

@@ -3,8 +3,8 @@ import cmder, { Command } from "commander";
 let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     {
         name: "join",
-        desc: "",
-        a1: "Join together all input claims and print them out",
+        desc: "Join together all input claims and print them out",
+        a1: "files...",
         a2: null
     },
     {
@@ -87,7 +87,7 @@ async function handleList(cmd: string, files: string[], options: any) {
             }
         }
         let content = reformat(tree.content, options.internal ? "internal" : "hr-compact");
-        let output = options.json ? JSON.stringify(content) : yamlDump(content);
+        let output = options.json ? JSON.stringify(content,null,2) : yamlDump(content);
         console.log(output);
         rc = 0;
     }
