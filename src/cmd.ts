@@ -1,53 +1,67 @@
-import { Command } from "commander";
+import cmder, { Command } from "commander";
+
+let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
+    {
+        name: "join",
+        desc: "",
+        a1: "Join together all input claims and print them out",
+        a2: null
+    },
+    {
+        name: "possible",
+        desc: "See if <claim> can be applied on <target>",
+        a1: "claim",
+        a2: "target"
+    },
+    {
+        name: "fulfills",
+        desc: "See if <claim> fulfills <target>",
+        a1: "claim",
+        a2: "target"
+    },
+    {
+        name: "diff",
+        desc: "See diff from <claim> to <target>",
+        a1: "claim",
+        a2: "target"
+    },
+    {
+        name: "apply",
+        desc: "Apply the claim on DB",
+        a1: "claim",
+        a2: "DB"
+    },
+    {
+        name: "reverse",
+        desc: "Reverse the claim from DB",
+        a1: "claim",
+        a2: "DB"
+    },
+];
+
+function addCommandOptions(cmd: cmder.Command) {
+    cmd.option("-i --internal", "Set outputs formating to internal - (instead of human readable compact)");
+    cmd.option("-j --json", "Generate output in JSON - not in YAML");
+    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
+}
+
 let cmd = new Command();
+for (let c of cmds) {
+    if (c.a2) {
+        // A two arg command
+        let _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
+            .description(c.desc)
+            .action((a1, a2, options) => { handle(c.name, a1, a2, options) })
+        addCommandOptions(_c);
+    } else {
+        // A one arg command
+        let _c = cmd.command(`${c.name} <${c.a1}>`)
+            .description(c.desc)
+            .action((a1, options) => { handleList(c.name, a1, options) })
+        addCommandOptions(_c);
+    }
+}
 
-cmd.command("join <claim1...>")
-    .description(
-        "Join together all input claims and print them out"
-    )
-    .action((claims, options) => {
-        handleList("join", claims, options);
-    });
-
-cmd.command("possible <claim> <target> ")
-    .description(
-        "See if <claim> can be applied on <target>"
-    )
-    .action((claim, target, options) => {
-        handle("possible", claim, target, options);
-    });
-
-cmd.command("fulfills <claim> <target>")
-    .description(
-        "See if <claim> fulfills <target>"
-    )
-    .action((claim, target, options) => {
-        handle("fulfills", claim, target, options);
-    });
-
-cmd.command("diff <claim> <target> ")
-    .description(
-        "Show diff from <target> to <claim>"
-    )
-    .action((claim, target, options) => {
-        handle("diff", claim, target, options);
-    });
-
-cmd.command("apply <claim> <DB>")
-    .description(
-        "Apply the claim on DB"
-    )
-    .action((target, DB, options) => {
-        handle("apply", target, DB, options);
-    });
-
-cmd.command("reverse <claim> <DB>")
-    .description(
-        "Reverse the claim from DB"
-    )
-    .action((target, DB, options) => {
-        handle("reverse", target, DB, options);
-    });
 cmd.parse(process.argv);
 
 // This works for ES module 
@@ -72,14 +86,15 @@ async function handleList(cmd: string, files: string[], options: any) {
                 r = ldMerge(tree, r);
             }
         }
-        let hr_content = reformat(tree.content, "hr-compact");
-        console.log(yamlDump(hr_content));
+        let content = reformat(tree.content, options.internal ? "internal" : "hr-compact");
+        let output = options.json ? JSON.stringify(content) : yamlDump(content);
+        console.log(output);
         rc = 0;
     }
     process.exit(rc);
 }
 
-async function handle(cmd: string, target: string | string[], candidate: string, options: any) {
+async function handle(cmd: string, target: string, candidate: string, options: any) {
     //console.log("handle: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
     let rc = 1000;
