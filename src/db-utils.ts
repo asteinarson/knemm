@@ -120,15 +120,15 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
 // It is assumed here that any changes passed in the 'tables' arg 
 // can be applied, i.e. that we have verified before that these are
 // valid changes that can be applied, without collisions. 
-async function modifySchema(conn: Knex, tables: Dict<any>) {
-    for (let t in tables) {
-        let has = await conn.schema.hasTable(t);
-        let tbl_met = has ? conn.schema.alterTable : conn.schema.createTable;
+async function modifySchema(conn: Knex, delta: Dict<any>, state:Dict<any>) {
+    for (let t in delta) {
+        let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
         await tbl_met(t, (table) => {
-            for (let col in tables[t]) {
-                let col_info = tables[t][col];
+            for (let col in delta[t]) {
+                let col_delta = delta[t][col];
+                let col_base:Dict<any> = state[t] ? state[t][col] : {};
                 let column: Knex.ColumnBuilder = null;
-                switch (col_info.data_type) {
+                switch (col_delta.data_type) {
                     case "boolean":
                     case "bool":
                         column = table.boolean(col);
@@ -137,17 +137,17 @@ async function modifySchema(conn: Knex, tables: Dict<any>) {
                         column = table.text(col);
                         break;
                     case "varchar":
-                        column = table.string(col, col_info.max_length ?? 255);
+                        column = table.string(col, col_delta.max_length ?? 255);
                         break;
                     case "int":
                     case "integer":
-                        if( col_info.has_auto_increment )
+                        if( col_delta.has_auto_increment )
                             column = table.increments(col);
                         else 
                             column = table.integer(col);
                         break;
                     case "bigint":
-                        if( col_info.has_auto_increment )
+                        if( col_delta.has_auto_increment )
                             column = table.bigIncrements(col);
                         else 
                             column = table.bigInteger(col);
@@ -158,7 +158,7 @@ async function modifySchema(conn: Knex, tables: Dict<any>) {
                         column = table.float(col);
                         break;
                     case "decimal":
-                        column = table.decimal(col, col_info.numeric_precision, col_info.numeric_scale);
+                        column = table.decimal(col, col_delta.numeric_precision, col_delta.numeric_scale);
                         break;
                     case "text":
                         column = table.text(col);
@@ -188,15 +188,15 @@ async function modifySchema(conn: Knex, tables: Dict<any>) {
                         column = table.jsonb(col);
                         break;
                     default:
-                        console.warn(`modifySchema - unhandled datatype - ${col}:${col_info.data_type}`);
+                        console.warn(`modifySchema - unhandled datatype - ${col}:${col_delta.data_type}`);
                 }
                 if( column ){
                     // Add other properties 
-                    if( col_info.is_primary_key ) column.primary();
-                    if( col_info.comment ) column.comment(col_info.comment);
-                    if( col_info.is_nullable ) column.nullable();
-                    if( col_info.is_unique ) column.unique();
-                    if( col_info.default ) column.defaultTo(col_info.default);
+                    if( col_delta.is_primary_key ) column.primary();
+                    if( col_delta.comment ) column.comment(col_delta.comment);
+                    if( col_delta.is_nullable ) column.nullable();
+                    if( col_delta.is_unique ) column.unique();
+                    if( col_delta.default ) column.defaultTo(col_delta.default);
                 }
             }
         });
