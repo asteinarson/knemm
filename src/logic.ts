@@ -150,8 +150,6 @@ function formatInternal(content: Dict<any>): Dict<any> {
                             console.warn(`formatInternal(${col_name}) - unknown type args: ${md[0]}`);
                     }
                     col.data_type = type;
-                    // Access remaining words as dictionary 
-                    let word_lut = toLut(words, 1);
 
                     // Iterate remaining words 
                     for (let ix = 1; ix < words.length; ix++) {

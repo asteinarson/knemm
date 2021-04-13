@@ -123,37 +123,80 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
 async function modifySchema(conn: Knex, tables: Dict<any>) {
     for (let t in tables) {
         let has = await conn.schema.hasTable(t);
-        let tbl_met = has ? conn.schema.table : conn.schema.createTable;
-        tbl_met(t, (table) => {
+        let tbl_met = has ? conn.schema.alterTable : conn.schema.createTable;
+        await tbl_met(t, (table) => {
             for (let col in tables[t]) {
                 let col_info = tables[t][col];
+                let column: Knex.ColumnBuilder = null;
                 switch (col_info.data_type) {
                     case "boolean":
                     case "bool":
-                        table.boolean(col);
+                        column = table.boolean(col);
                         break;
                     case "text":
-                        table.text(col);
+                        column = table.text(col);
                         break;
                     case "varchar":
-                        table.string(col, col_info.max_length ?? 255);
+                        column = table.string(col, col_info.max_length ?? 255);
                         break;
                     case "int":
                     case "integer":
-                        table.integer(col);
+                        if( col_info.has_auto_increment )
+                            column = table.increments(col);
+                        else 
+                            column = table.integer(col);
+                        break;
+                    case "bigint":
+                        if( col_info.has_auto_increment )
+                            column = table.bigIncrements(col);
+                        else 
+                            column = table.bigInteger(col);
                         break;
                     case "real":
                     case "float":
                         // !! size/precision/bytes not handled here! 
-                        table.float(col);
+                        column = table.float(col);
                         break;
                     case "decimal":
-                        table.decimal(col,col_info.numeric_precision, col_info.numeric_scale);
+                        column = table.decimal(col, col_info.numeric_precision, col_info.numeric_scale);
                         break;
-                    //case "bigint":
-                    //case "json":
+                    case "text":
+                        column = table.text(col);
+                        break;
+                    case "date":
+                        column = table.date(col);
+                        break;
+                    case "time":
+                        column = table.time(col);
+                        break;
+                    case "datetime":
+                        column = table.dateTime(col);
+                        break;
+                    case "timestamp":
+                        column = table.timestamp(col,{useTz:false});
+                        break;
+                    case "timestamp_tz":
+                        column = table.timestamp(col,{useTz:false});
+                        break;
+                    case "uuid":
+                        column = table.uuid(col);
+                        break;
+                    case "json":
+                        column = table.json(col);
+                        break;
+                    case "jsonb":
+                        column = table.jsonb(col);
+                        break;
                     default:
                         console.warn(`modifySchema - unhandled datatype - ${col}:${col_info.data_type}`);
+                }
+                if( column ){
+                    // Add other properties 
+                    if( col_info.is_primary_key ) column.primary();
+                    if( col_info.comment ) column.comment(col_info.comment);
+                    if( col_info.is_nullable ) column.nullable();
+                    if( col_info.is_unique ) column.unique();
+                    if( col_info.default ) column.defaultTo(col_info.default);
                 }
             }
         });
