@@ -16,7 +16,9 @@ export async function connect(connection: Record<string, string>, client = "pg")
 import { Dict } from "./utils.js";
 
 // column props that are by default true 
-const default_true_props: Dict<boolean> = {};
+const default_true_props: Dict<boolean> = {
+    is_nullable: true,
+};
 
 // data type translations 
 const data_type_remap: Dict<string> = {
@@ -92,9 +94,11 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
                     // Primary keys are always unique
                     if (c.is_primary_key && c.is_unique)
                         delete c.is_unique;
-                    // Delete properties set to null or false 
+                    // Delete properties set to null or false (or unnecessarily to true)
                     for (let k in c) {
                         if (c[k] == null || (c[k] == false && !default_true_props[k]))
+                            delete c[k];
+                        else if (c[k] == true && default_true_props[k])
                             delete c[k];
                     }
                     // Delete the schema property ? 
@@ -102,6 +106,12 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
                         delete c.schema;
                         if (c.foreign_key_schema == "public")
                             delete c.foreign_key_schema;
+                    }
+                    // Make the two foreign key entries a sub table 
+                    if (c.foreign_key_table || c.foreign_key_column) {
+                        c.foreign_key = { table: c.foreign_key_table, column: c.c.foreign_key_column }
+                        delete c.foreign_key_table;
+                        delete c.foreign_key_column;
                     }
                     // It is a child node, prune these too
                     delete c.table;
@@ -116,19 +126,30 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     return r;
 }
 
+// See if something is really changed between delta and state
+function modified(key: string, delta: Dict<any>, state: Dict<any>) {
+    return (delta[key] || delta[key] == false) &&
+        delta[key] != state[key];
+}
+
 // Apply schema changes on DB. 
 // It is assumed here that any changes passed in the 'tables' arg 
 // can be applied, i.e. that we have verified before that these are
 // valid changes that can be applied, without collisions. 
-async function modifySchema(conn: Knex, delta: Dict<any>, state:Dict<any>) {
+// Apart from table names, everything passed down here is assumed to 
+// be a change.
+async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
     for (let t in delta) {
         let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
-        await tbl_met(t, (table) => {
+        tbl_met(t, (table) => {
             for (let col in delta[t]) {
                 let col_delta = delta[t][col];
-                let col_base:Dict<any> = state[t] ? state[t][col] : {};
+                const is_new_column = (!state[t] || !state[t][col]);
+                let col_base: Dict<any> = is_new_column ? {} : state[t][col];
                 let column: Knex.ColumnBuilder = null;
-                switch (col_delta.data_type) {
+                // Knex needs to be given the ytype of the column (also when it already exists)
+                const data_type = col_delta.data_type ?? col_base.data_type;
+                switch (data_type) {
                     case "boolean":
                     case "bool":
                         column = table.boolean(col);
@@ -137,19 +158,19 @@ async function modifySchema(conn: Knex, delta: Dict<any>, state:Dict<any>) {
                         column = table.text(col);
                         break;
                     case "varchar":
-                        column = table.string(col, col_delta.max_length ?? 255);
+                        column = table.string(col, col_delta.max_length);
                         break;
                     case "int":
                     case "integer":
-                        if( col_delta.has_auto_increment )
+                        if (col_delta.has_auto_increment)
                             column = table.increments(col);
-                        else 
+                        else
                             column = table.integer(col);
                         break;
                     case "bigint":
-                        if( col_delta.has_auto_increment )
+                        if (col_delta.has_auto_increment)
                             column = table.bigIncrements(col);
-                        else 
+                        else
                             column = table.bigInteger(col);
                         break;
                     case "real":
@@ -173,10 +194,10 @@ async function modifySchema(conn: Knex, delta: Dict<any>, state:Dict<any>) {
                         column = table.dateTime(col);
                         break;
                     case "timestamp":
-                        column = table.timestamp(col,{useTz:false});
+                        column = table.timestamp(col, { useTz: false });
                         break;
                     case "timestamp_tz":
-                        column = table.timestamp(col,{useTz:false});
+                        column = table.timestamp(col, { useTz: false });
                         break;
                     case "uuid":
                         column = table.uuid(col);
@@ -190,13 +211,32 @@ async function modifySchema(conn: Knex, delta: Dict<any>, state:Dict<any>) {
                     default:
                         console.warn(`modifySchema - unhandled datatype - ${col}:${col_delta.data_type}`);
                 }
-                if( column ){
+                if (column) {
+                    if (!is_new_column) column.alter();
                     // Add other properties 
-                    if( col_delta.is_primary_key ) column.primary();
-                    if( col_delta.comment ) column.comment(col_delta.comment);
-                    if( col_delta.is_nullable ) column.nullable();
-                    if( col_delta.is_unique ) column.unique();
-                    if( col_delta.default ) column.defaultTo(col_delta.default);
+                    if (col_delta.is_primary_key != undefined) {
+                        if (col_delta.is_primary_key) column.primary();
+                        else table.dropPrimary();
+                    }
+                    if (col_delta.comment != undefined) {
+                        column.comment(col_delta.comment);
+                    }
+                    if (col_delta.is_unique != undefined) {
+                        if (col_delta.is_unique) column.unique();
+                        else table.dropUnique([col]);
+                    }
+
+                    if (col_delta.is_nullable != undefined) {
+                        if (col_delta.is_nullable) column.nullable();
+                        else column.notNullable();
+                    }
+                    else if (!is_new_column && state.is_nullable == false)
+                        column.notNullable();
+
+                    if (col_delta.default != undefined)
+                        column.defaultTo(col_delta.default);
+                    else if (!is_new_column && state.default)
+                        column.defaultTo(state.default);
                 }
             }
         });
