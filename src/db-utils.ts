@@ -120,6 +120,43 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
 // It is assumed here that any changes passed in the 'tables' arg 
 // can be applied, i.e. that we have verified before that these are
 // valid changes that can be applied, without collisions. 
-function modifySchema(conn: Knex, tables:Dict<any>){
-
+async function modifySchema(conn: Knex, tables: Dict<any>) {
+    for (let t in tables) {
+        let has = await conn.schema.hasTable(t);
+        let tbl_met = has ? conn.schema.table : conn.schema.createTable;
+        tbl_met(t, (table) => {
+            for (let col in tables[t]) {
+                let col_info = tables[t][col];
+                switch (col_info.data_type) {
+                    case "boolean":
+                    case "bool":
+                        table.boolean(col);
+                        break;
+                    case "text":
+                        table.text(col);
+                        break;
+                    case "varchar":
+                        table.string(col, col_info.max_length ?? 255);
+                        break;
+                    case "int":
+                    case "integer":
+                        table.integer(col);
+                        break;
+                    case "real":
+                    case "float":
+                        // !! size/precision/bytes not handled here! 
+                        table.float(col);
+                        break;
+                    case "decimal":
+                        table.decimal(col,col_info.numeric_precision, col_info.numeric_scale);
+                        break;
+                    //case "bigint":
+                    //case "json":
+                    default:
+                        console.warn(`modifySchema - unhandled datatype - ${col}:${col_info.data_type}`);
+                }
+            }
+        });
+    }
 }
+
