@@ -78,10 +78,12 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
                 }
 
                 // Do foreign key 
-                let fkt = col.foreign_key_table, fkc = col.foreign_key_column;
-                if (fkt || fkc) {
-                    words.push(`foreign_key(${fkt},${fkc})`);
-                    done.foreign_key_table = done.foreign_key_column = 1;
+                let fk = col.foreign_key;
+                if (fk) {
+                    if (typeof fk == "object") {
+                        words.push(`foreign_key(${fk.table},${fk.column})`);
+                    }
+                    done.foreign_key = 1;
                 }
 
                 // Handle case of default value 
@@ -160,8 +162,7 @@ function formatInternal(content: Dict<any>): Dict<any> {
                             if (w.indexOf("foreign_key(") == 0) {
                                 let md = w.match(re_get_args);
                                 if (md && md[2] && md[4]) {
-                                    col.foreign_key_table = md[2];
-                                    col.foreign_key_column = md[4];
+                                    col.foreign_key = { table: md[2], column: md[4] }
                                 } else console.warn(`formatInternal(${col_name}) - foreign key syntax bad: ${w}`);
                             }
                             else if (w.indexOf("default(") == 0) {
