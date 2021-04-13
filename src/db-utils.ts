@@ -140,120 +140,126 @@ function modified(key: string, delta: Dict<any>, state: Dict<any>) {
 // be a change.
 async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
     for (let t in delta) {
-        let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
-        tbl_met(t, (table) => {
-            for (let col in delta[t]) {
-                let col_delta = delta[t][col];
-                if( col_delta!="*NOT" ){
-                    const is_new_column = (!state[t] || !state[t][col]);
-                    let col_base: Dict<any> = is_new_column ? {} : state[t][col];
-                    let column: Knex.ColumnBuilder = null;
-                    // Knex needs to be given the ytype of the column (also when it already exists)
-                    const data_type = col_delta.data_type ?? col_base.data_type;
-                    switch (data_type) {
-                        case "boolean":
-                        case "bool":
-                            column = table.boolean(col);
-                            break;
-                        case "text":
-                            column = table.text(col);
-                            break;
-                        case "varchar":
-                            column = table.string(col, col_delta.max_length);
-                            break;
-                        case "int":
-                        case "integer":
-                            if (col_delta.has_auto_increment)
-                                column = table.increments(col);
-                            else
-                                column = table.integer(col);
-                            break;
-                        case "bigint":
-                            if (col_delta.has_auto_increment)
-                                column = table.bigIncrements(col);
-                            else
-                                column = table.bigInteger(col);
-                            break;
-                        case "real":
-                        case "float":
-                            // !! size/precision/bytes not handled here! 
-                            column = table.float(col);
-                            break;
-                        case "decimal":
-                            column = table.decimal(col, col_delta.numeric_precision, col_delta.numeric_scale);
-                            break;
-                        case "text":
-                            column = table.text(col);
-                            break;
-                        case "date":
-                            column = table.date(col);
-                            break;
-                        case "time":
-                            column = table.time(col);
-                            break;
-                        case "datetime":
-                            column = table.dateTime(col);
-                            break;
-                        case "timestamp":
-                            column = table.timestamp(col, { useTz: false });
-                            break;
-                        case "timestamp_tz":
-                            column = table.timestamp(col, { useTz: false });
-                            break;
-                        case "uuid":
-                            column = table.uuid(col);
-                            break;
-                        case "json":
-                            column = table.json(col);
-                            break;
-                        case "jsonb":
-                            column = table.jsonb(col);
-                            break;
-                        default:
-                            console.warn(`modifySchema - unhandled datatype - ${col}:${col_delta.data_type}`);
+        let t_delta = delta[t];
+        if( t_delta!=="*NOT" ){
+            let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
+            let r = await tbl_met(t, (table) => {
+                for (let col in delta[t]) {
+                    let col_delta = delta[t][col];
+                    if( col_delta!="*NOT" ){
+                        const is_new_column = (!state[t] || !state[t][col]);
+                        let col_base: Dict<any> = is_new_column ? {} : state[t][col];
+                        let column: Knex.ColumnBuilder = null;
+                        // Knex needs to be given the ytype of the column (also when it already exists)
+                        const data_type = col_delta.data_type ?? col_base.data_type;
+                        switch (data_type) {
+                            case "boolean":
+                            case "bool":
+                                column = table.boolean(col);
+                                break;
+                            case "text":
+                                column = table.text(col);
+                                break;
+                            case "varchar":
+                                column = table.string(col, col_delta.max_length);
+                                break;
+                            case "int":
+                            case "integer":
+                                if (col_delta.has_auto_increment)
+                                    column = table.increments(col);
+                                else
+                                    column = table.integer(col);
+                                break;
+                            case "bigint":
+                                if (col_delta.has_auto_increment)
+                                    column = table.bigIncrements(col);
+                                else
+                                    column = table.bigInteger(col);
+                                break;
+                            case "real":
+                            case "float":
+                                // !! size/precision/bytes not handled here! 
+                                column = table.float(col);
+                                break;
+                            case "decimal":
+                                column = table.decimal(col, col_delta.numeric_precision, col_delta.numeric_scale);
+                                break;
+                            case "text":
+                                column = table.text(col);
+                                break;
+                            case "date":
+                                column = table.date(col);
+                                break;
+                            case "time":
+                                column = table.time(col);
+                                break;
+                            case "datetime":
+                                column = table.dateTime(col);
+                                break;
+                            case "timestamp":
+                                column = table.timestamp(col, { useTz: false });
+                                break;
+                            case "timestamp_tz":
+                                column = table.timestamp(col, { useTz: false });
+                                break;
+                            case "uuid":
+                                column = table.uuid(col);
+                                break;
+                            case "json":
+                                column = table.json(col);
+                                break;
+                            case "jsonb":
+                                column = table.jsonb(col);
+                                break;
+                            default:
+                                console.warn(`modifySchema - unhandled datatype - ${col}:${col_delta.data_type}`);
+                        }
+                        if (column) {
+                            if (!is_new_column) column.alter();
+                            // Add other properties 
+                            if (col_delta.is_primary_key != undefined) {
+                                if (col_delta.is_primary_key) column.primary();
+                                else table.dropPrimary();
+                            }
+                            if (col_delta.comment != undefined) {
+                                column.comment(col_delta.comment);
+                            }
+                            if (col_delta.is_unique != undefined) {
+                                if (col_delta.is_unique) column.unique();
+                                else table.dropUnique([col]);
+                            }
+
+                            if (col_delta.is_nullable != undefined) {
+                                if (col_delta.is_nullable) column.nullable();
+                                else column.notNullable();
+                            }
+                            else if (!is_new_column && state.is_nullable == false)
+                                // Have to recreate 
+                                column.notNullable();
+
+                            if (col_delta.default != undefined)
+                                column.defaultTo(col_delta.default);
+                            else if (!is_new_column && state.default)
+                                // Have to recreate 
+                                column.defaultTo(state.default);
+
+                            const fk = col_delta.foreign_key;
+                            if (fk) {
+                                if (typeof fk == "object") {
+                                    column.references(fk.column).inTable(fk.table);
+                                } else if (fk == "*NOT")
+                                    table.dropForeign(col);
+                            }
+                        }
+                    } else {
+                        table.dropColumn(col);
                     }
-                    if (column) {
-                        if (!is_new_column) column.alter();
-                        // Add other properties 
-                        if (col_delta.is_primary_key != undefined) {
-                            if (col_delta.is_primary_key) column.primary();
-                            else table.dropPrimary();
-                        }
-                        if (col_delta.comment != undefined) {
-                            column.comment(col_delta.comment);
-                        }
-                        if (col_delta.is_unique != undefined) {
-                            if (col_delta.is_unique) column.unique();
-                            else table.dropUnique([col]);
-                        }
-
-                        if (col_delta.is_nullable != undefined) {
-                            if (col_delta.is_nullable) column.nullable();
-                            else column.notNullable();
-                        }
-                        else if (!is_new_column && state.is_nullable == false)
-                            // Have to recreate 
-                            column.notNullable();
-
-                        if (col_delta.default != undefined)
-                            column.defaultTo(col_delta.default);
-                        else if (!is_new_column && state.default)
-                            // Have to recreate 
-                            column.defaultTo(state.default);
-
-                        const fk = col_delta.foreign_key;
-                        if (fk) {
-                            if (typeof fk == "object") {
-                                column.references(fk.column).inTable(fk.table);
-                            } else if (fk == "*NOT")
-                                table.dropForeign(col);
-                        }
-                    }
-                } else {
-                    table.dropColumn(col);
                 }
-            }
-        });
+            });
+        } 
+        else {
+            let r = await conn.schema.dropTable(t);
+        }
     }
 }
 
