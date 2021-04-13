@@ -9,32 +9,32 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     },
     {
         name: "possible",
-        desc: "See if <claim> can be applied on <target>",
-        a1: "claim",
-        a2: "target"
+        desc: "See if <target> can be applied on <candidate>",
+        a1: "target",
+        a2: "candidate"
     },
     {
         name: "fulfills",
-        desc: "See if <claim> fulfills <target>",
-        a1: "claim",
+        desc: "See if <candidate> fulfills <target>",
+        a1: "candidate",
         a2: "target"
     },
     {
         name: "diff",
-        desc: "See diff from <claim> to <target>",
-        a1: "claim",
+        desc: "See diff from <candidate> to <target>",
+        a1: "candidate",
         a2: "target"
     },
     {
         name: "apply",
-        desc: "Apply the claim on DB",
-        a1: "claim",
+        desc: "Apply the claim/target on the DB",
+        a1: "target",
         a2: "DB"
     },
     {
         name: "reverse",
-        desc: "Reverse the claim from DB",
-        a1: "claim",
+        desc: "Reverse the claim/target from the DB",
+        a1: "target",
         a2: "DB"
     },
 ];
