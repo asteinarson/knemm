@@ -1,5 +1,5 @@
 
-export type Dict<T> = Record<string,T>;
+export type Dict<T> = Record<string, T>;
 
 export function remap(src: Dict<any>, transl: Dict<string>, tgt?: Dict<any>) {
     if (!tgt) tgt = {};
@@ -11,18 +11,27 @@ export function remap(src: Dict<any>, transl: Dict<string>, tgt?: Dict<any>) {
     return tgt;
 }
 
-export function toLut<T>( keys:string[], v:T|T[] ):Dict<T>{
-    let r:Dict<T> = {};
-    if( Array.isArray(v) ){
+export function toLut<T>(keys: string[], v: T | T[]): Dict<T> {
+    let r: Dict<T> = {};
+    if (Array.isArray(v)) {
         // Set all according to second array, even if length mismatch
-        for( let ix in keys ){
+        for (let ix in keys) {
             r[keys[ix]] = v[ix];
         }
     } else {
         // Set all to the same
-        for( let k of keys ){
+        for (let k of keys) {
             r[k] = v;
         }
     }
     return r;
+}
+
+export function firstKey(o: object): any {
+    if (typeof o == "object") {
+        for (let k in o) {
+            if (o.hasOwnProperty(k))
+                return k;
+        }
+    }
 }
