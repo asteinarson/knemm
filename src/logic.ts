@@ -116,7 +116,7 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
 }
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
-import { isNumeric, isString } from './db-props.js';
+import { getTypeGroup, isNumeric, isString } from './db-props.js';
 
 // Expand any nested data flattened to a string  
 function formatInternal(content: Dict<any>): Dict<any> {
@@ -253,8 +253,55 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
     }
 }
 
+type PropType = string | number | Dict<string | number | Dict<string | number>>;
+function propCmp(v1:PropType, v2: PropType) {
+    if( typeof v1=="string" || typeof v1=="number" ) return v1==v2; 
+    if( !v1 ) return v1==v2;
+    if( typeof v1=="object" ){
+        if( typeof v2!="object" ) return false;
+        // Each property of it should be equal 
+        for( let k in v1 ){
+            if( !propCmp(v1[k],v2[k]) ) 
+                return false;
+        }
+        return true;
+    }
+}
+
 function diffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
+    if (!firstKey(cand_col)) {
+        // The column does not exist in the candidate, so duplicate all properties 
+        // into the diff 
+        return { ...tgt_col };
+    }
+
+    if (tgt_col.data_type != cand_col.data_type) {
+        let tdt = tgt_col.data_type;
+        let cdt = cand_col.data_type;
+        let tgt_tg = getTypeGroup(tdt);
+        let cand_tg = getTypeGroup(cdt);
+        // For now, only accept type changes in same type group
+        // This also maybe needs additional protection by options, 
+        // in order not to easily loose precision in existing 
+        // values for the column.
+        if (tgt_tg != cand_tg) {
+            return [`Target and candidate type group mismatch (cannot alter from ${tdt}(${tgt_tg}) to ${cdt}(${cand_tg})`];
+        }
+        // If target requests a more narrow (less precision) data type than candidate
+        // has, we should keep it, as it is (usually) satisfied then. 
+        r.data_type = tdt;
+    }
+    // Do the remaining target properties 
+    for (let tk in tgt_col) {
+        if (tk == "data_type") continue;
+        if (!propCmp(tgt_col[tk], cand_col[tk])) {
+            r[tk] = tgt_col[tk];
+        }
+    }
+    // For properties that are only in candidate, we can keep those, 
+    // as target does not oppose them.
+
     return r;
 }
 
@@ -276,8 +323,10 @@ export function diff(candidate: Dict<any>, target: Dict<any>): Dict<any> | strin
                 let diff_col: Dict<any> | string;
                 if (typeof tgt_col == "object") {
                     let dc = diffColumn(cand_col, tgt_col);
-                    if (typeof dc == "object") 
-                        diff_col = dc;
+                    if (typeof dc == "object") {
+                        if (firstKey(dc))
+                            diff_col = dc;
+                    }
                     else errors = [...errors, ...dc];
                 }
                 else {
