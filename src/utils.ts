@@ -27,6 +27,13 @@ export function toLut<T>(keys: string[], v: T | T[]): Dict<T> {
     return r;
 }
 
+export function tryGet<T>( k:string, dict:Dict<T>, fallback_value?:T ){
+    if( typeof dict=="object" ){
+        let r = dict[k];
+        return r!=undefined ? r : fallback_value;
+    }
+}
+
 export function firstKey(o: object): any {
     if (typeof o == "object") {
         for (let k in o) {
