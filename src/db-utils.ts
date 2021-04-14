@@ -200,7 +200,7 @@ async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
                                 column = table.timestamp(col, { useTz: false });
                                 break;
                             case "timestamp_tz":
-                                column = table.timestamp(col, { useTz: false });
+                                column = table.timestamp(col, { useTz: true });
                                 break;
                             case "uuid":
                                 column = table.uuid(col);

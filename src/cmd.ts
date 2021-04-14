@@ -40,7 +40,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
 ];
 
 function addCommandOptions(cmd: cmder.Command) {
-    cmd.option("-i --internal", "Set outputs formating to internal - (instead of human readable compact)");
+    cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
 }
