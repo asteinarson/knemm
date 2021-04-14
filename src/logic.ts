@@ -1,4 +1,4 @@
-import { Dict, toLut } from './utils.js';
+import { Dict, toLut, firstKey, tryGet } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
@@ -251,5 +251,55 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
         }
         return r;
     }
+}
+
+function diffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
+    let r: Dict<any> = {};
+    return r;
+}
+
+// Generate the DB diff that is needed to go from 'candidate' to 'target'. 
+// In a sense, the output is a transition, not a state. (The two inputs are
+// states).
+export function diff(candidate: Dict<any>, target: Dict<any>): Dict<any> | string[] {
+    let r: Dict<any> = {};
+    let errors: string[] = [];
+    // Iterate tables 
+    for (let kt in target) {
+        let tgt_table = target[kt];
+        let cand_table = tryGet(kt, candidate, {});
+        if (typeof tgt_table == "object") {
+            // Iterate columns 
+            for (let kc in tgt_table) {
+                let tgt_col = tgt_table[kc];
+                let cand_col = tryGet(kc, cand_table, {});
+                let diff_col: Dict<any> | string;
+                if (typeof tgt_col == "object") {
+                    let dc = diffColumn(cand_col, tgt_col);
+                    if (typeof dc == "object") 
+                        diff_col = dc;
+                    else errors = [...errors, ...dc];
+                }
+                else {
+                    if (tgt_col == "*NOT") {
+                        // We only need to generate this if the table exists in the candidate
+                        if (!firstKey(cand_col) && cand_col != "*NOT")
+                            diff_col = "*NOT";
+                    }
+                }
+                if (diff_col) {
+                    if (!r[kt]) r[kt] = {};
+                    r[kt][kc] = diff_col;
+                }
+            }
+        } else {
+            if (tgt_table == "*NOT") {
+                // We only need to generate this if the table exists in the candidate
+                if (cand_table && cand_table[kt] && cand_table[kt] != "*NOT")
+                    r[kt] = "*NOT";
+            }
+        }
+    }
+    return errors ? errors : r;
 }
 
