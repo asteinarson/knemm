@@ -27,15 +27,15 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     },
     {
         name: "apply",
-        desc: "Apply the claim/target on the DB",
-        a1: "target",
-        a2: "DB"
+        desc: "On this DB, apply the claim/target",
+        a1: "DB",
+        a2: "target",
     },
     {
         name: "reverse",
-        desc: "Reverse the claim/target from the DB",
-        a1: "target",
-        a2: "DB"
+        desc: "On this DB, reverse the claim/target ",
+        a1: "DB",
+        a2: "target",
     },
 ];
 
@@ -65,11 +65,24 @@ for (let c of cmds) {
 cmd.parse(process.argv);
 
 // This works for ES module 
-import { toNestedDict, reformat } from './logic.js';
+import { toNestedDict, reformat, diff } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
+import { Dict } from "./utils.js";
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This is slowish 
+
+function logResult(r: Dict<any> | string[], options: any) {
+    if (!Array.isArray(r)) {
+        let output = options.json ? JSON.stringify(r, null, 2) : yamlDump(r);
+        console.log(output);
+    } else {
+        console.warn("!!! There were errors !!! ");
+        r.forEach(error => {
+            console.warn(error);
+        });
+    }
+}
 
 async function handleList(cmd: string, files: string[], options: any) {
     //console.log("handleList: " + cmd, files, options);
@@ -87,23 +100,26 @@ async function handleList(cmd: string, files: string[], options: any) {
             }
         }
         let content = reformat(tree.content, options.internal ? "internal" : "hr-compact");
-        let output = options.json ? JSON.stringify(content,null,2) : yamlDump(content);
-        console.log(output);
+        logResult(content, options);
         rc = 0;
     }
     process.exit(rc);
 }
 
-async function handle(cmd: string, target: string, candidate: string, options: any) {
+async function handle(cmd: string, candidate: string, target: string, options: any) {
     //console.log("handle: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
     let rc = 1000;
+    let cand = await toNestedDict(candidate, "internal");
+    let tgt = await toNestedDict(target, "internal");
     switch (cmd) {
         case "possible":
             break;
         case "fulfills":
             break;
         case "diff":
+            let r = diff(cand.content, tgt.content);
+            logResult(r, options);
             break;
         case "apply":
             break;
