@@ -68,7 +68,7 @@ cmd.parse(process.argv);
 import { toNestedDict, reformat, diff } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
-import { Dict } from "./utils.js";
+import { Dict, firstKey } from "./utils.js";
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This is slowish 
 
@@ -112,13 +112,24 @@ async function handle(cmd: string, candidate: string, target: string, options: a
     let rc = 1000;
     let cand = await toNestedDict(candidate, "internal");
     let tgt = await toNestedDict(target, "internal");
+    let r:Dict<any>|string[];
     switch (cmd) {
         case "possible":
+            r = diff(cand.content, tgt.content);
+            if( Array.isArray(r) ){
+                console.log("Not possible");
+                logResult(r,options);
+            } 
+            else console.log("Possible");
             break;
         case "fulfills":
+            r = diff(cand.content, tgt.content);
+            // Only generate an empty response if the diff is empty
+            if( Array.isArray(r) || firstKey(r) )
+                logResult(r, options);
             break;
         case "diff":
-            let r = diff(cand.content, tgt.content);
+            r = diff(cand.content, tgt.content);
             logResult(r, options);
             break;
         case "apply":
