@@ -126,19 +126,13 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     return r;
 }
 
-// See if something is really changed between delta and state
-function modified(key: string, delta: Dict<any>, state: Dict<any>) {
-    return (delta[key] || delta[key] == false) &&
-        delta[key] != state[key];
-}
-
 // Apply schema changes on DB. 
 // It is assumed here that any changes passed in the 'tables' arg 
 // can be applied, i.e. that we have verified before that these are
 // valid changes that can be applied, without collisions. 
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
-async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
+export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
     for (let t in delta) {
         let t_delta = delta[t];
         if( t_delta!=="*NOT" ){
