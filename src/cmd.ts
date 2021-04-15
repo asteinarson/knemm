@@ -115,7 +115,7 @@ async function handle(cmd: string, candidate: string, target: string, options: a
     let r:Dict<any>|string[];
     switch (cmd) {
         case "possible":
-            r = diff(cand.content, tgt.content);
+            r = matchDiff(cand.content, tgt.content);
             if( Array.isArray(r) ){
                 console.log("Not possible");
                 logResult(r,options);

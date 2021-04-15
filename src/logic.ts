@@ -268,7 +268,7 @@ function propCmp(v1:PropType, v2: PropType) {
     }
 }
 
-function diffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
+function matchDiffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
     if (!firstKey(cand_col)) {
         // The column does not exist in the candidate, so duplicate all properties 
@@ -285,7 +285,7 @@ function diffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string
         // This also maybe needs additional protection by options, 
         // in order not to easily loose precision in existing 
         // values for the column.
-        if (tgt_tg != cand_tg) {
+        if (tgt_tg != cand_tg) {  
             return [`Target and candidate type group mismatch (cannot alter from ${tdt}(${tgt_tg}) to ${cdt}(${cand_tg})`];
         }
         // If target requests a more narrow (less precision) data type than candidate
@@ -308,7 +308,7 @@ function diffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string
 // Generate the DB diff that is needed to go from 'candidate' to 'target'. 
 // In a sense, the output is a transition, not a state. (The two inputs are
 // states).
-export function diff(candidate: Dict<any>, target: Dict<any>): Dict<any> | string[] {
+export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
     let errors: string[] = [];
     // Iterate tables 
@@ -322,7 +322,7 @@ export function diff(candidate: Dict<any>, target: Dict<any>): Dict<any> | strin
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
                 if (typeof tgt_col == "object") {
-                    let dc = diffColumn(cand_col, tgt_col);
+                    let dc = matchDiffColumn(cand_col, tgt_col);
                     if (typeof dc == "object") {
                         if (firstKey(dc))
                             diff_col = dc;
