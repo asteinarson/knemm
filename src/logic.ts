@@ -269,7 +269,7 @@ function propEqual(v1: PropType, v2: PropType) {
 }
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
-// the target specification. 
+// the target specification. Or an array of errors, if not possible. 
 function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
     let errors: string[] = [];
@@ -281,7 +281,6 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
     }
 
     for (let tk in tgt_col) {
-        if (tk == "data_type") continue;
         // If property is different, we need to do something 
         let tv = tgt_col[tk], cv = cand_col[tk];
         if (!propEqual(tv, cv)) {
