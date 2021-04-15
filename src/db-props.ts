@@ -1,8 +1,19 @@
 
-import { Dict } from './utils.js';
+import { Dict, tryGet } from './utils.js';
 
+// The valid (and different) base numeric types 
 const numerics: Dict<number> = {
-    float: 1, real: 1, int: 1, integer: 1, bigint: 1, decimal: 1, numeric: 1
+    smallint: 1, int: 1, bigint: 1,
+    smallint_u: 1, int_u: 1, bigint_u: 1,
+    float: 1, real: 1,
+    decimal: 1, numeric: 1,
+};
+
+// In type comparisons, replace these before starting 
+const type_synonyms = {
+    integer: "int",
+    decimal: "numeric",
+    double: "float"
 };
 
 const strings: Dict<number> = { text: 1, varchar: 1 };
@@ -10,6 +21,7 @@ const strings: Dict<number> = { text: 1, varchar: 1 };
 const datetimes: Dict<number> = { date: 1, time: 1, datetime: 1, timestamp: 1, timestamp_tz: 1 };
 
 export function getTypeGroup(type: string): "numeric" | "text" | "json" | "datetime" | "boolean" | "uuid" {
+    type = tryGet(type, type_synonyms, type);
     if (numerics[type]) return "numeric";
     if (strings[type]) return "text";
     if (datetimes[type]) return "datetime";
@@ -31,9 +43,15 @@ let num_type_tree_loose: Dict<any> = {
         int: 1,
         bigint_u: 1
     },
+    bigint_u: {
+        int_u: 1,
+    },
     int: {
         smallint: 1,
         int_u: 1
+    },
+    int_u: {
+        smallint_u: 1,
     },
     real: {
         smallint: 1
@@ -64,10 +82,14 @@ export function numTypeContains(t1: string, t2: string) {
     t1 = adjustNumTypeLoose(t1);
     t2 = adjustNumTypeLoose(t2);
     if (t1 == t2) return true;
-    if (typeTreeContains(t1, t2,num_type_tree_loose)) return true;
+    if (typeTreeContains(t1, t2, num_type_tree_loose)) return true;
 }
 
 
-export function typeContains( t1: string, t2: string ){
-    return ""
+export function typeContains(t1: string, t2: string) {
+    const tg1 = getTypeGroup(t1);
+    const tg2 = getTypeGroup(t2);
+    if (tg1 == tg2) {
+
+    }
 }

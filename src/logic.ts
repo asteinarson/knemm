@@ -268,6 +268,8 @@ function propCmp(v1:PropType, v2: PropType) {
     }
 }
 
+// This generates the smallest diff that can adapt the candidate to fulfill 
+// the target specification. 
 function matchDiffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
     if (!firstKey(cand_col)) {
@@ -288,8 +290,6 @@ function matchDiffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | s
         if (tgt_tg != cand_tg) {  
             return [`Target and candidate type group mismatch (cannot alter from ${tdt}(${tgt_tg}) to ${cdt}(${cand_tg})`];
         }
-        // If target requests a more narrow (less precision) data type than candidate
-        // has, we should keep it, as it is (usually) satisfied then. 
         r.data_type = tdt;
     }
     // Do the remaining target properties 
