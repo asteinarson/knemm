@@ -21,7 +21,7 @@ function string_arg_encode(s: string) {
     }
     return s;
 }
-
+''
 function string_arg_decode(s: string) {
     if (s.match(re_dec_needed)) {
         for (let k in decode_pairs)
@@ -116,7 +116,7 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
 }
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
-import { getTypeGroup, isNumeric, isString } from './db-props.js';
+import { getTypeGroup, isNumeric, isString, typeContainsLoose } from './db-props.js';
 
 // Expand any nested data flattened to a string  
 function formatInternal(content: Dict<any>): Dict<any> {
@@ -254,14 +254,14 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
 }
 
 type PropType = string | number | Dict<string | number | Dict<string | number>>;
-function propCmp(v1:PropType, v2: PropType) {
-    if( typeof v1=="string" || typeof v1=="number" ) return v1==v2; 
-    if( !v1 ) return v1==v2;
-    if( typeof v1=="object" ){
-        if( typeof v2!="object" ) return false;
+function propEqual(v1: PropType, v2: PropType) {
+    if (typeof v1 == "string" || typeof v1 == "number") return v1 == v2;
+    if (!v1) return v1 == v2;
+    if (typeof v1 == "object") {
+        if (typeof v2 != "object") return false;
         // Each property of it should be equal 
-        for( let k in v1 ){
-            if( !propCmp(v1[k],v2[k]) ) 
+        for (let k in v1) {
+            if (!propEqual(v1[k], v2[k]))
                 return false;
         }
         return true;
@@ -270,39 +270,84 @@ function propCmp(v1:PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. 
-function matchDiffColumn(cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
+function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
+    let errors: string[] = [];
+    
     if (!firstKey(cand_col)) {
         // The column does not exist in the candidate, so duplicate all properties 
         // into the diff 
         return { ...tgt_col };
     }
 
-    if (tgt_col.data_type != cand_col.data_type) {
-        let tdt = tgt_col.data_type;
-        let cdt = cand_col.data_type;
-        let tgt_tg = getTypeGroup(tdt);
-        let cand_tg = getTypeGroup(cdt);
-        // For now, only accept type changes in same type group
-        // This also maybe needs additional protection by options, 
-        // in order not to easily loose precision in existing 
-        // values for the column.
-        if (tgt_tg != cand_tg) {  
-            return [`Target and candidate type group mismatch (cannot alter from ${tdt}(${tgt_tg}) to ${cdt}(${cand_tg})`];
-        }
-        r.data_type = tdt;
-    }
-    // Do the remaining target properties 
     for (let tk in tgt_col) {
         if (tk == "data_type") continue;
-        if (!propCmp(tgt_col[tk], cand_col[tk])) {
-            r[tk] = tgt_col[tk];
+        // If property is different, we need to do something 
+        let tv = tgt_col[tk], cv = cand_col[tk];
+        if (!propEqual(tv, cv)) {
+            switch (tk) {
+                case "data_type":
+                    if (!typeContainsLoose(cv, tv)) {
+                        // The candidate type does not hold, see if we can expand it 
+                        if (typeContainsLoose(tv, cv))
+                            r.data_type = tv;
+                        else
+                            errors.push(`${col_name} - Types are not compatible: ${cv}, ${tv} `);
+                    }
+                    break;
+                case "is_nullable":
+                    if (tv) {
+                        // We can safely go from notNullable => nullable
+                        if (cv == false)
+                            r.is_nullable = true;
+                    }
+                    else errors.push(`${col_name} - Cannot safely go from notNullable => nullable `);
+                    break;
+                case "is_unique":
+                    if (!tv) {
+                        // We can safely drop unique constraint 
+                        if (cv)
+                            r.is_unique = false;
+                    }
+                    else errors.push(`${col_name} - Cannot safely go to unique `);
+                    break;
+                case "is_primary_key":
+                    // We can actually go both ways here - w.o data loss 
+                    if (tv || cv == true) {
+                        r.is_primary_key = tv;
+                    }
+                    break;
+                case "has_auto_increment":
+                    // We can actually go both ways here - w.o data loss 
+                    if (tv) {
+                        r.has_auto_increment = true;
+                    }
+                    else errors.push(`${col_name} - Not possible to remove auto_increment. Drop the primary key instead`);
+                    break;
+                case "default":
+                    // We can always set a default 
+                    r.default = tv;
+                    break;
+                case "foreign_key":
+                    // Accept if candidate does not specify another foreign key 
+                    if (tv) {
+                        if (!cv) {
+                            // It would be good to first check for existense of table:column
+                            r.foreign_key = tv;
+                        }
+                        else errors.push(`${col_name} - Foreign key info mismatch: ${cv.table}:${cv.column} => ${tv.table}:${tv.column}`);
+                    }
+                    break;
+                default:
+                    errors.push(`${col_name} - Unhandled column keyword: ${tk}`);
+            }
         }
     }
+
     // For properties that are only in candidate, we can keep those, 
     // as target does not oppose them.
 
-    return r;
+    return errors.length > 0 ? errors : r;
 }
 
 // Generate the DB diff that is needed to go from 'candidate' to 'target'. 
@@ -322,7 +367,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
                 if (typeof tgt_col == "object") {
-                    let dc = matchDiffColumn(cand_col, tgt_col);
+                    let dc = matchDiffColumn(kc, cand_col, tgt_col);
                     if (typeof dc == "object") {
                         if (firstKey(dc))
                             diff_col = dc;

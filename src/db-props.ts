@@ -9,16 +9,17 @@ const numerics: Dict<number> = {
     decimal: 1, numeric: 1,
 };
 
-// In type comparisons, replace these before starting 
-const type_synonyms = {
-    integer: "int",
-    decimal: "numeric",
-    double: "float"
-};
-
 const strings: Dict<number> = { text: 1, varchar: 1 };
 
 const datetimes: Dict<number> = { date: 1, time: 1, datetime: 1, timestamp: 1, timestamp_tz: 1 };
+
+export function isNumeric(t:string){
+    return numerics[t];
+}
+
+export function isString(t:string){
+    return strings[t];
+}
 
 export function getTypeGroup(type: string): "numeric" | "datetime" | "text" | "json" | "boolean" | "uuid" {
     type = tryGet(type, type_synonyms, type);
@@ -30,6 +31,14 @@ export function getTypeGroup(type: string): "numeric" | "datetime" | "text" | "j
     if (type == "uuid") return "uuid";
     return null;
 }
+
+// In type comparisons, replace these before starting 
+const type_synonyms = {
+    integer: "int",
+    decimal: "numeric",
+    double: "float"
+};
+
 
 let num_type_tree_loose: Dict<any> = {
     numeric: {

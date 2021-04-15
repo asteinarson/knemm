@@ -65,7 +65,7 @@ for (let c of cmds) {
 cmd.parse(process.argv);
 
 // This works for ES module 
-import { toNestedDict, reformat, diff } from './logic.js';
+import { toNestedDict, reformat, matchDiff } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 import { Dict, firstKey } from "./utils.js";
@@ -123,13 +123,13 @@ async function handle(cmd: string, candidate: string, target: string, options: a
             else console.log("Possible");
             break;
         case "fulfills":
-            r = diff(cand.content, tgt.content);
+            r = matchDiff(cand.content, tgt.content);
             // Only generate an empty response if the diff is empty
             if( Array.isArray(r) || firstKey(r) )
                 logResult(r, options);
             break;
         case "diff":
-            r = diff(cand.content, tgt.content);
+            r = matchDiff(cand.content, tgt.content);
             logResult(r, options);
             break;
         case "apply":
