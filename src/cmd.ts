@@ -42,12 +42,12 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
 function addCommandOptions(cmd: cmder.Command) {
     cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
-    cmd.option("-p --path <paths>", "Search path for input files and dependencies");
+    cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
-    cmd.option("-s --state <dir>", "Manage merged state in this dir (default: .dbstate)", "./.dbstate");
-    cmd.option("--nostate", "Do not use a state dir, even if found");
-    cmd.option("-X --exclude <patterns>", "Exclude tables/columns according to this pattern");
-    cmd.option("-I --include <patterns>", "Include tables/columns according to this pattern");
+    cmd.option("-s --state <dir>", "Manage merged state in this dir (default: ./.dbstate)", "./.dbstate");
+    cmd.option("--no-state", "Do not use a state dir, even if found");
+    cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
+    cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
 }
 
 let cmd = new Command();
@@ -99,7 +99,7 @@ async function handleList(cmd: string, files: string[], options: any) {
         // and also look for additional dependencies. Unless a flag not 
         // to auto load deps. 
         for (let f of files) {
-            let r = await toNestedDict(f);
+            let r = await toNestedDict(f,options);
             if (r) {
                 r = ldMerge(tree, r);
             }
@@ -112,11 +112,13 @@ async function handleList(cmd: string, files: string[], options: any) {
 }
 
 async function handle(cmd: string, candidate: string, target: string, options: any) {
+    //console.log(options);
+    //process.exit(1);
     //console.log("handle: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
     let rc = 1000;
-    let cand = await toNestedDict(candidate, "internal");
-    let tgt = await toNestedDict(target, "internal");
+    let cand = await toNestedDict(candidate, options, "internal");
+    let tgt = await toNestedDict(target, options, "internal");
     let r: Dict<any> | string[];
     switch (cmd) {
         case "possible":

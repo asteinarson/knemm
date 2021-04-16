@@ -168,7 +168,7 @@ function formatInternal(tables: Dict<any>): Dict<any> {
                             col[w_int] = true;
                         }
                         else {
-                            if( w=="notnull" )
+                            if (w == "notnull")
                                 col.is_nullable = false;
                             else if (w.indexOf("foreign_key(") == 0) {
                                 let md = w.match(re_get_args);
@@ -204,30 +204,30 @@ export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
 
-export async function toNestedDict(file_or_db: string, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
+// Read a file, a directory or a DB into a schema state object
+export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
     if (!file_or_db) return null;
     if (!format) format = "internal";
 
     let conn_info: Dict<string>;
     if (file_or_db == "@") {
-        // Accept it as a DB specifier / link
-        let r = slurpFile("./@");
-        if (typeof r == "object") conn_info = r as Dict<string>;
+        // This means current/given state 
     }
-    if (file_or_db.slice(0, 3) == "db:") {
-        // Look for a connection file
-        let r = slurpFile(file_or_db);
-        if (typeof r == "object") conn_info = r as Dict<string>;
-    }
-    if (file_or_db == "%") {
-        // Use ENV vars
-        conn_info = {
-            host: process.env.HOST,
-            user: process.env.USER,
-            password: process.env.PASSWORD,
+    else if (file_or_db.slice(0, 3) == "db:") {
+        // Look for a connection file - or use ENV vars 
+        if (file_or_db.slice(3) != "%") {
+            let r = slurpFile(file_or_db);
+            if (typeof r == "object") conn_info = r as Dict<string>;
+        } else {
+            // '%' means use ENV vars
+            conn_info = {
+                host: process.env.HOST,
+                user: process.env.USER,
+                password: process.env.PASSWORD,
+            }
+            if (process.env.DATABASE)
+                conn_info.database = process.env.DATABASE;
         }
-        if( process.env.DATABASE )
-            conn_info.database = process.env.DATABASE;
     }
 
     let r: Dict<any> = {};
@@ -267,7 +267,7 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
 
 type PropType = string | number | Dict<string | number | Dict<string | number>>;
 function propEqual(v1: PropType, v2: PropType) {
-    if (typeof v1 == "string" || typeof v1 == "number" || typeof v1 == "boolean" ) return v1 == v2;
+    if (typeof v1 == "string" || typeof v1 == "number" || typeof v1 == "boolean") return v1 == v2;
     if (!v1) return v1 == v2;
     if (typeof v1 == "object") {
         if (typeof v2 != "object") return false;
