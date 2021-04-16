@@ -510,8 +510,16 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) 
     }
 
     let deps_ordered: Dict<any>[] = [];
-    let r = orderDeps(deps, toLut(Object.keys(deps), 0), deps_ordered)
-
+    for( let branch in deps ){
+        let dep = deps[branch];
+        if( !dep[dep.length-1]["*ordered"] ){
+            if( !orderDeps2(deps,branch,deps_ordered) ){
+                console.error("dependencySort - orderDeps2 - failed");
+                return;
+            }
+        }
+    }
+    return deps_ordered;
 }
 
 
