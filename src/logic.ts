@@ -422,3 +422,44 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
     return errors.length ? errors : r;
 }
 
+let re_name_num_ext = /^(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
+let re_name_ext = /^(.*)\.[a-zA-Z_-]+$/;
+
+function getClaimId(name: string, claim: Dict<any>): [string, (number | undefined)?] {
+    if (claim.id) {
+        if (typeof claim.id == "object")
+            return [claim.id.name.toString(), Number(claim.id.version)];
+        else {
+            if (typeof claim.id != "string") {
+                console.error(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim.id}`);
+                return;
+            }
+            // Assume it is a string like: invoice.14
+            // Let the code below do the work 
+            name = claim.id + ".yaml";
+        }
+    }
+    // Name plus version ? 
+    let md = name.match(re_name_num_ext);
+    if (md)
+        return [md[1], Number(md[2])];
+    // Then only a name
+    md = name.match(re_name_ext);
+    if (md)
+        return [md[1]];
+}
+
+// Sort input trees according to dependency specification 
+export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
+    let deps: Dict<Dict<any>[]> = {};
+    for (let f in file_dicts) {
+        let claim = file_dicts[f];
+
+    }
+}
+
+
+export function merge(): Dict<any> | string[] {
+
+    return null;
+}
