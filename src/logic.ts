@@ -203,6 +203,7 @@ export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): 
 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
+import { existsSync } from 'fs';
 
 // Read a file, a directory or a DB into a schema state object
 export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
@@ -210,8 +211,21 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
     if (!format) format = "internal";
 
     let conn_info: Dict<string>;
-    if (file_or_db == "@") {
+    if (file_or_db == "@" || file_or_db.slice(0, 2) == "s:") {
         // This means current/given state 
+        let state_dir: string;
+        if (file_or_db == "@") {
+            if (options.state == false) {
+                console.error("toNestedDict - Cannot resolve default state (@)");
+                return;
+            }
+            state_dir = options.state || "./.dbstate";
+        }
+        else state_dir = file_or_db.slice(2);
+        if (!existsSync(state_dir)) {
+            console.error(`toNestedDict - State dir does not exist: ${state_dir}`);
+            return;
+        }
     }
     else if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file - or use ENV vars 
