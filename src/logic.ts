@@ -425,20 +425,8 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
 let re_name_num_ext = /^(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
 let re_name_ext = /^(.*)\.[a-zA-Z_-]+$/;
 
-function getClaimId(name: string, claim: Dict<any>): [string, (number | undefined)?] {
-    if (claim.id) {
-        if (typeof claim.id == "object")
-            return [claim.id.name.toString(), Number(claim.id.version)];
-        else {
-            if (typeof claim.id != "string") {
-                console.error(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim.id}`);
-                return;
-            }
-            // Assume it is a string like: invoice.14
-            // Let the code below do the work 
-            name = claim.id + ".yaml";
-        }
-    }
+type ClaimId = [string, (number | undefined)?];
+function claimIdFromName(name: string): ClaimId {
     // Name plus version ? 
     let md = name.match(re_name_num_ext);
     if (md)
@@ -448,26 +436,85 @@ function getClaimId(name: string, claim: Dict<any>): [string, (number | undefine
     if (md)
         return [md[1]];
 }
+function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
+    if (claim_id) {
+        if (typeof claim_id == "object")
+            return [claim_id.name.toString(), Number(claim_id.version)];
+        else {
+            if (typeof claim_id != "string") {
+                console.error(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
+                return;
+            }
+            // Assume it is a string like: invoice.14
+            // Let the code below do the work 
+            name = claim_id + ".yaml";
+        }
+    }
+    return claimIdFromName(name);
+}
+
+function orderDeps(deps: Dict<Dict<any>[]>, pos: Dict<number>, deps_ordered: Dict<any>[]) {
+
+}
+
+// Order dependencies on branch <which> up to <number>. Nest and do sub dependencies.
+function orderDeps2(deps: Dict<Dict<any>[]>, which: string, upto: number, r: Dict<any>[], depth?: number) {
+    if (!depth) depth = 1;
+    else depth++;
+    if (depth > 100) {
+        console.error("orderDeps2 - Infinite recursion?")
+        return;
+    }
+    let branch = deps[which];
+    if (!branch) {
+        console.error("orderDeps2 - branch not found: " + which)
+        return;
+    }
+    for (let ix = 0; ix < branch.length && (ix <= upto || upto == undefined); ix++) {
+        let claim = branch[ix];
+        if (claim && !claim["*ordered"]) {
+            if (claim.depends) {
+                // Get the nested dependencies 
+                let nest_deps = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
+                for (let d of nest_deps) {
+                    let claim_id = getClaimId("", d);
+                    if (claim_id) {
+                        if (!orderDeps2(deps, claim_id[0], claim_id[1], r, depth))
+                            return;
+                    }
+                    else
+                        console.warn("orderDeps2 - Could not resolve claim: " + claim_id.toString());
+                }
+            }
+            claim["*ordered"] = true;
+            r.push(claim);
+        }
+    }
+    return true;
+}
 
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
     // Do initial registration based on branch name and version 
     let deps: Dict<Dict<any>[]> = {};
     for (let f in file_dicts) {
-        let claim_id = getClaimId(f,file_dicts[f]);
+        let claim_id = getClaimId(f, file_dicts[f].id);
         let name = claim_id[0];
-        if( name ){
+        if (name) {
             let ver = claim_id[1] || 0;
-            if( !deps[name] ) deps[name] = [];
+            if (!deps[name]) deps[name] = [];
             deps[name][ver] = file_dicts[f];
         } else {
             // have already reported error
         }
     }
     // Find additional dependencies, in given path (same branch names but lower versions)
-    if( options.deps!=false ){
-        let paths:string[] = options.paths || ["./"];
+    if (options.deps != false) {
+        let paths: string[] = options.paths || ["./"];
     }
+
+    let deps_ordered: Dict<any>[] = [];
+    let r = orderDeps(deps, toLut(Object.keys(deps), 0), deps_ordered)
 
 }
 
