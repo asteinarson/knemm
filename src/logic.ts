@@ -34,9 +34,10 @@ function string_arg_decode(s: string) {
 let column_words: Dict<string> = {
     is_primary_key: "pk",
     has_auto_increment: "auto",
-    is_nullable: "nullable",
     is_unique: "unique",
 };
+
+let column_words_rev = ldInvert(column_words);
 
 // These are tucked as args on the data_type 
 let type_args: Array<string> = ["max_length", "numeric_precision", "numeric_scale"];
@@ -63,6 +64,11 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
                         words.push(column_words[w]);
                         done[w] = 1;
                     }
+                }
+                // nullable - is true by default 
+                if (col.is_nullable != undefined) {
+                    words.push("notnull");
+                    done.is_nullable = 1;
                 }
 
                 // Do any length/precision modifiers 
@@ -143,11 +149,11 @@ function formatInternal(content: Dict<any>): Dict<any> {
                     if (md) {
                         type = md[1];
                         if (isNumeric(type)) {
-                            col.numeric_precision = md[2];
-                            if (md[3]) col.numeric_scale = md[3];
+                            col.numeric_precision = Number(md[2]);
+                            if (md[3]) col.numeric_scale = Number(md[3]);
                         }
                         else if (isString(type))
-                            col.max_length = md[2];
+                            col.max_length = Number(md[2]);
                         else
                             console.warn(`formatInternal(${col_name}) - unknown type args: ${md[0]}`);
                     }
@@ -156,10 +162,15 @@ function formatInternal(content: Dict<any>): Dict<any> {
                     // Iterate remaining words 
                     for (let ix = 1; ix < words.length; ix++) {
                         let w = words[ix];
-                        // Bpoolean flag ?
-                        if (column_words[w]) col[w] = true;
+                        // Boolean flag ?
+                        let w_int = column_words_rev[w];
+                        if (w_int) {
+                            col[w_int] = true;
+                        }
                         else {
-                            if (w.indexOf("foreign_key(") == 0) {
+                            if( w=="notnull" )
+                                col.is_nullable = false;
+                            else if (w.indexOf("foreign_key(") == 0) {
                                 let md = w.match(re_get_args);
                                 if (md && md[2] && md[4]) {
                                     col.foreign_key = { table: md[2], column: md[4] }
@@ -273,7 +284,7 @@ function propEqual(v1: PropType, v2: PropType) {
 function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
     let r: Dict<any> = {};
     let errors: string[] = [];
-    
+
     if (!firstKey(cand_col)) {
         // The column does not exist in the candidate, so duplicate all properties 
         // into the diff 
