@@ -43,11 +43,11 @@ let column_words_rev = ldInvert(column_words);
 let type_args: Array<string> = ["max_length", "numeric_precision", "numeric_scale"];
 
 // Flatten any nested data to strings
-function formatHrCompact(content: Dict<any>): Dict<any> {
+function formatHrCompact(tables: Dict<any>): Dict<any> {
     //let r: Dict<any> = {};
-    for (let t in content) {
+    for (let t in tables) {
         // This is a table  
-        let table: Dict<any> = content[t];
+        let table: Dict<any> = tables[t];
         for (let col_name in table) {
             let col: string | Dict<any> = table[col_name];
             if (typeof col == "object") {
@@ -118,17 +118,17 @@ function formatHrCompact(content: Dict<any>): Dict<any> {
             }
         }
     }
-    return content;
+    return tables;
 }
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
 import { getTypeGroup, isNumeric, isString, typeContainsLoose } from './db-props.js';
 
 // Expand any nested data flattened to a string  
-function formatInternal(content: Dict<any>): Dict<any> {
-    for (let t in content) {
+function formatInternal(tables: Dict<any>): Dict<any> {
+    for (let t in tables) {
         // This is a table  
-        let table: Dict<any> = content[t];
+        let table: Dict<any> = tables[t];
         for (let col_name in table) {
             let col: Dict<any>;
             let s: string;
@@ -194,11 +194,11 @@ function formatInternal(content: Dict<any>): Dict<any> {
             }
         }
     }
-    return content;
+    return tables;
 }
 
-export function reformat(content: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
-    return format == "internal" ? formatInternal(content) : formatHrCompact(content);
+export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
+    return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
 }
 
 import { slurpFile } from "./file-utils.js";
@@ -219,14 +219,15 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
         let r = slurpFile(file_or_db);
         if (typeof r == "object") conn_info = r as Dict<string>;
     }
-    if (file_or_db == "-") {
+    if (file_or_db == "%") {
         // Use ENV vars
         conn_info = {
             host: process.env.HOST,
             user: process.env.USER,
             password: process.env.PASSWORD,
-            database: process.env.DATABASE,
         }
+        if( process.env.DATABASE )
+            conn_info.database = process.env.DATABASE;
     }
 
     let r: Dict<any> = {};
@@ -240,25 +241,25 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
             // Keep the connection object here - it allows later knowing it is attached to a DB
             r.source = connection;
             r.format = "internal";
-            r.content = rs;
+            r.tables = rs;
         }
     }
 
-    if (!r.content) {
+    if (!r.tables) {
         // Then it should be a file 
         let rf = slurpFile(file_or_db);
         if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
         else {
             if (typeof rf == "object" && !Array.isArray(rf)) {
                 r.source = file_or_db;
-                r.content = rf;
+                r.tables = rf;
                 r.format = "?";
             }
         }
     }
-    if (r.content) {
+    if (r.tables) {
         if (r.format != format) {
-            r.content = reformat(r.content, format);
+            r.tables = reformat(r.tables, format);
         }
         return r;
     }

@@ -104,8 +104,8 @@ async function handleList(cmd: string, files: string[], options: any) {
                 r = ldMerge(tree, r);
             }
         }
-        let content = reformat(tree.content, options.internal ? "internal" : "hr-compact");
-        logResult(content, options);
+        let tables = reformat(tree.tables, options.internal ? "internal" : "hr-compact");
+        logResult(tables, options);
         rc = 0;
     }
     process.exit(rc);
@@ -120,7 +120,7 @@ async function handle(cmd: string, candidate: string, target: string, options: a
     let r: Dict<any> | string[];
     switch (cmd) {
         case "possible":
-            r = matchDiff(cand.content, tgt.content);
+            r = matchDiff(cand.tables, tgt.tables);
             if (Array.isArray(r)) {
                 console.log("Not possible");
                 logResult(r, options);
@@ -128,13 +128,13 @@ async function handle(cmd: string, candidate: string, target: string, options: a
             else console.log("Possible");
             break;
         case "fulfills":
-            r = matchDiff(cand.content, tgt.content);
+            r = matchDiff(cand.tables, tgt.tables);
             // Only generate an empty response if the diff is empty
             if (Array.isArray(r) || firstKey(r))
                 logResult(r, options);
             break;
         case "diff":
-            r = matchDiff(cand.content, tgt.content);
+            r = matchDiff(cand.tables, tgt.tables);
             logResult(r, options);
             break;
         case "apply":
