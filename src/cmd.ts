@@ -112,20 +112,20 @@ async function handle(cmd: string, candidate: string, target: string, options: a
     let rc = 1000;
     let cand = await toNestedDict(candidate, "internal");
     let tgt = await toNestedDict(target, "internal");
-    let r:Dict<any>|string[];
+    let r: Dict<any> | string[];
     switch (cmd) {
         case "possible":
             r = matchDiff(cand.content, tgt.content);
-            if( Array.isArray(r) ){
+            if (Array.isArray(r)) {
                 console.log("Not possible");
-                logResult(r,options);
-            } 
+                logResult(r, options);
+            }
             else console.log("Possible");
             break;
         case "fulfills":
             r = matchDiff(cand.content, tgt.content);
             // Only generate an empty response if the diff is empty
-            if( Array.isArray(r) || firstKey(r) )
+            if (Array.isArray(r) || firstKey(r))
                 logResult(r, options);
             break;
         case "diff":
