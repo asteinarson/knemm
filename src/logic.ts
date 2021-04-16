@@ -255,25 +255,25 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             // Keep the connection object here - it allows later knowing it is attached to a DB
             r.source = connection;
             r.format = "internal";
-            r.tables = rs;
+            r["*tables"] = rs;
         }
     }
 
-    if (!r.tables) {
+    if (!r["*tables"]) {
         // Then it should be a file 
         let rf = slurpFile(file_or_db);
         if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
         else {
             if (typeof rf == "object" && !Array.isArray(rf)) {
                 r.source = file_or_db;
-                r.tables = rf;
+                r["*tables"] = rf;
                 r.format = "?";
             }
         }
     }
-    if (r.tables) {
+    if (r["*tables"]) {
         if (r.format != format) {
-            r.tables = reformat(r.tables, format);
+            r["*tables"] = reformat(r["*tables"], format);
         }
         return r;
     }
