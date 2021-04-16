@@ -42,7 +42,10 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
 function addCommandOptions(cmd: cmder.Command) {
     cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
+    cmd.option("-p --path <paths>", "Search path for input files and dependencies");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
+    cmd.option("-s --state <dir>", "Manage merged state in this dir (default: .dbstate)", "./.dbstate");
+    cmd.option("--nostate", "Do not use a state dir, even if found");
 }
 
 let cmd = new Command();
