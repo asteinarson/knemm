@@ -1,4 +1,4 @@
-import { Dict, toLut, firstKey, tryGet } from './utils.js';
+import { Dict, toLut, firstKey, tryGet, errorRv } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
@@ -422,10 +422,12 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
     return errors.length ? errors : r;
 }
 
+// Regular expression to extract claim (name,number) from a string/filename
 let re_name_num_ext = /^(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
 let re_name_ext = /^(.*)\.[a-zA-Z_-]+$/;
 
 type ClaimId = [string, (number | undefined)?];
+
 function claimIdFromName(name: string): ClaimId {
     // Name plus version ? 
     let md = name.match(re_name_num_ext);
@@ -436,15 +438,14 @@ function claimIdFromName(name: string): ClaimId {
     if (md)
         return [md[1]];
 }
+
 function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
     if (claim_id) {
         if (typeof claim_id == "object")
             return [claim_id.name.toString(), Number(claim_id.version)];
         else {
-            if (typeof claim_id != "string") {
-                console.error(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
-                return;
-            }
+            if (typeof claim_id != "string") 
+                return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
             // Assume it is a string like: invoice.14
             // Let the code below do the work 
             name = claim_id + ".yaml";
@@ -455,17 +456,12 @@ function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
 
 // Order dependencies on branch <which> up to <number>. Nest and do sub dependencies.
 function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?: number, depth?: number) {
-    if (!depth) depth = 1;
-    else depth++;
-    if (depth > 500) {
-        console.error("orderDeps2 - Infinite recursion?")
-        return;
-    }
+    if (!depth) depth = 0;
+    if (depth++ > 500) return errorRv("orderDeps2 - Infinite recursion?");
+
     let branch = deps[which];
-    if (!branch) {
-        console.error("orderDeps2 - branch not found: " + which)
-        return;
-    }
+    if (!branch) return errorRv("orderDeps2 - branch not found: " + which);
+
     for (let ix = 0; ix < branch.length && (ix <= upto || upto == null); ix++) {
         let claim = branch[ix];
         if (claim && !claim["*ordered"]) {
@@ -478,8 +474,7 @@ function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto
                         if (!orderDeps2(deps, claim_id[0], r, claim_id[1], depth))
                             return;
                     }
-                    else
-                        console.warn("orderDeps2 - Could not resolve claim: " + claim_id.toString());
+                    else console.warn("orderDeps2 - Could not resolve claim: " + claim_id.toString());
                 }
             }
             claim["*ordered"] = true;
@@ -513,9 +508,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) 
     for( let branch in deps ){
         let dep = deps[branch];
         if( !dep[dep.length-1]["*ordered"] ){
-            if( !orderDeps2(deps,branch,deps_ordered) ){
-                console.error("dependencySort - orderDeps2 - failed");
-                return;
+            if( !orderDeps2(deps,branch,deps_ordered) )
+                return errorRv("dependencySort - orderDeps2 - failed");
             }
         }
     }
