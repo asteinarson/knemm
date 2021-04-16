@@ -453,8 +453,15 @@ function getClaimId(name: string, claim: Dict<any>): [string, (number | undefine
 export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
     let deps: Dict<Dict<any>[]> = {};
     for (let f in file_dicts) {
-        let claim = file_dicts[f];
-
+        let claim_id = getClaimId(f,file_dicts[f]);
+        let name = claim_id[0];
+        if( name ){
+            let ver = claim_id[1] || 0;
+            if( !deps[name] ) deps[name] = [];
+            deps[name][ver] = file_dicts[f];
+        } else {
+            // have already reported error
+        }
     }
 }
 
