@@ -73,7 +73,7 @@ import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 import { Dict, firstKey } from "./utils.js";
 const { merge: ldMerge } = pkg;
-//import {merge as ldMerge} from 'lodash-es'; // This is slowish 
+//import {merge as ldMerge} from 'lodash-es'; // This adds load time
 
 function logResult(r: Dict<any> | string[], options: any) {
     if (!Array.isArray(r)) {
