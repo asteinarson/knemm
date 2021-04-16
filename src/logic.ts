@@ -404,6 +404,6 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
             }
         }
     }
-    return errors ? errors : r;
+    return errors.length ? errors : r;
 }
 
