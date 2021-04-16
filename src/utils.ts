@@ -42,3 +42,20 @@ export function firstKey(o: object): any {
         }
     }
 }
+
+export function errorRv<RV>(msg:string, rv?:RV):RV{
+    console.error(msg);
+    return rv;
+}
+
+export function warnRv<RV>(msg:string, rv?:RV):RV{
+    console.warn(msg);
+    return rv;
+}
+
+export function logRv<RV>(msg:string, rv?:RV):RV{
+    console.log(msg);
+    return rv;
+}
+
+
