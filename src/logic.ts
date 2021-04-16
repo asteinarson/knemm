@@ -451,6 +451,7 @@ function getClaimId(name: string, claim: Dict<any>): [string, (number | undefine
 
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
+    // Do initial registration based on branch name and version 
     let deps: Dict<Dict<any>[]> = {};
     for (let f in file_dicts) {
         let claim_id = getClaimId(f,file_dicts[f]);
@@ -463,6 +464,11 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) 
             // have already reported error
         }
     }
+    // Find additional dependencies, in given path (same branch names but lower versions)
+    if( options.deps!=false ){
+        let paths:string[] = options.paths || ["./"];
+    }
+
 }
 
 
