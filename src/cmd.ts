@@ -67,8 +67,8 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-// This works for ES module 
 import { toNestedDict, reformat, matchDiff } from './logic.js';
+// This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
 import { Dict, firstKey } from "./utils.js";
