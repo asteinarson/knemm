@@ -3,37 +3,37 @@ import cmder, { Command } from "commander";
 let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     {
         name: "join",
-        desc: "Join together all input claims and print them out",
+        desc: "Join together all input claims, store as state and print them out",
         a1: "files...",
         a2: null
     },
     {
         name: "possible",
-        desc: "See if <target> can be applied on <candidate>",
-        a1: "target",
-        a2: "candidate"
+        desc: "On this <candidate/DB>, see if <target> can be applied",
+        a1: "candidate",
+        a2: "target",
     },
     {
         name: "fulfills",
-        desc: "See if <candidate> fulfills <target>",
+        desc: "See if <candidate/DB> fulfills <target>",
         a1: "candidate",
         a2: "target"
     },
     {
         name: "diff",
-        desc: "See diff from <candidate> to <target>",
+        desc: "See diff from <candidate/DB> to <target>",
         a1: "candidate",
         a2: "target"
     },
     {
         name: "apply",
-        desc: "On this DB, apply the claim/target",
+        desc: "On this DB (or state), apply the claim/target",
         a1: "DB",
         a2: "target",
     },
     {
         name: "reverse",
-        desc: "On this DB, reverse the claim/target ",
+        desc: "On this DB (or state), reverse the claim/target ",
         a1: "DB",
         a2: "target",
     },
