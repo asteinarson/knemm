@@ -453,15 +453,11 @@ function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
     return claimIdFromName(name);
 }
 
-function orderDeps(deps: Dict<Dict<any>[]>, pos: Dict<number>, deps_ordered: Dict<any>[]) {
-
-}
-
 // Order dependencies on branch <which> up to <number>. Nest and do sub dependencies.
-function orderDeps2(deps: Dict<Dict<any>[]>, which: string, upto: number, r: Dict<any>[], depth?: number) {
+function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?: number, depth?: number) {
     if (!depth) depth = 1;
     else depth++;
-    if (depth > 100) {
+    if (depth > 500) {
         console.error("orderDeps2 - Infinite recursion?")
         return;
     }
@@ -470,7 +466,7 @@ function orderDeps2(deps: Dict<Dict<any>[]>, which: string, upto: number, r: Dic
         console.error("orderDeps2 - branch not found: " + which)
         return;
     }
-    for (let ix = 0; ix < branch.length && (ix <= upto || upto == undefined); ix++) {
+    for (let ix = 0; ix < branch.length && (ix <= upto || upto == null); ix++) {
         let claim = branch[ix];
         if (claim && !claim["*ordered"]) {
             if (claim.depends) {
@@ -479,7 +475,7 @@ function orderDeps2(deps: Dict<Dict<any>[]>, which: string, upto: number, r: Dic
                 for (let d of nest_deps) {
                     let claim_id = getClaimId("", d);
                     if (claim_id) {
-                        if (!orderDeps2(deps, claim_id[0], claim_id[1], r, depth))
+                        if (!orderDeps2(deps, claim_id[0], r, claim_id[1], depth))
                             return;
                     }
                     else
