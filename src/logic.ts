@@ -266,7 +266,7 @@ export async function toNestedDict(file_or_db: string, format?: "internal" | "hr
 
 type PropType = string | number | Dict<string | number | Dict<string | number>>;
 function propEqual(v1: PropType, v2: PropType) {
-    if (typeof v1 == "string" || typeof v1 == "number") return v1 == v2;
+    if (typeof v1 == "string" || typeof v1 == "number" || typeof v1 == "boolean" ) return v1 == v2;
     if (!v1) return v1 == v2;
     if (typeof v1 == "object") {
         if (typeof v2 != "object") return false;
