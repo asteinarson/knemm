@@ -510,7 +510,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) 
         if( !dep[dep.length-1]["*ordered"] ){
             if( !orderDeps2(deps,branch,deps_ordered) )
                 return errorRv("dependencySort - orderDeps2 - failed");
-            }
         }
     }
     return deps_ordered;
