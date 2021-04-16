@@ -1,6 +1,6 @@
 
 import { existsSync, readFileSync } from 'fs';
-import { load } from 'js-yaml';
+import { load as yamlLoad } from 'js-yaml';
 
 export function slurpFile(file: string): string | number | any[] | Record<string,any> {
     if (existsSync(file)) {
@@ -11,12 +11,12 @@ export function slurpFile(file: string): string | number | any[] | Record<string
                 return JSON.parse(s.toString());
             }
             if (ejs == ".yaml" || ejs == ".YAML") {
-                return load(s.toString());
+                return yamlLoad(s.toString());
             }
             // No extension match, try the two formats 
             let r = JSON.parse(s.toString());
             if(r) return r;
-            r = load(s.toString());
+            r = yamlLoad(s.toString());
             if(r) return r;
         } catch (e) {
             console.log(`slurpFile ${file}, exception: ${e.toString()}`);
