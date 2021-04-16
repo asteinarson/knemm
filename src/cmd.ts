@@ -46,6 +46,8 @@ function addCommandOptions(cmd: cmder.Command) {
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
     cmd.option("-s --state <dir>", "Manage merged state in this dir (default: .dbstate)", "./.dbstate");
     cmd.option("--nostate", "Do not use a state dir, even if found");
+    cmd.option("-X --exclude <patterns>", "Exclude tables/columns according to this pattern");
+    cmd.option("-I --include <patterns>", "Include tables/columns according to this pattern");
 }
 
 let cmd = new Command();
