@@ -226,6 +226,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             console.error(`toNestedDict - State dir does not exist: ${state_dir}`);
             return;
         }
+        // Reading 
     }
     else if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file - or use ENV vars 
@@ -426,25 +427,25 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
 let re_name_num_ext = /^(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
 let re_name_ext = /^(.*)\.[a-zA-Z_-]+$/;
 
-type ClaimId = [string, (number | undefined)?];
+type ClaimId = { branch: string, version?: number };
 
 function claimIdFromName(name: string): ClaimId {
     // Name plus version ? 
     let md = name.match(re_name_num_ext);
     if (md)
-        return [md[1], Number(md[2])];
+        return { branch: md[1], version: Number(md[2]) };
     // Then only a name
     md = name.match(re_name_ext);
     if (md)
-        return [md[1]];
+        return { branch: md[1] };
 }
 
 function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
     if (claim_id) {
         if (typeof claim_id == "object")
-            return [claim_id.name.toString(), Number(claim_id.version)];
+            return { branch: claim_id.name, version: Number(claim_id.version) };
         else {
-            if (typeof claim_id != "string") 
+            if (typeof claim_id != "string")
                 return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
             // Assume it is a string like: invoice.14
             // Let the code below do the work 
@@ -471,7 +472,7 @@ function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto
                 for (let d of nest_deps) {
                     let claim_id = getClaimId("", d);
                     if (claim_id) {
-                        if (!orderDeps2(deps, claim_id[0], r, claim_id[1], depth))
+                        if (!orderDeps2(deps, claim_id.branch, r, claim_id.version, depth))
                             return;
                     }
                     else console.warn("orderDeps2 - Could not resolve claim: " + claim_id.toString());
@@ -490,9 +491,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) 
     let deps: Dict<Dict<any>[]> = {};
     for (let f in file_dicts) {
         let claim_id = getClaimId(f, file_dicts[f].id);
-        let name = claim_id[0];
+        let name = claim_id.branch;
         if (name) {
-            let ver = claim_id[1] || 0;
+            let ver = claim_id.version || 0;
             if (!deps[name]) deps[name] = [];
             deps[name][ver] = file_dicts[f];
         } else {
@@ -502,13 +503,14 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) 
     // Find additional dependencies, in given path (same branch names but lower versions)
     if (options.deps != false) {
         let paths: string[] = options.paths || ["./"];
+        // fs.readdir
     }
 
     let deps_ordered: Dict<any>[] = [];
-    for( let branch in deps ){
+    for (let branch in deps) {
         let dep = deps[branch];
-        if( !dep[dep.length-1]["*ordered"] ){
-            if( !orderDeps2(deps,branch,deps_ordered) )
+        if (!dep[dep.length - 1]["*ordered"]) {
+            if (!orderDeps2(deps, branch, deps_ordered))
                 return errorRv("dependencySort - orderDeps2 - failed");
         }
     }
