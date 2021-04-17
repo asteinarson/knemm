@@ -210,8 +210,9 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
     if (!file_or_db) return null;
     if (!format) format = "internal";
 
+    let r: Dict<any> = {};
     let conn_info: Dict<string>;
-    if (file_or_db == "@" || file_or_db.slice(0, 2) == "s:") {
+    if (file_or_db == "@" || file_or_db.slice(0, 6) == "state:") {
         // This means current/given state 
         let state_dir: string;
         if (file_or_db == "@") {
@@ -221,12 +222,12 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             }
             state_dir = options.state || "./.dbstate";
         }
-        else state_dir = file_or_db.slice(2);
+        else state_dir = file_or_db.slice(6);
         if (!existsSync(state_dir)) {
             console.error(`toNestedDict - State dir does not exist: ${state_dir}`);
             return;
         }
-        // Reading 
+        // !! We need to read the state also ! 
     }
     else if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file - or use ENV vars 
@@ -245,7 +246,6 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         }
     }
 
-    let r: Dict<any> = {};
     // Get our dict from DB conn ? 
     if (conn_info) {
         let client = conn_info.client ? conn_info.client : "pg";
@@ -254,7 +254,8 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         let rs = await slurpSchema(connection);
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
-            r.source = connection;
+            r.source = "*DB";
+            r.connection = connection;
             r.format = "internal";
             r["*tables"] = rs;
         }
