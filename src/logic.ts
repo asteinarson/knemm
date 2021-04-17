@@ -266,8 +266,12 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
         else {
             if (typeof rf == "object" && !Array.isArray(rf)) {
+                // Is it a claim with top level props, or just the tables? 
+                if( rf["*tables"]) 
+                    r = rf; 
+                else 
+                    r["*tables"] = rf;
                 r.source = file_or_db;
-                r["*tables"] = rf;
                 r.format = "?";
             }
         }
