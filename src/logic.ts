@@ -562,8 +562,8 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
                     let r = await toNestedDict(path.join(p, f), options);
                     if (r && r.id) {
                         // We are only interested in our list of claims and their deps
-                        if ( ver_by_br[r.id.branch] && 
-                            typeof r.id.version=="number" && r.id.version<=ver_by_br[r.id.branch] )
+                        if (ver_by_br[r.id.branch] &&
+                            typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch])
                             cl_by_br[r.id.branch][r.id.version] = r;
                     }
                 }
@@ -584,8 +584,46 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
     return deps_ordered;
 }
 
+// Merge dependency ordered claims 
+export function merge(claims: Dict<any>[]): Dict<any> | string[] {
+    let errors: string[] = [];
+    let merge: Dict<any> = {};
+    for (let claim of claims) {
+        let cl_tables: Dict<any> = claim["*tables"];
+        for (let t in cl_tables) {
+            let cols = cl_tables[t];
+            let is_dict = typeof cols == "object";
+            if (is_dict && !firstKey(cols)) continue;
+            // If the table is created by other branch, make ref structure to it
+            let is_ref = false;
+            if (merge[t]) {
+                is_ref = true;
+                merge[t]["*refs"] ||= {};
+                merge[t]["*refs"][claim.id.branch] ||= [];
+            }
+            else merge[t] = {};
+            if (is_dict) {
+                for (let c_name in cols) {
+                    let col = cols[c_name];
+                }
+            }
+            else {
+                if (cols == "*NOT") {
+                    if (is_ref) {
+                        // We drop the refs to the table 
+                        delete merge[t]["*refs"][claim.id.branch];
+                    }
+                    else {
+                        // A directive to drop the table 
+                        if( !merge[t]["*refs"] || !firstKey(merge[t]["*refs"]) )
+                            merge[t] = "*NOT";
+                        else errors.push(`merge: Cannot drop table with references: ${merge[t]["*refs"]}`);
+                    }
+                }
+                else errors.push(`merge: unknown value (${cols}) for table ${t} in branch ${claim.id.branch}`);
+            }
+        }
 
-export function merge(): Dict<any> | string[] {
-
-    return null;
+    }
+    return errors.length ? errors : merge;
 }
