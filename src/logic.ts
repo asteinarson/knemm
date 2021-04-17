@@ -282,6 +282,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
     if (r["*tables"]) {
         if (r.format != format) {
             r["*tables"] = reformat(r["*tables"], format);
+            r.format = format;
         }
         return r;
     }
