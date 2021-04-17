@@ -487,7 +487,7 @@ function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
 }
 
 // Order dependencies on branch <which> up to <number>. Nest and do sub dependencies.
-function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?: number, depth?: number) {
+function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?: number, depth?: number) {
     if (!depth) depth = 0;
     if (depth++ > 500) return errorRv("orderDeps2 - Infinite recursion?");
 
@@ -503,7 +503,7 @@ function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto
                 for (let d of nest_deps) {
                     let claim_id = getClaimId("", d);
                     if (claim_id) {
-                        if (!orderDeps2(deps, claim_id.branch, r, claim_id.version, depth))
+                        if (!orderDeps(deps, claim_id.branch, r, claim_id.version, depth))
                             return;
                     }
                     else console.warn("orderDeps2 - Could not resolve claim: " + claim_id.toString());
@@ -571,14 +571,16 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
         }
     }
 
+    // And now do full linear ordering
     let deps_ordered: Dict<any>[] = [];
     for (let branch in cl_by_br) {
         let dep = cl_by_br[branch];
         if (!dep[dep.length - 1]["*ordered"]) {
-            if (!orderDeps2(cl_by_br, branch, deps_ordered, ver_by_br[branch]))
+            if (!orderDeps(cl_by_br, branch, deps_ordered, ver_by_br[branch]))
                 return errorRv("dependencySort - orderDeps2 - failed");
         }
     }
+
     return deps_ordered;
 }
 
