@@ -273,6 +273,8 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
                     r["*tables"] = rf;
                 r.source = file_or_db;
                 r.format = "?";
+                if( !r.id )
+                    r.id = claimIdFromName(file_or_db);
             }
         }
     }
