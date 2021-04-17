@@ -203,18 +203,18 @@ export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): 
 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import path from 'path';
 
-function stateToNestedDict(dir:string){
-    if (!existsSync(dir)) 
-        return errorRv( `stateToNestedDict - State dir does not exist: ${dir}`);
-    let m_yaml = path.join(dir,"__merge.yaml");
-    if( !existsSync(m_yaml) )
-        return errorRv( `stateToNestedDict - Merge file does not exist: ${m_yaml}`);
+function stateToNestedDict(dir: string) {
+    if (!existsSync(dir))
+        return errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
+    let m_yaml = path.join(dir, "__merge.yaml");
+    if (!existsSync(m_yaml))
+        return errorRv(`stateToNestedDict - Merge file does not exist: ${m_yaml}`);
     let r = slurpFile(m_yaml);
-    if( typeof r != "object" )
-        return errorRv( `stateToNestedDict - Failed reading: ${m_yaml}` );
+    if (typeof r != "object")
+        return errorRv(`stateToNestedDict - Failed reading: ${m_yaml}`);
     return r;
 }
 
@@ -237,7 +237,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         else state_dir = file_or_db.slice(6);
         // !! We need to read the state also ! 
         r = stateToNestedDict(state_dir);
-        if( r ){
+        if (r) {
             r.source = "*state";
             r.directory = file_or_db;
             r.format = "internal";
@@ -260,7 +260,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             if (process.env.DATABASE)
                 conn_info.database = process.env.DATABASE;
         }
-        
+
         // Get our dict from DB conn ? 
         if (conn_info) {
             let client = conn_info.client ? conn_info.client : "pg";
@@ -284,15 +284,17 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         else {
             if (typeof rf == "object" && !Array.isArray(rf)) {
                 // Is it a claim with top level props, or just the tables? 
-                if( rf["*tables"]) 
-                    r = rf; 
-                else 
+                if (rf["*tables"])
+                    r = rf;
+                else
                     r["*tables"] = rf;
                 r.source = "*file";
                 r.file = file_or_db;
                 r.format = "?";
-                if( !r.id )
+                if (!r.id)
                     r.id = claimIdFromName(file_or_db);
+                else if (typeof r.id == "string")
+                    r.id = claimIdFromName(r.id + ".yaml");
             }
         }
     }
@@ -468,7 +470,11 @@ function claimIdFromName(name: string): ClaimId {
 function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
     if (claim_id) {
         if (typeof claim_id == "object")
-            return { branch: claim_id.name, version: Number(claim_id.version) };
+            return {
+                // The ID is stored using <name> while the dep list can use <branch>
+                branch: claim_id.name || claim_id.branch,
+                version: Number(claim_id.version)
+            };
         else {
             if (typeof claim_id != "string")
                 return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
@@ -511,31 +517,65 @@ function orderDeps2(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto
 }
 
 // Sort input trees according to dependency specification 
-export function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
+export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
     // Do initial registration based on branch name and version 
-    let deps: Dict<Dict<any>[]> = {};
+    let cl_by_br: Dict<Dict<any>[]> = {};
+    let ver_by_br: Dict<number> = {};
     for (let f in file_dicts) {
-        let claim_id = getClaimId(f, file_dicts[f].id);
+        let claim = file_dicts[f].id;
+        let claim_id = getClaimId(f, claim);
         let name = claim_id.branch;
         if (name) {
+            // Register this claim 
             let ver = claim_id.version || 0;
-            if (!deps[name]) deps[name] = [];
-            deps[name][ver] = file_dicts[f];
+            if (!cl_by_br[name]) cl_by_br[name] = [];
+            cl_by_br[name][ver] = file_dicts[f];
+            // See if it is highest version of its branch 
+            if (!ver_by_br[name] || ver > ver_by_br[name])
+                ver_by_br[name] = ver;
+            // Record highest versions of the dependencies we need 
+            if (claim.depends) {
+                let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
+                nest_deps.forEach((d, ix) => {
+                    if (typeof d == "string") d = claimIdFromName(d + ".yaml");
+                    nest_deps[ix] = d;
+                    if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
+                        ver_by_br[d.branch] = d.version;
+                });
+            }
         } else {
             // have already reported error
         }
     }
+
     // Find additional dependencies, in given path (same branch names but lower versions)
     if (options.deps != false) {
+        // Look for any dependencies in provided paths. 
+        // To find the real claim ID:s we need to actually load them
+        // (The filename ID is not decisive)
         let paths: string[] = options.paths || ["./"];
-        // fs.readdir
+        let re_yj = /\.(json|yaml|JSON|YAML)$/;
+        for (let p of paths) {
+            let files = readdirSync(p);
+            for (let f of files) {
+                if (f.match(re_yj)) {
+                    let r = await toNestedDict(path.join(p, f), options);
+                    if (r && r.id) {
+                        // We are only interested in our list of claims and their deps
+                        if ( ver_by_br[r.id.branch] && 
+                            typeof r.id.version=="number" && r.id.version<=ver_by_br[r.id.branch] )
+                            cl_by_br[r.id.branch][r.id.version] = r;
+                    }
+                }
+            }
+        }
     }
 
     let deps_ordered: Dict<any>[] = [];
-    for (let branch in deps) {
-        let dep = deps[branch];
+    for (let branch in cl_by_br) {
+        let dep = cl_by_br[branch];
         if (!dep[dep.length - 1]["*ordered"]) {
-            if (!orderDeps2(deps, branch, deps_ordered))
+            if (!orderDeps2(cl_by_br, branch, deps_ordered, ver_by_br[branch]))
                 return errorRv("dependencySort - orderDeps2 - failed");
         }
     }
