@@ -239,7 +239,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         r = stateToNestedDict(state_dir);
         if (r) {
             r.source = "*state";
-            r.directory = file_or_db;
+            r.directory = state_dir;
             r.format = "internal";
         }
         return r;
