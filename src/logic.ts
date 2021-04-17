@@ -204,6 +204,19 @@ export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
 import { existsSync } from 'fs';
+import path from 'path';
+
+function stateToNestedDict(dir:string){
+    if (!existsSync(dir)) 
+        return errorRv( `stateToNestedDict - State dir does not exist: ${dir}`);
+    let m_yaml = path.join(dir,"__merge.yaml");
+    if( !existsSync(m_yaml) )
+        return errorRv( `stateToNestedDict - Merge file does not exist: ${m_yaml}`);
+    let r = slurpFile(m_yaml);
+    if( typeof r != "object" )
+        return errorRv( `stateToNestedDict - Failed reading: ${m_yaml}` );
+    return r;
+}
 
 // Read a file, a directory or a DB into a schema state object
 export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
@@ -223,11 +236,14 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             state_dir = options.state || "./.dbstate";
         }
         else state_dir = file_or_db.slice(6);
-        if (!existsSync(state_dir)) {
-            console.error(`toNestedDict - State dir does not exist: ${state_dir}`);
-            return;
-        }
         // !! We need to read the state also ! 
+        r = stateToNestedDict(state_dir);
+        if( r ){
+            r.source = "*state";
+            r.directory = file_or_db;
+            r.format = "internal";
+            return r;
+        }
     }
     else if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file - or use ENV vars 
@@ -254,7 +270,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         let rs = await slurpSchema(connection);
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
-            r.source = "*DB";
+            r.source = "*db";
             r.connection = connection;
             r.format = "internal";
             r["*tables"] = rs;
@@ -272,7 +288,8 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
                     r = rf; 
                 else 
                     r["*tables"] = rf;
-                r.source = file_or_db;
+                r.source = "*file";
+                r.file = file_or_db;
                 r.format = "?";
                 if( !r.id )
                     r.id = claimIdFromName(file_or_db);
