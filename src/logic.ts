@@ -224,7 +224,6 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
     if (!format) format = "internal";
 
     let r: Dict<any> = {};
-    let conn_info: Dict<string>;
     if (file_or_db == "@" || file_or_db.slice(0, 6) == "state:") {
         // This means current/given state 
         let state_dir: string;
@@ -242,11 +241,12 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             r.source = "*state";
             r.directory = file_or_db;
             r.format = "internal";
-            return r;
         }
+        return r;
     }
     else if (file_or_db.slice(0, 3) == "db:") {
         // Look for a connection file - or use ENV vars 
+        let conn_info: Dict<string>;
         if (file_or_db.slice(3) != "%") {
             let r = slurpFile(file_or_db);
             if (typeof r == "object") conn_info = r as Dict<string>;
@@ -260,20 +260,20 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             if (process.env.DATABASE)
                 conn_info.database = process.env.DATABASE;
         }
-    }
-
-    // Get our dict from DB conn ? 
-    if (conn_info) {
-        let client = conn_info.client ? conn_info.client : "pg";
-        if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
-        let connection = await connect(conn_info, client);
-        let rs = await slurpSchema(connection);
-        if (rs) {
-            // Keep the connection object here - it allows later knowing it is attached to a DB
-            r.source = "*db";
-            r.connection = connection;
-            r.format = "internal";
-            r["*tables"] = rs;
+        
+        // Get our dict from DB conn ? 
+        if (conn_info) {
+            let client = conn_info.client ? conn_info.client : "pg";
+            if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
+            let connection = await connect(conn_info, client);
+            let rs = await slurpSchema(connection);
+            if (rs) {
+                // Keep the connection object here - it allows later knowing it is attached to a DB
+                r.source = "*db";
+                r.connection = connection;
+                r.format = "internal";
+                r["*tables"] = rs;
+            }
         }
     }
 
