@@ -603,8 +603,15 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
             }
             else merge[t] = {};
             if (is_dict) {
+                let m_tbl = merge[t];
                 for (let c_name in cols) {
                     let col = cols[c_name];
+                    if( !m_tbl[c_name] ){
+                        // A new column
+                    }
+                    else {
+                        // A ref to a column 
+                    }
                 }
             }
             else {
@@ -615,7 +622,7 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                     }
                     else {
                         // A directive to drop the table 
-                        if( !merge[t]["*refs"] || !firstKey(merge[t]["*refs"]) )
+                        if (!merge[t]["*refs"] || !firstKey(merge[t]["*refs"]))
                             merge[t] = "*NOT";
                         else errors.push(`merge: Cannot drop table with references: ${merge[t]["*refs"]}`);
                     }
