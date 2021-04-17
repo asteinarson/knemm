@@ -2,9 +2,15 @@
 import { Dict, tryGet } from './utils.js';
 
 // The valid (and different) base numeric types 
-const numerics: Dict<number> = {
+const numerics_w_smallint: Dict<number> = {
     smallint: 1, int: 1, bigint: 1,
     smallint_u: 1, int_u: 1, bigint_u: 1,
+    float: 1, real: 1,
+    decimal: 1, numeric: 1,
+};
+const numerics: Dict<number> = {
+    int: 1, bigint: 1,
+    int_u: 1, bigint_u: 1,
     float: 1, real: 1,
     decimal: 1, numeric: 1,
 };
