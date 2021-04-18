@@ -57,7 +57,7 @@ export function inLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof keys {
         for (let k in keys)
             if (lut[k] != undefined)
                 r[k] = 1;
-        return firstKey(r ? r : null;
+        return firstKey(r) ? r : null;
     }
 }
 
