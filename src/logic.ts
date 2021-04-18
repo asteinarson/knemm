@@ -403,9 +403,9 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
             let cols = cl_tables[t];
             let is_dict = typeof cols == "object";
             if (is_dict && !firstKey(cols)) continue;
-            // If the table is created by other branch, make ref structure to it
+            // If the table is created by other branch, make <*refs> structure to track that
             let is_ref = false;
-            if (merge[t]) {
+            if ( typeof merge[t] == "object" ) {
                 is_ref = true;
                 merge[t]["*refs"] ||= {};
                 merge[t]["*refs"][claim.id.branch] ||= [];
@@ -419,6 +419,7 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                         // A new column - accept the various properties 
                         // A known type ? 
                         if( getTypeGroup(col.data_type) ){
+                            // !! we could check for  a <*ref> flag (requiring an existing column) 
                             // See if we accept all suggested column keywords 
                             let unknowns = notInLut(col,db_column_words);
                             if( !unknowns ){
@@ -433,6 +434,12 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                         // A ref to a previously declared column. Either a requirement 
                         // on a column in another branch/module, or a reference to one 
                         // 'of our own making' - i.e. we can modify it. 
+                        let m_col = m_tbl[c_name];
+                        if( m_col["*owned_by"]==claim.id.branch ){
+                            // Modifying what we declared ourselves 
+                        } else {
+                            // Modifying something we refered to in another branch/module
+                        }
                     }
                 }
             }
@@ -441,11 +448,15 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                     if (is_ref) {
                         // We drop the refs to the table 
                         delete merge[t]["*refs"][claim.id.branch];
+                        // !! Delete references to child props ?
                     }
                     else {
                         // A directive to drop the table 
-                        if (!merge[t]["*refs"] || !firstKey(merge[t]["*refs"]))
-                            merge[t] = "*NOT";
+                        if (!merge[t]["*refs"] || !firstKey(merge[t]["*refs"])){
+                            // See that it is just not being declared
+                            if( Object.keys(merge[t]).length>1 )
+                                merge[t] = "*NOT";
+                        }
                         else errors.push(`merge: Cannot drop table with references: ${merge[t]["*refs"]}`);
                     }
                 }
