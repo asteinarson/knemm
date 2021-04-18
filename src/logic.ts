@@ -1,8 +1,8 @@
-import { Dict, toLut, firstKey, tryGet, errorRv } from './utils.js';
+import { Dict, toLut, firstKey, tryGet, errorRv, notInLut } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
-import { typeContainsLoose } from './db-props.js';
+import { db_column_words, getTypeGroup, typeContainsLoose } from './db-props.js';
 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
@@ -410,13 +410,24 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                 merge[t]["*refs"] ||= {};
                 merge[t]["*refs"][claim.id.branch] ||= [];
             }
-            else merge[t] = { "*owner": claim.id.branch };
+            else merge[t] = { "*owned_by": claim.id.branch };
             if (is_dict) {
                 let m_tbl = merge[t];
                 for (let c_name in cols) {
                     let col = cols[c_name];
                     if (!m_tbl[c_name]) {
                         // A new column - accept the various properties 
+                        // A known type ? 
+                        if( getTypeGroup(col.data_type) ){
+                            // See if we accept all suggested column keywords 
+                            let unknowns = notInLut(col,db_column_words);
+                            if( !unknowns ){
+                                // Accept column declaration in its fullness
+                                m_tbl[c_name] = {...col, "*owned_by": claim.id.branch }
+                            } 
+                            else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
+                        } 
+                        errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
                     }
                     else {
                         // A ref to a previously declared column. Either a requirement 
