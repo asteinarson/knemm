@@ -1,4 +1,4 @@
-import { Dict, toLut, firstKey, tryGet, errorRv, notInLut } from './utils.js';
+import { Dict, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
@@ -14,6 +14,8 @@ import { formatInternal, formatHrCompact } from "./hrc.js";
 export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
     return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
 }
+
+export type TableInfoOrErrors = Dict<any> | string[];
 
 function stateToNestedDict(dir: string) {
     if (!existsSync(dir))
@@ -133,7 +135,7 @@ function propEqual(v1: PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. Or an array of errors, if not possible. 
-function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>): Dict<any> | string[] {
+function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
 
@@ -212,10 +214,76 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
     return errors.length > 0 ? errors : r;
 }
 
+// Merge revised claim into column declared earlier, by the same module
+// The general rule is that we accept widening of data type, precision,
+// but not that which would likely cause loss of data. 
+// TODO: Provide a path to narrow and add constraints, by application 
+// specific migration/preparation methods.
+function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<any>): string[] {
+    let r: Dict<any> = {};
+    let errors: string[] = [];
+    for (let k in claim) {
+        if (db_column_words[k]) {
+            // All other column props
+            if (!propEqual(m_col[k], claim[k])) {
+                let is_reffed = isDictWithKeys(m_col[k]?.["*refs"]);
+                let ref_error = false;
+                let range_error = false;
+                let reason: string;
+                switch (k) {
+                    case "data_type":
+                        // We can widen the data type 
+                        if (!typeContainsLoose(claim.data_type, m_col.data_type)) {
+                            // ... but refuse to go to a more narrow type 
+                            reason = `Cannot safely go from type: ${m_col.data_type} to ${claim.data_type}`;
+                        }
+                        break;
+                    case "max_length":
+                    case "numeric_precision":
+                    case "numeric_scale":
+                        // For these, we can increase the value, as long as that 
+                        // is inline also with reference to this prop 
+                        if (claim[k] < m_col[k])
+                            reason = `Unsafe target value: ${claim[k]} should be more than: ${m_col[k]}`;
+                        break;
+                    case "is_unique":
+                    case "is_primary_key":
+                    case "has_auto_increment":
+                        if (claim[k]) reason = `Cannot safely add/remove constraint ${k} now`;
+                        break;
+                    case "is_nullable":
+                        // We allow to go back to nullable - DB is fine w that 
+                        if( is_reffed ) ref_error = true;
+                        else if( !claim[k] ) reason = "Cannot add constraint NOT NULLABLE now";
+                        break; 
+                    default:
+                        ref_error = is_reffed;
+                        break;
+                    }
+                if (ref_error && !reason ) 
+                    reason = `${k} is referenced by: (${m_col[k]["*refs"]})`;
+                if (!reason)
+                    r[k] = claim[k];
+                else {
+                    errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${claim[k]} ` +
+                        `(${reason})`);
+                }
+            }
+        }
+        else errors.push(`mergeOwnColumnClaim - Unknown column keyword: ${k}`);
+    }
+
+    // Merge, even if errors 
+    for (let k in r)
+        m_col[k] = r[k];
+
+    if (errors.length) return errors;
+}
+
 // Generate the DB diff that is needed to go from 'candidate' to 'target'. 
 // In a sense, the output is a transition, not a state. (The two inputs are
 // states).
-export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | string[] {
+export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
     // Iterate tables 
@@ -228,7 +296,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): Dict<any> | 
                 let tgt_col = tgt_table[kc];
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
-                if (typeof tgt_col == "object") {
+                if (isDict(tgt_col)) {
                     let dc = matchDiffColumn(kc, cand_col, tgt_col);
                     if (typeof dc == "object") {
                         if (firstKey(dc))
@@ -394,18 +462,18 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
 }
 
 // Merge dependency ordered claims 
-export function merge(claims: Dict<any>[]): Dict<any> | string[] {
+export function merge(claims: Dict<any>[], options: Dict<any>): TableInfoOrErrors {
     let errors: string[] = [];
     let merge: Dict<any> = {};
     for (let claim of claims) {
         let cl_tables: Dict<any> = claim["*tables"];
         for (let t in cl_tables) {
             let cols = cl_tables[t];
-            let is_dict = typeof cols == "object";
+            let is_dict = isDict(cols);
             if (is_dict && !firstKey(cols)) continue;
             // If the table is created by other branch, make <*refs> structure to track that
             let is_ref = false;
-            if ( typeof merge[t] == "object" ) {
+            if (isDict(merge[t])) {
                 is_ref = true;
                 merge[t]["*refs"] ||= {};
                 merge[t]["*refs"][claim.id.branch] ||= [];
@@ -418,16 +486,16 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                     if (!m_tbl[c_name]) {
                         // A new column - accept the various properties 
                         // A known type ? 
-                        if( getTypeGroup(col.data_type) ){
+                        if (getTypeGroup(col.data_type)) {
                             // !! we could check for  a <*ref> flag (requiring an existing column) 
                             // See if we accept all suggested column keywords 
-                            let unknowns = notInLut(col,db_column_words);
-                            if( !unknowns ){
+                            let unknowns = notInLut(col, db_column_words);
+                            if (!unknowns) {
                                 // Accept column declaration in its fullness
-                                m_tbl[c_name] = {...col, "*owned_by": claim.id.branch }
-                            } 
+                                m_tbl[c_name] = { ...col, "*owned_by": claim.id.branch }
+                            }
                             else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
-                        } 
+                        }
                         errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
                     }
                     else {
@@ -435,10 +503,16 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                         // on a column in another branch/module, or a reference to one 
                         // 'of our own making' - i.e. we can modify it. 
                         let m_col = m_tbl[c_name];
-                        if( m_col["*owned_by"]==claim.id.branch ){
+                        if (m_col["*owned_by"] == claim.id.branch) {
                             // Modifying what we declared ourselves 
+                            // By default we accept wider types and more permissive 
+                            // column properties. 
+                            let es = mergeOwnColumnClaim(m_col, col, options);
+                            if (es) errors = [...errors, ...es];
                         } else {
-                            // Modifying something we refered to in another branch/module
+                            // Make claims on a column of another branch/module
+                            // It holds if the data type we need is equal or more narrow 
+                            // than the one declared, 
                         }
                     }
                 }
@@ -452,9 +526,9 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                     }
                     else {
                         // A directive to drop the table 
-                        if (!merge[t]["*refs"] || !firstKey(merge[t]["*refs"])){
+                        if (!merge[t]["*refs"] || !firstKey(merge[t]["*refs"])) {
                             // See that it is just not being declared
-                            if( Object.keys(merge[t]).length>1 )
+                            if (Object.keys(merge[t]).length > 1)
                                 merge[t] = "*NOT";
                         }
                         else errors.push(`merge: Cannot drop table with references: ${merge[t]["*refs"]}`);
