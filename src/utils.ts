@@ -27,10 +27,10 @@ export function toLut<T>(keys: string[], v: T | T[]): Dict<T> {
     return r;
 }
 
-export function tryGet<T>( k:string, dict:Dict<T>, fallback_value?:T ){
-    if( typeof dict=="object" ){
+export function tryGet<T>(k: string, dict: Dict<T>, fallback_value?: T) {
+    if (typeof dict == "object") {
         let r = dict[k];
-        return r!=undefined ? r : fallback_value;
+        return r != undefined ? r : fallback_value;
     }
 }
 
@@ -44,52 +44,52 @@ export function firstKey(o: object): any {
 }
 
 // Find keys/values in <keys> not in <lut>
-export function inLut(keys: string[]|Dict<any>, lut:Dict<any> ){
-    if( Array.isArray(keys) ){
-        let r:string[] = [];
-        for( let k of keys )
-            if( lut[k]!=undefined )
+export function inLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof keys {
+    if (Array.isArray(keys)) {
+        let r: string[] = [];
+        for (let k of keys)
+            if (lut[k] != undefined)
                 r.push(k);
-        return r.length>0 ? r : null;
+        return r.length > 0 ? r : null;
     }
     else {
-        let r:Dict<number> = {};
-        for( let k in keys )
-            if( lut[k]!=undefined )
+        let r: Dict<number> = {};
+        for (let k in keys)
+            if (lut[k] != undefined)
                 r[k] = 1;
         return firstKey(r ? r : null;
     }
 }
 
 // Find keys/values in <keys> not in <lut>
-export function notInLut(keys: string[]|Dict<any>, lut:Dict<any> ){
-    if( Array.isArray(keys) ){
-        let r:string[] = [];
-        for( let k of keys )
-            if( !lut[k] )
+export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof keys {
+    if (Array.isArray(keys)) {
+        let r: string[] = [];
+        for (let k of keys)
+            if (!lut[k])
                 r.push(k);
-        return r.length>0 ? r : null;
+        return r.length > 0 ? r : null;
     }
     else {
-        let r:Dict<number> = {};
-        for( let k in keys )
-            if( !lut[k] )
+        let r: Dict<number> = {};
+        for (let k in keys)
+            if (!lut[k])
                 r[k] = 1;
-        return firstKey(r ? r : null;
+        return firstKey(r) ? r : null;
     }
 }
 
-export function errorRv<RV>(msg:string, rv?:RV):RV{
+export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
 }
 
-export function warnRv<RV>(msg:string, rv?:RV):RV{
+export function warnRv<RV>(msg: string, rv?: RV): RV {
     console.warn(msg);
     return rv;
 }
 
-export function logRv<RV>(msg:string, rv?:RV):RV{
+export function logRv<RV>(msg: string, rv?: RV): RV {
     console.log(msg);
     return rv;
 }
