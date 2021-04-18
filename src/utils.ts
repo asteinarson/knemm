@@ -79,6 +79,10 @@ export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof key
     }
 }
 
+export function isDict(o:any): o is Object {
+    return o?.constructor == Object;
+}
+
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
