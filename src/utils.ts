@@ -83,6 +83,11 @@ export function isDict(o:any): o is Object {
     return o?.constructor == Object;
 }
 
+export function isArray(a:any): a is [] {
+    return Array.isArray(a);
+    //return a?.constructor == Array;
+}
+
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
