@@ -273,7 +273,7 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
         else errors.push(`mergeOwnColumnClaim - Unknown column keyword: ${k}`);
     }
 
-    // Merge, even if errors 
+    // Merge, even if we have errors 
     for (let k in r)
         m_col[k] = r[k];
 
@@ -512,7 +512,7 @@ export function merge(claims: Dict<any>[], options: Dict<any>): TableInfoOrError
                         } else {
                             // Make claims on a column of another branch/module
                             // It holds if the data type we need is equal or more narrow 
-                            // than the one declared, 
+                            // than the one declared
                         }
                     }
                 }
