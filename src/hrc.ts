@@ -34,7 +34,7 @@ function string_arg_decode(s: string) {
 
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
-import { column_words, getTypeGroup, isNumeric, isString, typeContainsLoose } from './db-props.js';
+import { db_column_flags, db_type_args, isNumeric, isString } from './db-props.js';
 
 
 // Expand any nested data flattened to a string  
@@ -76,7 +76,7 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
                     for (let ix = 1; ix < words.length; ix++) {
                         let w = words[ix];
                         // Boolean flag ?
-                        let w_int = column_words_rev[w];
+                        let w_int = db_column_flags_rev[w];
                         if (w_int) {
                             col[w_int] = true;
                         }
@@ -110,10 +110,8 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
     return tables;
 }
 
-let column_words_rev = ldInvert(column_words);
+let db_column_flags_rev = ldInvert(db_column_flags);
 
-// These are tucked as args on the data_type 
-let type_args: Array<string> = ["max_length", "numeric_precision", "numeric_scale"];
 
 // Flatten any nested data to strings
 export function formatHrCompact(tables: Dict<any>): Dict<any> {
@@ -132,9 +130,9 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 let done: Dict<number> = { data_type: 1 };
 
                 // Simple boolean flags 
-                for (let w in column_words) {
+                for (let w in db_column_flags) {
                     if (col[w]) {
-                        words.push(column_words[w]);
+                        words.push(db_column_flags[w]);
                         done[w] = 1;
                     }
                 }
@@ -146,7 +144,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
 
                 // Do any length/precision modifiers 
                 let type_nums: number[] = [];
-                for (let c of type_args) {
+                for (let c in db_type_args) {
                     if (col[c]) {
                         type_nums.push(col[c]);
                         done[c] = 1;

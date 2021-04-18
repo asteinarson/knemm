@@ -2,12 +2,28 @@
 import { Dict, tryGet } from './utils.js';
 
 // short form boolean flags 
-export let column_words: Dict<string> = {
+export let db_column_flags: Dict<string> = {
     is_primary_key: "pk",
     has_auto_increment: "auto",
     is_unique: "unique",
 };
 
+// These are tucked as args on the data_type 
+export let db_type_args: Dict<number> = {
+    max_length: 1, 
+    numeric_precision: 1, 
+    numeric_scale: 1,
+};
+
+export let db_column_words: Dict<string | number> = {
+    data_type: 1,
+    ...db_column_flags,
+    is_nullable: 1,
+    default: 1,
+    comment: 1,
+    foreign_key: 1,
+    ...db_type_args,
+};
 
 // The valid (and different) base numeric types 
 const numerics_w_smallint: Dict<number> = {
@@ -27,11 +43,11 @@ const strings: Dict<number> = { text: 1, varchar: 1 };
 
 const datetimes: Dict<number> = { date: 1, time: 1, datetime: 1, timestamp: 1, timestamp_tz: 1 };
 
-export function isNumeric(t:string){
+export function isNumeric(t: string) {
     return numerics[t];
 }
 
-export function isString(t:string){
+export function isString(t: string) {
     return strings[t];
 }
 
@@ -117,21 +133,21 @@ function typeTreeContains(t_outer: string, t_inner: string, type_dict: Dict<any>
 // start to store larger integers beyond that, in such a column, we 
 // normally would have considered migrating to 'bigint' by then. 
 export function typeContainsLoose(t1: string, t2: string) {
-    t1 = tryGet(t1,type_synonyms,t1);
-    t2 = tryGet(t2,type_synonyms,t2);
-    if( t1==t2 ) return true;
+    t1 = tryGet(t1, type_synonyms, t1);
+    t2 = tryGet(t2, type_synonyms, t2);
+    if (t1 == t2) return true;
     const tg1 = getTypeGroup(t1);
     const tg2 = getTypeGroup(t2);
     if (tg1 == tg2) {
-        if( tg1=="numeric"){
-            return typeTreeContains(t1,t2,num_type_tree_loose);
+        if (tg1 == "numeric") {
+            return typeTreeContains(t1, t2, num_type_tree_loose);
         }
-        if( tg1=="datetime" ){
-            return typeTreeContains(t1,t2,datetime_type_tree_loose);
+        if (tg1 == "datetime") {
+            return typeTreeContains(t1, t2, datetime_type_tree_loose);
         }
-        if( tg1=="text" ){
-            return t1=="text";
+        if (tg1 == "text") {
+            return t1 == "text";
         }
-        if( tg1=="json" ) return true;
+        if (tg1 == "json") return true;
     }
 }

@@ -410,17 +410,18 @@ export function merge(claims: Dict<any>[]): Dict<any> | string[] {
                 merge[t]["*refs"] ||= {};
                 merge[t]["*refs"][claim.id.branch] ||= [];
             }
-            else merge[t] = {};
+            else merge[t] = { "*owner": claim.id.branch };
             if (is_dict) {
                 let m_tbl = merge[t];
                 for (let c_name in cols) {
                     let col = cols[c_name];
                     if (!m_tbl[c_name]) {
-                        // A new column
+                        // A new column - accept the various properties 
                     }
                     else {
-                        // A ref to a column. Whatever properties that comes here 
-                        // is the requirements of one branch (module) on another one.
+                        // A ref to a previously declared column. Either a requirement 
+                        // on a column in another branch/module, or a reference to one 
+                        // 'of our own making' - i.e. we can modify it. 
                     }
                 }
             }
