@@ -88,6 +88,16 @@ export function isArray(a:any): a is [] {
     //return a?.constructor == Array;
 }
 
+export function isDictWithKeys(o:any): o is Object {
+    return o?.constructor == Object && firstKey(o);
+}
+
+export function isArrayWithElems(a:any): a is [] {
+    return Array.isArray(a) && a.length>0;
+    //return a?.constructor == Array;
+}
+
+
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
