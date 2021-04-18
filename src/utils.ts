@@ -43,6 +43,42 @@ export function firstKey(o: object): any {
     }
 }
 
+// Find keys/values in <keys> not in <lut>
+export function inLut(keys: string[]|Dict<any>, lut:Dict<any> ){
+    if( Array.isArray(keys) ){
+        let r:string[] = [];
+        for( let k of keys )
+            if( lut[k]!=undefined )
+                r.push(k);
+        return r.length>0 ? r : null;
+    }
+    else {
+        let r:Dict<number> = {};
+        for( let k in keys )
+            if( lut[k]!=undefined )
+                r[k] = 1;
+        return firstKey(r ? r : null;
+    }
+}
+
+// Find keys/values in <keys> not in <lut>
+export function notInLut(keys: string[]|Dict<any>, lut:Dict<any> ){
+    if( Array.isArray(keys) ){
+        let r:string[] = [];
+        for( let k of keys )
+            if( !lut[k] )
+                r.push(k);
+        return r.length>0 ? r : null;
+    }
+    else {
+        let r:Dict<number> = {};
+        for( let k in keys )
+            if( !lut[k] )
+                r[k] = 1;
+        return firstKey(r ? r : null;
+    }
+}
+
 export function errorRv<RV>(msg:string, rv?:RV):RV{
     console.error(msg);
     return rv;
