@@ -1,6 +1,14 @@
 
 import { Dict, tryGet } from './utils.js';
 
+// short form boolean flags 
+export let column_words: Dict<string> = {
+    is_primary_key: "pk",
+    has_auto_increment: "auto",
+    is_unique: "unique",
+};
+
+
 // The valid (and different) base numeric types 
 const numerics_w_smallint: Dict<number> = {
     smallint: 1, int: 1, bigint: 1,
