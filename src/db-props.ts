@@ -24,8 +24,8 @@ export let db_with_args: Dict<string> = {
 export let db_column_words: Dict<string | number> = {
     data_type: 1,
     ...db_column_flags,
-    ...db_with_args, 
     ...db_type_args,
+    ...db_with_args, 
     is_nullable: 1,
     foreign_key: 1,
 };

@@ -82,23 +82,28 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
                         if (w_int) {
                             col[w_int] = true;
                         }
+                        else if (w == "notnull")
+                            col.is_nullable = false;
                         else {
-                            if (w == "notnull")
-                                col.is_nullable = false;
-                            else if (w.indexOf("foreign_key(") == 0) {
-                                let md = w.match(re_get_args);
-                                if (md && md[2] && md[4]) {
-                                    col.foreign_key = { table: md[2], column: md[4] }
-                                } else console.warn(`formatInternal(${col_name}) - foreign key syntax bad: ${w}`);
+                            // See if keyword w args 
+                            let md = w.match(re_get_args);
+                            if (md) {
+                                if (md[1] == "foreign_key") {
+                                    if (md[2] && md[4]) {
+                                        col.foreign_key = { table: md[2], column: md[4] }
+                                    }
+                                    else console.warn(`formatInternal(${col_name}) - foreign key syntax bad: ${w}`);
+                                }
+                                else {
+                                    let w_rev = db_with_args_rev[md[1]];
+                                    if (w_rev) {
+                                        if (md[2]) col[w_rev] = string_arg_decode(md[2]);
+                                        else console.warn(`formatInternal(${col_name}) - expected arg for: ${w}`);
+                                    }
+                                    else md = null;
+                                }
                             }
-                            else if (w.indexOf("default(") == 0) {
-                                let md = w.match(re_get_args);
-                                if (md && md[2] && md[4]) {
-                                    col.foreign_key_table = md[2];
-                                    col.foreign_key_column = md[4];
-                                } else console.warn(`formatInternal(${col_name}) - foreign key syntax bad: ${w}`);
-                            }
-                            else {
+                            if (!md) {
                                 console.warn(`formatInternal(${col_name}) - unknown word: ${w}`);
                             }
                         }
@@ -113,7 +118,7 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
 }
 
 let db_column_flags_rev = ldInvert(db_column_flags);
-
+let db_with_args_rev = ldInvert(db_with_args);
 
 // Flatten any nested data to strings
 export function formatHrCompact(tables: Dict<any>): Dict<any> {
@@ -140,7 +145,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 }
                 // nullable - is true by default 
                 if (col.is_nullable != undefined) {
-                    if( col.is_nullable==false )
+                    if (col.is_nullable == false)
                         words.push("notnull");
                     done.is_nullable = 1;
                 }
@@ -181,7 +186,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
 
                 // See if we have any unhandled columns - and warn 
                 //let unhandled = Object.keys(col).filter(prop => !done[prop]);
-                let unhandled = notInLut(col,done);
+                let unhandled = notInLut(col, done);
                 if (firstKey(unhandled)) {
                     console.warn(`formatHrCompact(${col_name}) - unhandled: ${unhandled}`);
                     // We make a subtree, but keep the default line in key "*" 
