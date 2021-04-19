@@ -46,7 +46,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     {
         name: "reverse",
         desc: "On this DB (or state), reverse the claim/target ",
-        a1: "DB",
+        a1: "DB", 
         a2: "target",
     },
 ];
@@ -56,8 +56,8 @@ function addCommandOptions(cmd: cmder.Command) {
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
     cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
-    cmd.option("-s --state <dir>", "Manage merged state in this dir (default: ./.dbstate)", "./.dbstate");
-    cmd.option("--no-state", "Do not use a state dir, even if found");
+    cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)" );
+    //cmd.option("--no-state", "Do not use a state dir, even if found");
     cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
     cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
 }
@@ -104,6 +104,16 @@ function logResult(r: Dict<any> | string[], options: any) {
 async function handleList(cmd: string, files: string[], options: any) {
     //console.log("handleList: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
+    let state_dir:string;
+    if( options.state ){
+        if( options.state==true )
+            state_dir = "./.dbstate";
+        else {
+            state_dir = options.state;
+            if( state_dir.slice(-9)!="/.dbstate" )
+                state_dir += "/.dbstate";
+        }
+    }
     let rc = 1000;
     if (cmd == "join") {
         let tree: Record<string, any> = {};

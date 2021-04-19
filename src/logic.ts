@@ -6,7 +6,7 @@ import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeCo
 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, mkdirSync } from 'fs';
 import path from 'path';
 
 import { formatInternal, formatHrCompact } from "./hrc.js";
@@ -16,6 +16,24 @@ export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): 
 }
 
 export type TableInfoOrErrors = Dict<any> | string[];
+
+export function getStateDir( options:any ){
+    let state_dir:string;
+    if( options.state ){
+        if( options.state==true )
+            state_dir = "./.dbstate";
+        else {
+            state_dir = options.state;
+            if( state_dir.slice(-9)!="/.dbstate" )
+                state_dir += "/.dbstate";
+        }
+    }
+    if( state_dir && !existsSync(state_dir) ){
+        mkdirSync(state_dir);   // Does not give a return value (?)
+        if( !existsSync(state_dir) ) return;
+    }
+    return state_dir;
+}
 
 function stateToNestedDict(dir: string) {
     if (!existsSync(dir))
