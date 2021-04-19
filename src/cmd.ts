@@ -115,11 +115,11 @@ async function handleList(cmd: string, files: string[], options: any) {
     let dirs = getDirsFromFileList(files);
     if( !options.paths ) options.paths = dirs;
     else options.paths = append(options.paths,dirs);
-    
+
     let rc = 1000;
     if (cmd == "join") {
         let tree: Record<string, any> = {};
-        let state:Dict<any>
+        let state_base:Dict<any> = stateToNestedDict(state_dir,true);
         // Sort the files, according to dependencies, also load them. 
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
@@ -127,14 +127,16 @@ async function handleList(cmd: string, files: string[], options: any) {
             if (r) file_dicts[f] = r;
             else console.error("join: could not resolve file source: " + f);
         }
-        let dicts = await dependencySort(file_dicts, state_dir, options);
+        let dicts = await dependencySort(file_dicts, state_base, options);
         if (dicts) {
-            let state_tree = mergeClaims(dicts, options);
+            let state_tree = mergeClaims(dicts, state_base, options);
             if (isDict(state_tree)) {
                 if (state_dir && dicts.length)
                     storeState(files, state_dir, state_tree, options);
                 if (!options.internal)
-                    state_tree = reformat(state_tree, "hr-compact");
+                    state_tree.___tables = reformat(state_tree.___tables, "hr-compact");
+                // This is for outputting just the tables, below
+                state_tree = state_tree.___tables;
             }
             logResult(state_tree, options);
         }

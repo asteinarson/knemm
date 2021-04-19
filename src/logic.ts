@@ -69,12 +69,12 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
     return existsSync(m_yaml);
 }
 
-export function stateToNestedDict(dir: string):Dict<any> {
+export function stateToNestedDict(dir: string, quiet?:boolean):Dict<any> {
     if (!existsSync(dir))
-        return errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
+        return quiet ? undefined : errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
     let m_yaml = path.join(dir, "__merge.yaml");
     if (!existsSync(m_yaml))
-        return errorRv(`stateToNestedDict - Merge file does not exist: ${m_yaml}`);
+        return quiet ? undefined : errorRv(`stateToNestedDict - Merge file does not exist: ${m_yaml}`);
     let r = slurpFile(m_yaml);
     if (!isDict(r))
         return errorRv(`stateToNestedDict - Failed reading: ${m_yaml}`);
@@ -467,7 +467,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 }
 
 // Sort input trees according to dependency specification 
-export async function dependencySort(file_dicts: Dict<Dict<any>>, state_dir:string, options: Dict<any>): Promise<Dict<any>[]> {
+export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dict<any>, options: Dict<any>): Promise<Dict<any>[]> {
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
@@ -546,10 +546,13 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_dir:stri
 }
 
 // Merge dependency ordered claims 
-export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoOrErrors {
+export function mergeClaims(claims: Dict<any>[], merge_base:Dict<any>|null, options: Dict<any>): TableInfoOrErrors {
     let errors: string[] = [];
-    let merge: Dict<any> = {};
+    if( !merge_base || !merge_base.___tables ) merge_base = { modules: {}, ___tables:{} };
+    let merge = merge_base.___tables;
     for (let claim of claims) {
+        // Keep track of the current version of each module
+        merge_base.modules[claim.id.branch] = claim.id.version;
         let cl_tables: Dict<any> = claim.___tables;
         for (let t in cl_tables) {
             let cols = cl_tables[t];
@@ -636,5 +639,5 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
         }
 
     }
-    return errors.length ? errors : merge;
+    return errors.length ? errors : merge_base;
 }
