@@ -3,7 +3,7 @@ import cmder, { Command } from "commander";
 let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     {
         name: "join",
-        desc: "Join together all input claims, store as state and print them out",
+        desc: "Join together all input claims and print them out",
         a1: "files...",
         a2: null
     },
@@ -24,6 +24,18 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
         desc: "See diff from <candidate/DB> to <target>",
         a1: "candidate",
         a2: "target"
+    },
+    {
+        name: "info",
+        desc: "Show info about this <state>",
+        a1: "state",
+        a2: null,
+    },
+    {
+        name: "connect",
+        desc: "Connect this <DB> to the given <state>",
+        a1: "db",
+        a2: "state",
     },
     {
         name: "apply",
