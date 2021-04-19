@@ -46,7 +46,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     {
         name: "reverse",
         desc: "On this DB (or state), reverse the claim/target ",
-        a1: "DB", 
+        a1: "DB",
         a2: "target",
     },
 ];
@@ -56,7 +56,7 @@ function addCommandOptions(cmd: cmder.Command) {
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
     cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
-    cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)" );
+    cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
     //cmd.option("--no-state", "Do not use a state dir, even if found");
     cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
     cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
@@ -81,7 +81,7 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
@@ -104,16 +104,7 @@ function logResult(r: Dict<any> | string[], options: any) {
 async function handleList(cmd: string, files: string[], options: any) {
     //console.log("handleList: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
-    let state_dir:string;
-    if( options.state ){
-        if( options.state==true )
-            state_dir = "./.dbstate";
-        else {
-            state_dir = options.state;
-            if( state_dir.slice(-9)!="/.dbstate" )
-                state_dir += "/.dbstate";
-        }
-    }
+    let state_dir = getStateDir(options);
     let rc = 1000;
     if (cmd == "join") {
         let tree: Record<string, any> = {};
@@ -124,12 +115,13 @@ async function handleList(cmd: string, files: string[], options: any) {
             if (r) file_dicts[f] = r;
             else console.error("join: could not resolve source: " + f);
         }
-        let dicts = await dependencySort(file_dicts,options);
-        if( dicts ){
-            let state_tree = mergeClaims(dicts,options);
-            if( isDict(state_tree) ){
-                //state_tree = reformat(state_tree, options.internal ? "internal" : "hr-compact");
-                if( !options.internal )
+        let dicts = await dependencySort(file_dicts, options);
+        if (dicts) {
+            let state_tree = mergeClaims(dicts, options);
+            if (isDict(state_tree)) {
+                if (state_dir)
+                    storeState(files, state_dir, state_tree, options);
+                if (!options.internal)
                     state_tree = reformat(state_tree, "hr-compact");
             }
             logResult(state_tree, options);

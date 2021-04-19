@@ -6,8 +6,9 @@ import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeCo
 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
-import { existsSync, readdirSync, mkdirSync } from 'fs';
+import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
+import { dump as yamlDump } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc.js";
 
@@ -36,6 +37,36 @@ export function getStateDir(options: any) {
         }
     }
     return state_dir;
+}
+
+export function storeState(files: string[], state_dir: string, state: Dict<any>, options: Dict<any>) {
+    if (!existsSync(state_dir)) {
+        console.error("storeState - Dir does not exist: " + state_dir);
+        return;
+    }
+
+    // Normalize the state
+    if (!state["*tables"])
+        state = { "*tables": state };
+
+    // Copy input files here     
+    for (let f of files) {
+        let md = f.match(re_name_ext);
+        if (md) {
+            let name = md[2] + "." + md[3];
+            let tgt_name = path.join(state_dir, name);
+            copyFileSync(f, tgt_name);
+            if( !existsSync(tgt_name) ) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
+        }
+        else console.warn("storeState - failed extract filename from: " + f);
+    }
+
+    // And write the new state
+    let m_yaml = path.join(state_dir, "__merge.yaml");
+    if( existsSync(m_yaml) ) rmSync(m_yaml);
+    writeFileSync( m_yaml, yamlDump(state) );
+    
+    return existsSync(m_yaml);
 }
 
 function stateToNestedDict(dir: string) {
@@ -371,7 +402,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 
 // Regular expression to extract claim (name,number) from a string/filename
 let re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
-let re_name_ext = /^([^/]+\/)*(.*)\.[a-zA-Z_-]+$/;
+let re_name_ext = /^([^/]+\/)*(.*)\.([a-zA-Z_-]+)$/;
 
 type ClaimId = { branch: string, version?: number };
 
