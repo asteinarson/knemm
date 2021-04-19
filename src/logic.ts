@@ -29,6 +29,30 @@ function stateToNestedDict(dir: string) {
     return r;
 }
 
+export async function fileToNestedDict(file: string): Promise<Dict<any>{
+    let r: Dict<any> = {};
+    // Then it should be a file 
+    let rf = slurpFile(file);
+    if (!rf) console.log("fileToNestedDict - file not found: " + file);
+    else {
+        if (typeof rf == "object" && !Array.isArray(rf)) {
+            // Is it a claim with top level props, or just the tables? 
+            if (rf["*tables"])
+                r = rf;
+            else
+                r["*tables"] = rf;
+            r.source = "*file";
+            r.file = file;
+            r.format = "?";
+            if (!r.id)
+                r.id = claimIdFromName(file);
+            else if (typeof r.id == "string")
+                r.id = claimIdFromName(r.id + ".yaml");
+        }
+    }
+    return r;
+}
+
 // Read a file, a directory or a DB into a schema state object
 export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
     if (!file_or_db) return null;
@@ -87,28 +111,8 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             }
         }
     }
+    else r = fileToNestedDict(file_or_db);
 
-    if (!r["*tables"]) {
-        // Then it should be a file 
-        let rf = slurpFile(file_or_db);
-        if (!rf) console.log("toNestedDict - file not found: " + file_or_db);
-        else {
-            if (typeof rf == "object" && !Array.isArray(rf)) {
-                // Is it a claim with top level props, or just the tables? 
-                if (rf["*tables"])
-                    r = rf;
-                else
-                    r["*tables"] = rf;
-                r.source = "*file";
-                r.file = file_or_db;
-                r.format = "?";
-                if (!r.id)
-                    r.id = claimIdFromName(file_or_db);
-                else if (typeof r.id == "string")
-                    r.id = claimIdFromName(r.id + ".yaml");
-            }
-        }
-    }
     if (r["*tables"]) {
         if (r.format != format) {
             r["*tables"] = reformat(r["*tables"], format);
@@ -455,7 +459,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
             for (let f of files) {
                 if (f.match(re_yj)) {
                     try {
-                        let r = await toNestedDict(path.join(p, f), options);
+                        let r = await fileToNestedDict(path.join(p, f));
                         if (r && r.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
