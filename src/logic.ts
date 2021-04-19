@@ -507,7 +507,9 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                             let unknowns = notInLut(col, db_column_words);
                             if (!unknowns) {
                                 // Accept column declaration in its fullness
-                                m_tbl[c_name] = { ...col, "*owned_by": claim.id.branch }
+                                m_tbl[c_name] = { ...col }
+                                if( claim.id.branch!=m_tbl["*owned_by"] )
+                                    m_tbl[c_name]["*owned_by"] = claim.id.branch;
                             }
                             else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
                         }
