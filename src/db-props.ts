@@ -15,6 +15,13 @@ export let db_type_args: Dict<number> = {
     numeric_scale: 1,
 };
 
+// These are tucked as args on the data_type 
+export let db_types_with_args: Dict<1> = {
+    varchar: 1, 
+    decimal: 1, 
+    numeric: 1, 
+};
+
 // These are other props with (string?) args 
 export let db_with_args: Dict<string> = {
     comment: "comment", 

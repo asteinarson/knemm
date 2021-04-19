@@ -2,7 +2,7 @@ import { Dict, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithEl
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
-import { db_column_words, getTypeGroup, typeContainsLoose } from './db-props.js';
+import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props.js';
 
 import { slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
@@ -236,6 +236,16 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         if (!typeContainsLoose(claim.data_type, m_col.data_type)) {
                             // ... but refuse to go to a more narrow type 
                             reason = `Cannot safely go from type: ${m_col.data_type} to ${claim.data_type}`;
+                        }
+                        else {
+                            // If new type has no arg, need to clean those away 
+                            if( !db_types_with_args[claim.data_type] ){
+                                for( let ta in db_type_args )
+                                    delete m_col[ta];
+                            }
+                            else {
+                                // Even w type args, we may need to delete non used type args
+                            }
                         }
                         break;
                     case "max_length":
