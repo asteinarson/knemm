@@ -462,7 +462,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
             for (let f of files) {
                 if (f.match(re_yj)) {
                     try {
-                        let r = await fileToNestedDict(path.join(p, f));
+                        let r = await fileToNestedDict(path.join(p, f),true);
                         if (r && r.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
