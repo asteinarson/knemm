@@ -1,11 +1,15 @@
 
-import { Dict, toLut, firstKey, tryGet, errorRv, notInLut } from './utils.js';
+import { Dict, firstKey, notInLut } from './utils.js';
 
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
-let re_enc_needed = /[_ \(\)]/;
-let re_dec_needed = /([_]|\\\(|\\\))/;
+import {multiReplace} from "./str-utils";
+
+//let re_enc_needed = /[_ \(\)]/;
+//let re_dec_needed = /([_]|\\\(|\\\))/;
+let re_enc_needed = /[_ ]/;
+let re_dec_needed = /_/;
 
 // Encode: 
 let encode_pairs: Dict<string> = {
@@ -17,20 +21,14 @@ let encode_pairs: Dict<string> = {
 let decode_pairs = ldInvert(encode_pairs);
 
 function string_arg_encode(s: string) {
-    if (s.match(re_enc_needed)) {
-        for (let k in encode_pairs)
-            s = s.replace(k, encode_pairs[k]);
-    }
+    if (s.match(re_enc_needed)) 
+        s = multiReplace(s,encode_pairs);
     return s;
 }
 
 function string_arg_decode(s: string) {
-    if (s.match(re_dec_needed)) {
-        for (let k in decode_pairs) {
-            // !! This ends up wrong for __ => _ => " "
-            s = s.replace(k, decode_pairs[k]);
-        }
-    }
+    if (s.match(re_dec_needed))
+        s = multiReplace(s,decode_pairs);
     return s;
 }
 
