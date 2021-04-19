@@ -69,11 +69,11 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
-import { Dict, firstKey } from "./utils.js";
+import { Dict, firstKey, isDict } from "./utils.js";
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This adds load time
 
@@ -95,18 +95,21 @@ async function handleList(cmd: string, files: string[], options: any) {
     let rc = 1000;
     if (cmd == "join") {
         let tree: Record<string, any> = {};
-        // !! Here we should sort the files, according to dependencies 
-        // and also look for additional dependencies. Unless a flag not 
-        // to auto load deps. 
+        // Sort the files, according to dependencies, also load them. 
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
             let r = await toNestedDict(f, options);
             if (r) file_dicts[f] = r;
             else console.error("join: could not resolve source: " + f);
         }
-        dependencySort(file_dicts,options);
-        let tables = reformat(tree["*tables"], options.internal ? "internal" : "hr-compact");
-        logResult(tables, options);
+        let dicts = await dependencySort(file_dicts,options);
+        if( dicts ){
+            let state_tree = mergeClaims(dicts,options);
+            if( isDict(state_tree) ){
+                state_tree = reformat(state_tree["*tables"], options.internal ? "internal" : "hr-compact");
+            }
+            logResult(state_tree, options);
+        }
         rc = 0;
     }
     process.exit(rc);
