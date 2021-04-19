@@ -4,7 +4,7 @@ import { Dict, firstKey, notInLut } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
-import { multiReplace } from "./str-utils";
+import { multiReplace } from "./str-utils.js";
 
 //let re_enc_needed = /[_ \(\)]/;
 //let re_dec_needed = /([_]|\\\(|\\\))/;
