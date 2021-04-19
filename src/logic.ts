@@ -239,8 +239,8 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         }
                         else {
                             // If new type has no arg, need to clean those away 
-                            if( !db_types_with_args[claim.data_type] ){
-                                for( let ta in db_type_args )
+                            if (!db_types_with_args[claim.data_type]) {
+                                for (let ta in db_type_args)
                                     delete m_col[ta];
                             }
                             else {
@@ -462,7 +462,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
                                 typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch])
                                 cl_by_br[r.id.branch][r.id.version] = r;
                         }
-                    } catch(e){
+                    } catch (e) {
                         // Do nothing 
                         let _e = e;
                     }
@@ -518,7 +518,7 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                             if (!unknowns) {
                                 // Accept column declaration in its fullness
                                 m_tbl[c_name] = { ...col }
-                                if( claim.id.branch!=m_tbl["*owned_by"] )
+                                if (claim.id.branch != m_tbl["*owned_by"])
                                     m_tbl[c_name]["*owned_by"] = claim.id.branch;
                             }
                             else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
@@ -530,7 +530,8 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                         // on a column in another branch/module, or a reference to one 
                         // 'of our own making' - i.e. we can modify it. 
                         let m_col = m_tbl[c_name];
-                        if (m_col["*owned_by"] == claim.id.branch) {
+                        if (m_col["*owned_by"] == claim.id.branch ||
+                            (!m_col["*owned_by"] && m_tbl["*owned_by"] == claim.id.branch)) {
                             // Modifying what we declared ourselves 
                             let es = mergeOwnColumnClaim(m_col, col, options);
                             if (es) errors = [...errors, ...es];
