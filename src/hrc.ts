@@ -4,7 +4,7 @@ import { Dict, firstKey, notInLut } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
-import {multiReplace} from "./str-utils";
+import { multiReplace } from "./str-utils";
 
 //let re_enc_needed = /[_ \(\)]/;
 //let re_dec_needed = /([_]|\\\(|\\\))/;
@@ -21,14 +21,14 @@ let encode_pairs: Dict<string> = {
 let decode_pairs = ldInvert(encode_pairs);
 
 function string_arg_encode(s: string) {
-    if (s.match(re_enc_needed)) 
-        s = multiReplace(s,encode_pairs);
+    if (s.match(re_enc_needed))
+        s = multiReplace(s, encode_pairs);
     return s;
 }
 
 function string_arg_decode(s: string) {
     if (s.match(re_dec_needed))
-        s = multiReplace(s,decode_pairs);
+        s = multiReplace(s, decode_pairs);
     return s;
 }
 
