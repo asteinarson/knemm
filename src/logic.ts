@@ -38,7 +38,7 @@ export async function fileToNestedDict(file: string, quiet?:boolean): Promise<Di
             console.log("fileToNestedDict - file not found: " + file);
     }
     else {
-        if (typeof rf == "object" && !Array.isArray(rf)) {
+        if (isDict(rf)) {
             // Is it a claim with top level props, or just the tables? 
             if (rf["*tables"])
                 r = rf;
@@ -114,7 +114,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             }
         }
     }
-    else r = fileToNestedDict(file_or_db);
+    else r = await fileToNestedDict(file_or_db);
 
     if (r["*tables"]) {
         if (r.format != format) {
