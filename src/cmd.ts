@@ -8,6 +8,12 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
         a2: null
     },
     {
+        name: "rebuild",
+        desc: "Join together all input claims with a DB state and rebuild the merge",
+        a1: "files...",
+        a2: null
+    },
+    {
         name: "possible",
         desc: "On this <candidate/DB>, see if <target> can be applied",
         a1: "candidate",
@@ -81,11 +87,12 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
-import { Dict, firstKey, isDict } from "./utils.js";
+import { append, Dict, firstKey, isDict } from "./utils.js";
+import { getDirsFromFileList } from "./file-utils.js";
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This adds load time
 
@@ -105,9 +112,14 @@ async function handleList(cmd: string, files: string[], options: any) {
     //console.log("handleList: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
+    let dirs = getDirsFromFileList(files);
+    if( !options.paths ) options.paths = dirs;
+    else options.paths = append(options.paths,dirs);
+    
     let rc = 1000;
     if (cmd == "join") {
         let tree: Record<string, any> = {};
+        let state:Dict<any>
         // Sort the files, according to dependencies, also load them. 
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
@@ -115,11 +127,11 @@ async function handleList(cmd: string, files: string[], options: any) {
             if (r) file_dicts[f] = r;
             else console.error("join: could not resolve file source: " + f);
         }
-        let dicts = await dependencySort(file_dicts, options);
+        let dicts = await dependencySort(file_dicts, state_dir, options);
         if (dicts) {
             let state_tree = mergeClaims(dicts, options);
             if (isDict(state_tree)) {
-                if (state_dir)
+                if (state_dir && dicts.length)
                     storeState(files, state_dir, state_tree, options);
                 if (!options.internal)
                     state_tree = reformat(state_tree, "hr-compact");
@@ -127,6 +139,9 @@ async function handleList(cmd: string, files: string[], options: any) {
             logResult(state_tree, options);
         }
         rc = 0;
+    }
+    else if (cmd == "rebuild") {
+
     }
     process.exit(rc);
 }

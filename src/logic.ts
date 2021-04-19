@@ -69,14 +69,14 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
     return existsSync(m_yaml);
 }
 
-function stateToNestedDict(dir: string) {
+export function stateToNestedDict(dir: string):Dict<any> {
     if (!existsSync(dir))
         return errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
     let m_yaml = path.join(dir, "__merge.yaml");
     if (!existsSync(m_yaml))
         return errorRv(`stateToNestedDict - Merge file does not exist: ${m_yaml}`);
     let r = slurpFile(m_yaml);
-    if (typeof r != "object")
+    if (!isDict(r))
         return errorRv(`stateToNestedDict - Failed reading: ${m_yaml}`);
     return r;
 }
@@ -467,7 +467,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 }
 
 // Sort input trees according to dependency specification 
-export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>): Promise<Dict<any>[]> {
+export async function dependencySort(file_dicts: Dict<Dict<any>>, state_dir:string, options: Dict<any>): Promise<Dict<any>[]> {
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
