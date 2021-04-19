@@ -79,24 +79,35 @@ export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof key
     }
 }
 
-export function isDict<T>(o:any): o is Dict<T> {
+export function isDict<T>(o: any): o is Dict<T> {
     return o?.constructor == Object;
 }
 
-export function isArray(a:any): a is [] {
+export function isArray<T>(a: any): a is T[] {
     return Array.isArray(a);
     //return a?.constructor == Array;
 }
 
-export function isDictWithKeys(o:any): o is Object {
+export function isDictWithKeys(o: any): o is Object {
     return o?.constructor == Object && firstKey(o);
 }
 
-export function isArrayWithElems(a:any): a is [] {
-    return Array.isArray(a) && a.length>0;
+export function isArrayWithElems(a: any): a is [] {
+    return Array.isArray(a) && a.length > 0;
     //return a?.constructor == Array;
 }
 
+export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof acc {
+    if (isArray(acc)) {
+        for (let e of to_add as T[])
+            acc.push(e);
+    }
+    else {
+        for (let k in to_add)
+            acc[k] = (to_add as Dict<T>)[k];
+    }
+    return acc;
+}
 
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
