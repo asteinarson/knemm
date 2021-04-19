@@ -285,7 +285,7 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
         if (db_column_words[k]) {
             // All other column props
             if (!propEqual(m_col[k], claim[k])) {
-                let is_reffed = isDictWithKeys(m_col[k]?..___refs);
+                let is_reffed = isDictWithKeys(m_col[k]?.___refs);
                 let ref_error = false;
                 let range_error = false;
                 let reason: string;

@@ -81,7 +81,7 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
@@ -111,9 +111,9 @@ async function handleList(cmd: string, files: string[], options: any) {
         // Sort the files, according to dependencies, also load them. 
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
-            let r = await toNestedDict(f, options);
+            let r = await fileToNestedDict(f, options);
             if (r) file_dicts[f] = r;
-            else console.error("join: could not resolve source: " + f);
+            else console.error("join: could not resolve file source: " + f);
         }
         let dicts = await dependencySort(file_dicts, options);
         if (dicts) {
