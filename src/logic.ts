@@ -332,8 +332,8 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 }
 
 // Regular expression to extract claim (name,number) from a string/filename
-let re_name_num_ext = /^(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
-let re_name_ext = /^(.*)\.[a-zA-Z_-]+$/;
+let re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
+let re_name_ext = /^([^/]+\/)*(.*)\.[a-zA-Z_-]+$/;
 
 type ClaimId = { branch: string, version?: number };
 
@@ -341,11 +341,11 @@ function claimIdFromName(name: string): ClaimId {
     // Name plus version ? 
     let md = name.match(re_name_num_ext);
     if (md)
-        return { branch: md[1], version: Number(md[2]) };
+        return { branch: md[2], version: Number(md[3]) };
     // Then only a name
     md = name.match(re_name_ext);
     if (md)
-        return { branch: md[1] };
+        return { branch: md[2] };
 }
 
 function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
