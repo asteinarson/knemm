@@ -106,7 +106,9 @@ async function handleList(cmd: string, files: string[], options: any) {
         if( dicts ){
             let state_tree = mergeClaims(dicts,options);
             if( isDict(state_tree) ){
-                state_tree = reformat(state_tree["*tables"], options.internal ? "internal" : "hr-compact");
+                //state_tree = reformat(state_tree, options.internal ? "internal" : "hr-compact");
+                if( !options.internal )
+                    state_tree = reformat(state_tree, "hr-compact");
             }
             logResult(state_tree, options);
         }
