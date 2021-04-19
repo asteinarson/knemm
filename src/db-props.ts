@@ -15,14 +15,19 @@ export let db_type_args: Dict<number> = {
     numeric_scale: 1,
 };
 
+// These are other props with (string?) args 
+export let db_with_args: Dict<string> = {
+    comment: "comment", 
+    default_value: "default", 
+};
+
 export let db_column_words: Dict<string | number> = {
     data_type: 1,
     ...db_column_flags,
-    is_nullable: 1,
-    default: 1,
-    comment: 1,
-    foreign_key: 1,
+    ...db_with_args, 
     ...db_type_args,
+    is_nullable: 1,
+    foreign_key: 1,
 };
 
 // The valid (and different) base numeric types 

@@ -1,5 +1,5 @@
 
-import { Dict, toLut, firstKey, tryGet, errorRv } from './utils.js';
+import { Dict, toLut, firstKey, tryGet, errorRv, notInLut } from './utils.js';
 
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
@@ -11,8 +11,8 @@ let re_dec_needed = /([_]|\\\(|\\\))/;
 let encode_pairs: Dict<string> = {
     "_": "__",
     " ": "_",
-    "(": "\\(",
-    ")": "\\)"
+    //"(": "\\(",
+    //")": "\\)"
 };
 let decode_pairs = ldInvert(encode_pairs);
 
@@ -23,18 +23,20 @@ function string_arg_encode(s: string) {
     }
     return s;
 }
-''
+
 function string_arg_decode(s: string) {
     if (s.match(re_dec_needed)) {
-        for (let k in decode_pairs)
+        for (let k in decode_pairs) {
+            // !! This ends up wrong for __ => _ => " "
             s = s.replace(k, decode_pairs[k]);
+        }
     }
     return s;
 }
 
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
-import { db_column_flags, db_type_args, isNumeric, isString } from './db-props.js';
+import { db_column_flags, db_type_args, db_with_args, isNumeric, isString } from './db-props.js';
 
 
 // Expand any nested data flattened to a string  
@@ -138,7 +140,8 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 }
                 // nullable - is true by default 
                 if (col.is_nullable != undefined) {
-                    words.push("notnull");
+                    if( col.is_nullable==false )
+                        words.push("notnull");
                     done.is_nullable = 1;
                 }
 
@@ -163,26 +166,27 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                     done.foreign_key = 1;
                 }
 
-                // Handle case of default value 
-                let dv = col.default_value
-                if (dv) {
-                    if (typeof dv == "string") {
-                        dv = string_arg_encode(dv);
+                // Handle case of <default> and <comment> values 
+                for (let kw in db_with_args) {
+                    let v = col[kw];
+                    if (v) {
+                        if (typeof v == "string") {
+                            v = string_arg_encode(v);
+                        }
+                        words.push(`${db_with_args[kw]}(${v})`);
+                        done[kw] = 1;
                     }
-                    words.push(`default(${dv})`);
-                    done.default_value = 1;
                 }
                 table[col_name] = words.join(" ");
 
-                // ! We have not yet done the comment 
-
                 // See if we have any unhandled columns - and warn 
-                let unhandled = Object.keys(col).filter(prop => !done[prop]);
-                if (unhandled.length > 0) {
+                //let unhandled = Object.keys(col).filter(prop => !done[prop]);
+                let unhandled = notInLut(col,done);
+                if (firstKey(unhandled)) {
                     console.warn(`formatHrCompact(${col_name}) - unhandled: ${unhandled}`);
                     // We make a subtree, but keep the default line in key "*" 
                     let small_node: Dict<string> = { "*": table[col_name] };
-                    for (let k of unhandled)
+                    for (let k in unhandled)
                         small_node[k] = col[k];
                     table[col_name] = small_node;
                 }
