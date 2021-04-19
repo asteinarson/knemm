@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
 
-export function slurpFile(file: string): string | number | any[] | Record<string,any> {
+export function slurpFile(file: string, quiet?:boolean): string | number | any[] | Record<string,any> {
     if (existsSync(file)) {
         let s = readFileSync(file);
         let ejs = file.slice(-5);
@@ -19,7 +19,8 @@ export function slurpFile(file: string): string | number | any[] | Record<string
             r = yamlLoad(s.toString());
             if(r) return r;
         } catch (e) {
-            console.log(`slurpFile ${file}, exception: ${e.toString()}`);
+            if( !quiet )
+                console.log(`slurpFile ${file}, exception: ${e.toString()}`);
         }
     }
     return null;

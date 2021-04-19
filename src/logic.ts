@@ -29,11 +29,14 @@ function stateToNestedDict(dir: string) {
     return r;
 }
 
-export async function fileToNestedDict(file: string): Promise<Dict<any>>{
+export async function fileToNestedDict(file: string, quiet?:boolean): Promise<Dict<any>>{
     let r: Dict<any> = {};
     // Then it should be a file 
     let rf = slurpFile(file);
-    if (!rf) console.log("fileToNestedDict - file not found: " + file);
+    if (!rf){
+        if( !quiet )
+            console.log("fileToNestedDict - file not found: " + file);
+    }
     else {
         if (typeof rf == "object" && !Array.isArray(rf)) {
             // Is it a claim with top level props, or just the tables? 
