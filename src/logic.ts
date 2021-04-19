@@ -424,6 +424,10 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
                         ver_by_br[d.branch] = d.version;
                 });
             }
+            if( claim.weak_depends ){
+                // Weak depends are only looked for (and run) if that module has been previously 
+                // included/installed. 
+            }
         } else {
             // have already reported error
         }
