@@ -29,7 +29,7 @@ function stateToNestedDict(dir: string) {
     return r;
 }
 
-export async function fileToNestedDict(file: string): Promise<Dict<any>{
+export async function fileToNestedDict(file: string): Promise<Dict<any>>{
     let r: Dict<any> = {};
     // Then it should be a file 
     let rf = slurpFile(file);
