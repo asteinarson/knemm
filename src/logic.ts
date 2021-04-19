@@ -246,10 +246,14 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         if (claim[k] < m_col[k])
                             reason = `Unsafe target value: ${claim[k]} should be more than: ${m_col[k]}`;
                         break;
-                    case "is_unique":
                     case "is_primary_key":
                     case "has_auto_increment":
                         if (claim[k]) reason = `Cannot safely add/remove constraint ${k} now`;
+                        break;
+                    case "is_unique":
+                        // We allow to go back to nullable - DB is fine w that 
+                        if( is_reffed ) ref_error = true;
+                        else if( claim[k] ) reason = "Cannot add constraint UNIQUE now";
                         break;
                     case "is_nullable":
                         // We allow to go back to nullable - DB is fine w that 
@@ -505,8 +509,6 @@ export function merge(claims: Dict<any>[], options: Dict<any>): TableInfoOrError
                         let m_col = m_tbl[c_name];
                         if (m_col["*owned_by"] == claim.id.branch) {
                             // Modifying what we declared ourselves 
-                            // By default we accept wider types and more permissive 
-                            // column properties. 
                             let es = mergeOwnColumnClaim(m_col, col, options);
                             if (es) errors = [...errors, ...es];
                         } else {
