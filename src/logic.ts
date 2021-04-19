@@ -466,7 +466,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
 }
 
 // Merge dependency ordered claims 
-export function merge(claims: Dict<any>[], options: Dict<any>): TableInfoOrErrors {
+export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoOrErrors {
     let errors: string[] = [];
     let merge: Dict<any> = {};
     for (let claim of claims) {
@@ -513,8 +513,18 @@ export function merge(claims: Dict<any>[], options: Dict<any>): TableInfoOrError
                             if (es) errors = [...errors, ...es];
                         } else {
                             // Make claims on a column of another branch/module
-                            // It holds if the data type we need is equal or more narrow 
-                            // than the one declared
+                            for( let p of col ){
+                                if( p=="data_type" ){
+                                    // Accept same or more narrow datatype 
+                                    if( !typeContainsLoose(m_col[p],col[p]) )
+                                        errors.push(`${t}:${c_name} - reference type ${col[p]} does not fit in declared type ${m_col[p]}` );
+                                } else {
+                                    if( !db_column_words[p] )
+                                        errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
+                                    else if( !propEqual(col[p],m_col[p]) )
+                                        errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
+                                }
+                            }
                         }
                     }
                 }
