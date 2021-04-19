@@ -46,8 +46,8 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
     }
 
     // Normalize the state
-    if (!state["*tables"])
-        state = { "*tables": state };
+    if (!state.___tables)
+        state = { ___tables: state };
 
     // Copy input files here     
     for (let f of files) {
@@ -92,10 +92,10 @@ export async function fileToNestedDict(file: string, quiet?: boolean): Promise<D
     else {
         if (isDict(rf)) {
             // Is it a claim with top level props, or just the tables? 
-            if (rf["*tables"])
+            if (rf.___tables)
                 r = rf;
             else
-                r["*tables"] = rf;
+                r.___tables = rf;
             r.source = "*file";
             r.file = file;
             r.format = "?";
@@ -162,15 +162,15 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
                 r.source = "*db";
                 r.connection = connection;
                 r.format = "internal";
-                r["*tables"] = rs;
+                r.___tables = rs;
             }
         }
     }
     else r = await fileToNestedDict(file_or_db);
 
-    if (r["*tables"]) {
+    if (r.___tables) {
         if (r.format != format) {
-            r["*tables"] = reformat(r["*tables"], format);
+            r.___tables = reformat(r.___tables, format);
             r.format = format;
         }
         return r;
@@ -285,7 +285,7 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
         if (db_column_words[k]) {
             // All other column props
             if (!propEqual(m_col[k], claim[k])) {
-                let is_reffed = isDictWithKeys(m_col[k]?.["*refs"]);
+                let is_reffed = isDictWithKeys(m_col[k]?..___refs);
                 let ref_error = false;
                 let range_error = false;
                 let reason: string;
@@ -334,7 +334,7 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         break;
                 }
                 if (ref_error && !reason)
-                    reason = `${k} is referenced by: (${m_col[k]["*refs"]})`;
+                    reason = `${k} is referenced by: (${m_col[k].___refs})`;
                 if (!reason)
                     r[k] = claim[k];
                 else {
@@ -550,7 +550,7 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
     let errors: string[] = [];
     let merge: Dict<any> = {};
     for (let claim of claims) {
-        let cl_tables: Dict<any> = claim["*tables"];
+        let cl_tables: Dict<any> = claim.___tables;
         for (let t in cl_tables) {
             let cols = cl_tables[t];
             let is_dict = isDict(cols);
@@ -558,13 +558,13 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
             // If the table is created by other branch, make <*refs> structure to track that
             let is_ref = false;
             if (isDict(merge[t])) {
-                if (merge[t]["*owned_by"] != claim.id.branch) {
+                if (merge[t].___owner != claim.id.branch) {
                     is_ref = true;
-                    merge[t]["*refs"] ||= {};
-                    merge[t]["*refs"][claim.id.branch] ||= [];
+                    merge[t].___refs ||= {};
+                    merge[t].___refs[claim.id.branch] ||= [];
                 }
             }
-            else merge[t] = { "*owned_by": claim.id.branch };
+            else merge[t] = { ___owner: claim.id.branch };
             if (is_dict) {
                 let m_tbl = merge[t];
                 for (let c_name in cols) {
@@ -579,8 +579,8 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                             if (!unknowns) {
                                 // Accept column declaration in its fullness
                                 m_tbl[c_name] = { ...col }
-                                if (claim.id.branch != m_tbl["*owned_by"])
-                                    m_tbl[c_name]["*owned_by"] = claim.id.branch;
+                                if (claim.id.branch != m_tbl.___owner)
+                                    m_tbl[c_name].___owner = claim.id.branch;
                             }
                             else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
                         }
@@ -591,8 +591,8 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                         // on a column in another branch/module, or a reference to one 
                         // 'of our own making' - i.e. we can modify it. 
                         let m_col = m_tbl[c_name];
-                        if (m_col["*owned_by"] == claim.id.branch ||
-                            (!m_col["*owned_by"] && m_tbl["*owned_by"] == claim.id.branch)) {
+                        if (m_col.___owner == claim.id.branch ||
+                            (!m_col.___owner && m_tbl.___owner == claim.id.branch)) {
                             // Modifying what we declared ourselves 
                             let es = mergeOwnColumnClaim(m_col, col, options);
                             if (es) errors = [...errors, ...es];
@@ -618,17 +618,17 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                 if (cols == "*NOT") {
                     if (is_ref) {
                         // We drop the refs to the table 
-                        delete merge[t]["*refs"][claim.id.branch];
+                        delete merge[t].___refs[claim.id.branch];
                         // !! Delete references to child props ?
                     }
                     else {
                         // A directive to drop the table 
-                        if (!merge[t]["*refs"] || !firstKey(merge[t]["*refs"])) {
+                        if (!merge[t].___refs || !firstKey(merge[t].___refs)) {
                             // See that it is just not being declared
                             if (Object.keys(merge[t]).length > 1)
                                 merge[t] = "*NOT";
                         }
-                        else errors.push(`merge: Cannot drop table with references: ${merge[t]["*refs"]}`);
+                        else errors.push(`merge: Cannot drop table with references: ${merge[t].___refs}`);
                     }
                 }
                 else errors.push(`merge: unknown value (${cols}) for table ${t} in branch ${claim.id.branch}`);

@@ -142,7 +142,7 @@ async function handle(cmd: string, candidate: string, target: string, options: a
     let r: Dict<any> | string[];
     switch (cmd) {
         case "possible":
-            r = matchDiff(cand["*tables"], tgt["*tables"]);
+            r = matchDiff(cand.___tables, tgt.___tables);
             if (Array.isArray(r)) {
                 console.log("Not possible");
                 logResult(r, options);
@@ -150,13 +150,13 @@ async function handle(cmd: string, candidate: string, target: string, options: a
             else console.log("Possible");
             break;
         case "fulfills":
-            r = matchDiff(cand["*tables"], tgt["*tables"]);
+            r = matchDiff(cand.___tables, tgt.___tables);
             // Only generate an empty response if the diff is empty
             if (Array.isArray(r) || firstKey(r))
                 logResult(r, options);
             break;
         case "diff":
-            r = matchDiff(cand["*tables"], tgt["*tables"]);
+            r = matchDiff(cand.___tables, tgt.___tables);
             logResult(r, options);
             break;
         case "apply":
