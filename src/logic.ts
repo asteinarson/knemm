@@ -398,7 +398,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 }
 
 // Sort input trees according to dependency specification 
-export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>) {
+export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<any>): Promise<Dict<any>[]> {
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
