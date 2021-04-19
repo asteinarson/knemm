@@ -444,12 +444,17 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
             let files = readdirSync(p);
             for (let f of files) {
                 if (f.match(re_yj)) {
-                    let r = await toNestedDict(path.join(p, f), options);
-                    if (r && r.id) {
-                        // We are only interested in our list of claims and their deps
-                        if (ver_by_br[r.id.branch] &&
-                            typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch])
-                            cl_by_br[r.id.branch][r.id.version] = r;
+                    try {
+                        let r = await toNestedDict(path.join(p, f), options);
+                        if (r && r.id) {
+                            // We are only interested in our list of claims and their deps
+                            if (ver_by_br[r.id.branch] &&
+                                typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch])
+                                cl_by_br[r.id.branch][r.id.version] = r;
+                        }
+                    } catch(e){
+                        // Do nothing 
+                        let _e = e;
                     }
                 }
             }
