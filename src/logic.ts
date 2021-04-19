@@ -462,6 +462,8 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
             for (let f of files) {
                 if (f.match(re_yj)) {
                     try {
+                        // It is wasteful to try parsing each file here. We could have
+                        // a flag that makes us trust the filenames for claim ID. 
                         let r = await fileToNestedDict(path.join(p, f),true);
                         if (r && r.id) {
                             // We are only interested in our list of claims and their deps
