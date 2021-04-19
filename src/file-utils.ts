@@ -1,8 +1,9 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
+import { Dict } from './utils.js';
 
-export function slurpFile(file: string, quiet?:boolean): string | number | any[] | Record<string,any> {
+export function slurpFile(file: string, quiet?: boolean): string | number | any[] | Record<string, any> {
     if (existsSync(file)) {
         let s = readFileSync(file);
         let ejs = file.slice(-5);
@@ -15,15 +16,28 @@ export function slurpFile(file: string, quiet?:boolean): string | number | any[]
             }
             // No extension match, try the two formats 
             let r = JSON.parse(s.toString());
-            if(r) return r;
+            if (r) return r;
             r = yamlLoad(s.toString());
-            if(r) return r;
+            if (r) return r;
         } catch (e) {
-            if( !quiet )
+            if (!quiet)
                 console.log(`slurpFile ${file}, exception: ${e.toString()}`);
         }
     }
     return null;
 }
 
-
+let re_path = /^(.*)\/[^/]*/;
+export function getDirsFromFileList(files: string[]): string[] {
+    let dirs: Dict<1> = {};
+    for (let f of files) {
+        let md = f.match(re_path);
+        if (md) dirs[md[1]] = 1;
+    }
+    return Object.keys(dirs);
+    /*return Object.keys(files.reduce((dirs: Dict<1>, f) => {
+        let md = f.match(re_path);
+        if (md) dirs[md[1]] = 1;
+        return dirs;
+    }, {}));*/
+}
