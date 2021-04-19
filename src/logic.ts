@@ -17,20 +17,23 @@ export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): 
 
 export type TableInfoOrErrors = Dict<any> | string[];
 
-export function getStateDir( options:any ){
-    let state_dir:string;
-    if( options.state ){
-        if( options.state==true )
+export function getStateDir(options: any) {
+    let state_dir: string;
+    if (options.state) {
+        if (options.state == true)
             state_dir = "./.dbstate";
         else {
             state_dir = options.state;
-            if( state_dir.slice(-9)!="/.dbstate" )
+            if (state_dir.slice(-9) != "/.dbstate")
                 state_dir += "/.dbstate";
         }
-    }
-    if( state_dir && !existsSync(state_dir) ){
-        mkdirSync(state_dir);   // Does not give a return value (?)
-        if( !existsSync(state_dir) ) return;
+        if (!existsSync(state_dir)) {
+            mkdirSync(state_dir);   // Does not give a return value (?)
+            if (!existsSync(state_dir)) {
+                console.error("getStateDir - Failed creating: " + state_dir);
+                return;
+            }
+        }
     }
     return state_dir;
 }
@@ -47,12 +50,12 @@ function stateToNestedDict(dir: string) {
     return r;
 }
 
-export async function fileToNestedDict(file: string, quiet?:boolean): Promise<Dict<any>>{
+export async function fileToNestedDict(file: string, quiet?: boolean): Promise<Dict<any>> {
     let r: Dict<any> = {};
     // Then it should be a file 
-    let rf = slurpFile(file,quiet);
-    if (!rf){
-        if( !quiet )
+    let rf = slurpFile(file, quiet);
+    if (!rf) {
+        if (!quiet)
             console.log("fileToNestedDict - file not found: " + file);
     }
     else {
@@ -482,7 +485,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
                     try {
                         // It is wasteful to try parsing each file here. We could have
                         // a flag that makes us trust the filenames for claim ID. 
-                        let r = await fileToNestedDict(path.join(p, f),true);
+                        let r = await fileToNestedDict(path.join(p, f), true);
                         if (r && r.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
