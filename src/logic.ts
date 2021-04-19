@@ -32,7 +32,7 @@ function stateToNestedDict(dir: string) {
 export async function fileToNestedDict(file: string, quiet?:boolean): Promise<Dict<any>>{
     let r: Dict<any> = {};
     // Then it should be a file 
-    let rf = slurpFile(file);
+    let rf = slurpFile(file,quiet);
     if (!rf){
         if( !quiet )
             console.log("fileToNestedDict - file not found: " + file);
