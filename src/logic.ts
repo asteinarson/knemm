@@ -252,19 +252,19 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         break;
                     case "is_unique":
                         // We allow to go back to nullable - DB is fine w that 
-                        if( is_reffed ) ref_error = true;
-                        else if( claim[k] ) reason = "Cannot add constraint UNIQUE now";
+                        if (is_reffed) ref_error = true;
+                        else if (claim[k]) reason = "Cannot add constraint UNIQUE now";
                         break;
                     case "is_nullable":
                         // We allow to go back to nullable - DB is fine w that 
-                        if( is_reffed ) ref_error = true;
-                        else if( !claim[k] ) reason = "Cannot add constraint NOT NULLABLE now";
-                        break; 
+                        if (is_reffed) ref_error = true;
+                        else if (!claim[k]) reason = "Cannot add constraint NOT NULLABLE now";
+                        break;
                     default:
                         ref_error = is_reffed;
                         break;
-                    }
-                if (ref_error && !reason ) 
+                }
+                if (ref_error && !reason)
                     reason = `${k} is referenced by: (${m_col[k]["*refs"]})`;
                 if (!reason)
                     r[k] = claim[k];
@@ -424,7 +424,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, options: Dict<
                         ver_by_br[d.branch] = d.version;
                 });
             }
-            if( claim.weak_depends ){
+            if (claim.weak_depends) {
                 // Weak depends are only looked for (and run) if that module has been previously 
                 // included/installed. 
             }
@@ -482,9 +482,11 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
             // If the table is created by other branch, make <*refs> structure to track that
             let is_ref = false;
             if (isDict(merge[t])) {
-                is_ref = true;
-                merge[t]["*refs"] ||= {};
-                merge[t]["*refs"][claim.id.branch] ||= [];
+                if (merge[t]["*owned_by"] != claim.id.branch) {
+                    is_ref = true;
+                    merge[t]["*refs"] ||= {};
+                    merge[t]["*refs"][claim.id.branch] ||= [];
+                }
             }
             else merge[t] = { "*owned_by": claim.id.branch };
             if (is_dict) {
@@ -504,7 +506,7 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                             }
                             else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
                         }
-                        errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
+                        else errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
                     }
                     else {
                         // A ref to a previously declared column. Either a requirement 
@@ -517,15 +519,15 @@ export function mergeClaims(claims: Dict<any>[], options: Dict<any>): TableInfoO
                             if (es) errors = [...errors, ...es];
                         } else {
                             // Make claims on a column of another branch/module
-                            for( let p of col ){
-                                if( p=="data_type" ){
+                            for (let p of col) {
+                                if (p == "data_type") {
                                     // Accept same or more narrow datatype 
-                                    if( !typeContainsLoose(m_col[p],col[p]) )
-                                        errors.push(`${t}:${c_name} - reference type ${col[p]} does not fit in declared type ${m_col[p]}` );
+                                    if (!typeContainsLoose(m_col[p], col[p]))
+                                        errors.push(`${t}:${c_name} - reference type ${col[p]} does not fit in declared type ${m_col[p]}`);
                                 } else {
-                                    if( !db_column_words[p] )
+                                    if (!db_column_words[p])
                                         errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
-                                    else if( !propEqual(col[p],m_col[p]) )
+                                    else if (!propEqual(col[p], m_col[p]))
                                         errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
                                 }
                             }
