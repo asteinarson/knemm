@@ -1,11 +1,29 @@
 import cmder, { Command } from "commander";
 
-let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
+type CmdOptionAdder = (cmd:cmder.Command) => void;
+
+function addBaseOptions(cmd: cmder.Command) {
+    cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
+    cmd.option("-j --json", "Generate output in JSON - not in YAML");
+    cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
+    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
+    cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
+    //cmd.option("--no-state", "Do not use a state dir, even if found");
+    cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
+    cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
+}
+
+function addJoinOptions(cmd: cmder.Command) {
+    cmd.option("--rebuild", "Rebuild stored state (__merge.yaml) from input claims");
+}
+
+let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOptionAdder[] }[] = [
     {
         name: "join",
         desc: "Join together all input claims and print them out",
         a1: "files...",
-        a2: null
+        a2: null,
+        options:[addJoinOptions],
     },
     {
         name: "rebuild",
@@ -57,31 +75,24 @@ let cmds: { name: string, a1: string, a2: string, desc: string }[] = [
     },
 ];
 
-function addCommandOptions(cmd: cmder.Command) {
-    cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
-    cmd.option("-j --json", "Generate output in JSON - not in YAML");
-    cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
-    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
-    cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
-    //cmd.option("--no-state", "Do not use a state dir, even if found");
-    cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
-    cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
-}
-
 let cmd = new Command();
 for (let c of cmds) {
+    let _c:cmder.Command;
     if (c.a2) {
         // A two arg command
-        let _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
-            .description(c.desc)
-            .action((a1, a2, options) => { handle(c.name, a1, a2, options) })
-        addCommandOptions(_c);
+        _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
+            .action((a1, a2, options) => { handle(c.name, a1, a2, options) });
     } else {
         // A one arg command
-        let _c = cmd.command(`${c.name} <${c.a1}>`)
-            .description(c.desc)
-            .action((a1, options) => { handleList(c.name, a1, options) })
-        addCommandOptions(_c);
+        _c = cmd.command(`${c.name} <${c.a1}>`)
+            .action((a1, options) => { handleList(c.name, a1, options) });
+    }
+    _c.description(c.desc)
+    addBaseOptions(_c);
+    if( c.options ){
+        for( let opt_f of c.options ){
+            opt_f(_c);
+        }
     }
 }
 
