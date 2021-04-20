@@ -26,12 +26,6 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOpti
         options:[addJoinOptions],
     },
     {
-        name: "rebuild",
-        desc: "Join together all input claims with a DB state and rebuild the merge",
-        a1: "files...",
-        a2: null
-    },
-    {
         name: "possible",
         desc: "On this <candidate/DB>, see if <target> can be applied",
         a1: "candidate",
@@ -98,7 +92,7 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict, getStartState } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
@@ -128,11 +122,18 @@ async function handleList(cmd: string, files: string[], options: any) {
     else options.paths = append(options.paths,dirs);
 
     let rc = 1000;
+
     if (cmd == "join") {
-        let tree: Record<string, any> = {};
         let state_base:Dict<any>;
         if(state_dir) state_base = stateToNestedDict(state_dir,true);
-
+        if( options.rebuild ){
+            if( !state_dir ){
+                console.error("The rebuild option requires a state directory (-s option)");
+                process.exit(rc);
+            }
+            state_base = getStartState();
+        }
+    
         // Sort the files, according to dependencies, also load them. 
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
@@ -168,9 +169,6 @@ async function handleList(cmd: string, files: string[], options: any) {
             logResult(state_tree, options);
         }
         rc = 0;
-    }
-    else if (cmd == "rebuild") {
-
     }
     process.exit(rc);
 }
