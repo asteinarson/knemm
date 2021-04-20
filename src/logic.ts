@@ -469,11 +469,18 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dic
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
+    let branches:Dict<number> = state_base ? state_base.modules : {};
+    let err_cnt = 0; 
     for (let f in file_dicts) {
         let claim = file_dicts[f].id;
         let claim_id = getClaimId(f, claim);
         let name = claim_id.branch;
         if (name) {
+            // Trying to insert claim from earlier part of history ? 
+            if( branches[name] && claim_id.version<branches[name] ){
+                console.error(`dependencySort - Branch ${name} is already at version ${branches[name]}. Trying to append v ${claim_id.version} now.`);
+                err_cnt++;
+            }
             // Register this claim 
             let ver = claim_id.version || 0;
             if (!cl_by_br[name]) cl_by_br[name] = [];
@@ -496,9 +503,10 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dic
                 // included/installed. 
             }
         } else {
-            // have already reported error
+            err_cnt++;
         }
     }
+    if( err_cnt>0 ) return;
 
     // Find additional dependencies, in given path (same branch names but lower versions)
     if (options.deps != false) {
