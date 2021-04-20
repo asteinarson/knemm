@@ -551,13 +551,14 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dic
     return deps_ordered;
 }
 
-export function getStartState( ){
+export function getInitialState( ){
     return { modules: {}, ___tables:{} };
 }
+
 // Merge dependency ordered claims 
 export function mergeClaims(claims: Dict<any>[], merge_base:Dict<any>|null, options: Dict<any>): TableInfoOrErrors {
     let errors: string[] = [];
-    if( !merge_base || !merge_base.___tables ) merge_base = getStartState();
+    if( !merge_base || !merge_base.___tables ) merge_base = getInitialState();
     let merge = merge_base.___tables;
     for (let claim of claims) {
         // Keep track of the current version of each module

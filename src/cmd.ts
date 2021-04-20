@@ -92,7 +92,7 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict, getStartState } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict, getStartState, getInitialState } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
@@ -131,7 +131,7 @@ async function handleList(cmd: string, files: string[], options: any) {
                 console.error("The rebuild option requires a state directory (-s option)");
                 process.exit(rc);
             }
-            state_base = getStartState();
+            state_base = getInitialState();
         }
     
         // Sort the files, according to dependencies, also load them. 
