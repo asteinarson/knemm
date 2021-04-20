@@ -119,13 +119,29 @@ async function handleList(cmd: string, files: string[], options: any) {
     let rc = 1000;
     if (cmd == "join") {
         let tree: Record<string, any> = {};
-        let state_base:Dict<any> = stateToNestedDict(state_dir,true);
+        let state_base:Dict<any>;
+        if(state_dir) state_base = stateToNestedDict(state_dir,true);
+
         // Sort the files, according to dependencies, also load them. 
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
-            let r = await fileToNestedDict(f, options);
-            if (r) file_dicts[f] = r;
-            else console.error("join: could not resolve file source: " + f);
+            let r = await toNestedDict(f, options);
+            if (r){
+                if( r.source=="*file" ) file_dicts[f] = r;
+                else {
+                    if( state_dir ){
+                        console.error(`join: Cannot specify additional DB or state dirs (already using state in: ${state_dir})`);
+                        process.exit(rc);
+                    }
+                    if( state_base ){
+                        console.error(`join: Cannot specify multiple DB or state dirs (already have one)`);
+                        process.exit(rc);
+                    }
+                    // Accept it 
+                    state_base = r;
+                }
+            }
+            else console.error("join: could not resolve source: " + f);
         }
         let dicts = await dependencySort(file_dicts, state_base, options);
         if (dicts) {

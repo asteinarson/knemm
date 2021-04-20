@@ -78,6 +78,10 @@ export function stateToNestedDict(dir: string, quiet?:boolean):Dict<any> {
     let r = slurpFile(m_yaml);
     if (!isDict(r))
         return errorRv(`stateToNestedDict - Failed reading: ${m_yaml}`);
+
+    r.source = "*state";
+    r.directory = dir;
+    r.format = "internal";
     return r;
 }
 
@@ -125,13 +129,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             state_dir = options.state || "./.dbstate";
         }
         else state_dir = file_or_db.slice(6);
-        // !! We need to read the state also ! 
         r = stateToNestedDict(state_dir);
-        if (r) {
-            r.source = "*state";
-            r.directory = state_dir;
-            r.format = "internal";
-        }
         return r;
     }
     else if (file_or_db.slice(0, 3) == "db:") {
