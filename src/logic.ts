@@ -62,7 +62,7 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
     }
 
     // And write the new state
-    let m_yaml = path.join(state_dir, "__merge.yaml");
+    let m_yaml = path.join(state_dir, "___merge.yaml");
     if( existsSync(m_yaml) ) rmSync(m_yaml);
     writeFileSync( m_yaml, yamlDump(state) );
     
@@ -72,7 +72,7 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
 export function stateToNestedDict(dir: string, quiet?:boolean):Dict<any> {
     if (!existsSync(dir))
         return quiet ? undefined : errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
-    let m_yaml = path.join(dir, "__merge.yaml");
+    let m_yaml = path.join(dir, "___merge.yaml");
     if (!existsSync(m_yaml))
         return quiet ? undefined : errorRv(`stateToNestedDict - Merge file does not exist: ${m_yaml}`);
     let r = slurpFile(m_yaml);

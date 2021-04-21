@@ -14,7 +14,7 @@ function addBaseOptions(cmd: cmder.Command) {
 }
 
 function addJoinOptions(cmd: cmder.Command) {
-    cmd.option("--rebuild", "Rebuild stored state (__merge.yaml) from input claims");
+    cmd.option("--rebuild", "Rebuild stored state (___merge.yaml) from input claims");
 }
 
 let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOptionAdder[] }[] = [
