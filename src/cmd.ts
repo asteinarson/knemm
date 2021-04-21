@@ -21,7 +21,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOpti
     {
         name: "join",
         desc: "Join together all input claims and print them out",
-        a1: "files...",
+        a1: "claims...",
         a2: null,
         options:[addJoinOptions],
     },
@@ -57,13 +57,13 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOpti
     },
     {
         name: "apply",
-        desc: "On this DB (or state), apply the claim/target",
+        desc: "On this DB (or state), apply this claim",
         a1: "DB",
         a2: "target",
     },
     {
         name: "reverse",
-        desc: "On this DB (or state), reverse the claim/target ",
+        desc: "On this DB (or state), reverse this claim ",
         a1: "DB",
         a2: "target",
     },
