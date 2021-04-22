@@ -113,15 +113,19 @@ import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList } from "./file-utils.js";
 
-function logResult(r: Dict<any> | string[], options: any) {
+function logResult(r: Dict<any> | string[], options: any, rc_err?:number ) {
     if (!Array.isArray(r)) {
+        if (!options.internal)
+            r = reformatTables(r, "hr-compact");
         let output = options.json ? JSON.stringify(r, null, 2) : yamlDump(r);
         console.log(output);
+        return 0;
     } else {
         console.warn("!!! There were errors !!! ");
         r.forEach(error => {
             console.warn(error);
         });
+        return rc_err || 199;
     }
 }
 
@@ -177,14 +181,10 @@ async function handleOneArgCmd(cmd: string, files: string[], options: any) {
             if (isDict(state_tree)) {
                 if (state_dir && dicts.length)
                     storeState(files, state_dir, state_tree, options);
-                if (!options.internal)
-                    state_tree.___tables = reformatTables(state_tree.___tables, "hr-compact");
                 // This is for outputting just the tables, below
                 state_tree = state_tree.___tables;
-                rc = 0;
             }
-            else rc = 101;
-            logResult(state_tree, options);
+            rc = logResult(state_tree, options,101);
         }
     }
     process.exit(rc);
