@@ -70,7 +70,7 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
 }
 
 // Rebuild the state directory from claims that are stored in the directory
-export async function rebuildState(state_dir: string, options: Dict<any>): Promise<true> {
+export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     if (!existsSync(state_dir))
         return errorRv(`rebuildState - Directory ${state_dir} not found`);
     // Build a list of modules with last versions 
@@ -79,6 +79,9 @@ export async function rebuildState(state_dir: string, options: Dict<any>): Promi
         if (f == "___merge.yaml") continue;
         if (f.match(re_yj)) {
             try {
+                // Doing the await here (fileToNestedDict declared async without being so) 
+                // causes nested funcyion to return to the parent function (!)
+                //let r = await fileToNestedDict(path.join(state_dir, f), true);
                 let r = fileToNestedDict(path.join(state_dir, f), true);
                 if (r?.id) file_dicts[f] = r;
                 else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
@@ -88,7 +91,7 @@ export async function rebuildState(state_dir: string, options: Dict<any>): Promi
         }
     }
     let state_base = getInitialState();
-    let dicts = await dependencySort(file_dicts, state_base, options);
+    let dicts = dependencySort(file_dicts, state_base, options);
     if (!dicts) return;
     let r = mergeClaims(dicts, state_base, options);
     if (isDict(r)) {
@@ -195,7 +198,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             }
         }
     }
-    else r = await fileToNestedDict(file_or_db);
+    else r = fileToNestedDict(file_or_db);
 
     if (r.___tables) {
         if (r.format != format) {
@@ -498,7 +501,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
 // Sort input trees according to dependency specification 
-export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Promise<Dict<any>[]> {
+export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
@@ -558,7 +561,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Di
                         if (claims_by_name[fileNameOf(f)]) continue;
                         // It is wasteful to try parsing each file here. We could have
                         // a flag that makes us trust the filenames for claim ID. 
-                        let r = await fileToNestedDict(path.join(p, f), true);
+                        let r = fileToNestedDict(path.join(p, f), true);
                         if (r?.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&

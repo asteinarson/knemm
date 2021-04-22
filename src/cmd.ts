@@ -128,13 +128,17 @@ function logResult(r: Dict<any> | string[], options: any) {
 
 async function handleNoArg(cmd: string, options: any) {
     let state_dir = getStateDir(options);
-    let rc = 1000;
-    if (cmd == "rebuild") {
-        if (!state_dir) {
-            console.error("The rebuild option requires a state directory (-s option)");
-            process.exit(rc);
+    let rc = 100;
+    try {
+        if (cmd == "rebuild") {
+            if (!state_dir) {
+                console.error("The rebuild option requires a state directory (-s option)");
+                process.exit(rc);
+            }
+            rebuildState(state_dir, options);
         }
-        rebuildState(state_dir, options);
+    } catch(e){
+        console.log("handleNoArg - exception: " + e);
     }
     process.exit(rc);
 }
@@ -143,7 +147,7 @@ async function handleOneArg(cmd: string, files: string[], options: any) {
     //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
-    let rc = 1000;
+    let rc = 100;
 
     if (cmd == "join") {
         let dirs = getDirsFromFileList(files);
@@ -168,7 +172,7 @@ async function handleOneArg(cmd: string, files: string[], options: any) {
             }
             else console.error("join: could not resolve source: " + f);
         }
-        let dicts = await dependencySort(file_dicts, state_base, options);
+        let dicts = dependencySort(file_dicts, state_base, options);
         if (dicts) {
             let state_tree = mergeClaims(dicts, state_base, options);
             if (isDict(state_tree)) {
@@ -191,7 +195,7 @@ async function handleTwoArg(cmd: string, candidate: string, target: string, opti
     //process.exit(1);
     //console.log("handle: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
-    let rc = 1000;
+    let rc = 100;
     let cand = await toNestedDict(candidate, options, "internal");
     let tgt = await toNestedDict(target, options, "internal");
     let r: Dict<any> | string[];
