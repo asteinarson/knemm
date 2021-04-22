@@ -320,86 +320,6 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
     return errors.length > 0 ? errors : r;
 }
 
-// Merge revised claim into column declared earlier, by the same module
-// The general rule is that we accept widening of data type, precision,
-// but not that which would likely cause loss of data. 
-// TODO: Provide a path to narrow and add constraints, by application 
-// specific migration/preparation methods.
-function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<any>): string[] {
-    let r: Dict<any> = {};
-    let errors: string[] = [];
-    for (let k in claim) {
-        if (db_column_words[k]) {
-            // All other column props
-            if (!propEqual(m_col[k], claim[k])) {
-                let is_reffed = isDictWithKeys(m_col[k]?.___refs);
-                let ref_error = false;
-                let range_error = false;
-                let reason: string;
-                switch (k) {
-                    case "data_type":
-                        // We can widen the data type 
-                        if (!typeContainsLoose(claim.data_type, m_col.data_type)) {
-                            // ... but refuse to go to a more narrow type 
-                            reason = `Cannot safely go from type: ${m_col.data_type} to ${claim.data_type}`;
-                        }
-                        else {
-                            // If new type has no arg, need to clean those away 
-                            if (!db_types_with_args[claim.data_type]) {
-                                for (let ta in db_type_args)
-                                    delete m_col[ta];
-                            }
-                            else {
-                                // Even w type args, we may need to delete non used type args
-                            }
-                        }
-                        break;
-                    case "max_length":
-                    case "numeric_precision":
-                    case "numeric_scale":
-                        // For these, we can increase the value, as long as that 
-                        // is inline also with reference to this prop 
-                        if (claim[k] < m_col[k])
-                            reason = `Unsafe target value: ${claim[k]} should be more than: ${m_col[k]}`;
-                        break;
-                    case "is_primary_key":
-                    case "has_auto_increment":
-                        if (claim[k]) reason = `Cannot safely add/remove constraint ${k} now`;
-                        break;
-                    case "is_unique":
-                        // We allow to go back to nullable - DB is fine w that 
-                        if (is_reffed) ref_error = true;
-                        else if (claim[k]) reason = "Cannot add constraint UNIQUE now";
-                        break;
-                    case "is_nullable":
-                        // We allow to go back to nullable - DB is fine w that 
-                        if (is_reffed) ref_error = true;
-                        else if (!claim[k]) reason = "Cannot add constraint NOT NULLABLE now";
-                        break;
-                    default:
-                        ref_error = is_reffed;
-                        break;
-                }
-                if (ref_error && !reason)
-                    reason = `${k} is referenced by: (${m_col[k].___refs})`;
-                if (!reason)
-                    r[k] = claim[k];
-                else {
-                    errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${claim[k]} ` +
-                        `(${reason})`);
-                }
-            }
-        }
-        else errors.push(`mergeOwnColumnClaim - Unknown column keyword: ${k}`);
-    }
-
-    // Merge, even if we have errors 
-    for (let k in r)
-        m_col[k] = r[k];
-
-    if (errors.length) return errors;
-}
-
 // Generate the DB diff that is needed to go from 'candidate' to 'target'. 
 // In a sense, the output is a transition, not a state. (The two inputs are
 // states).
@@ -712,3 +632,84 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
     }
     return errors.length ? errors : merge_base;
 }
+
+// Merge revised claim into column declared earlier, by the same module
+// The general rule is that we accept widening of data type, precision,
+// but not that which would likely cause loss of data. 
+// TODO: Provide a path to narrow and add constraints, by application 
+// specific migration/preparation methods.
+function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<any>): string[] {
+    let r: Dict<any> = {};
+    let errors: string[] = [];
+    for (let k in claim) {
+        if (db_column_words[k]) {
+            // All other column props
+            if (!propEqual(m_col[k], claim[k])) {
+                let is_reffed = isDictWithKeys(m_col[k]?.___refs);
+                let ref_error = false;
+                let range_error = false;
+                let reason: string;
+                switch (k) {
+                    case "data_type":
+                        // We can widen the data type 
+                        if (!typeContainsLoose(claim.data_type, m_col.data_type)) {
+                            // ... but refuse to go to a more narrow type 
+                            reason = `Cannot safely go from type: ${m_col.data_type} to ${claim.data_type}`;
+                        }
+                        else {
+                            // If new type has no arg, need to clean those away 
+                            if (!db_types_with_args[claim.data_type]) {
+                                for (let ta in db_type_args)
+                                    delete m_col[ta];
+                            }
+                            else {
+                                // Even w type args, we may need to delete non used type args
+                            }
+                        }
+                        break;
+                    case "max_length":
+                    case "numeric_precision":
+                    case "numeric_scale":
+                        // For these, we can increase the value, as long as that 
+                        // is inline also with reference to this prop 
+                        if (claim[k] < m_col[k])
+                            reason = `Unsafe target value: ${claim[k]} should be more than: ${m_col[k]}`;
+                        break;
+                    case "is_primary_key":
+                    case "has_auto_increment":
+                        if (claim[k]) reason = `Cannot safely add/remove constraint ${k} now`;
+                        break;
+                    case "is_unique":
+                        // We allow to go back to nullable - DB is fine w that 
+                        if (is_reffed) ref_error = true;
+                        else if (claim[k]) reason = "Cannot add constraint UNIQUE now";
+                        break;
+                    case "is_nullable":
+                        // We allow to go back to nullable - DB is fine w that 
+                        if (is_reffed) ref_error = true;
+                        else if (!claim[k]) reason = "Cannot add constraint NOT NULLABLE now";
+                        break;
+                    default:
+                        ref_error = is_reffed;
+                        break;
+                }
+                if (ref_error && !reason)
+                    reason = `${k} is referenced by: (${m_col[k].___refs})`;
+                if (!reason)
+                    r[k] = claim[k];
+                else {
+                    errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${claim[k]} ` +
+                        `(${reason})`);
+                }
+            }
+        }
+        else errors.push(`mergeOwnColumnClaim - Unknown column keyword: ${k}`);
+    }
+
+    // Merge, even if we have errors 
+    for (let k in r)
+        m_col[k] = r[k];
+
+    if (errors.length) return errors;
+}
+
