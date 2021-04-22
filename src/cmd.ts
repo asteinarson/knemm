@@ -200,23 +200,27 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
     let tgt = await toNestedDict(target, options, "internal");
     let r: Dict<any> | string[];
     switch (cmd) {
+        case "diff":
+            r = matchDiff(cand.___tables, tgt.___tables);
+            rc = logResult(r, options);
+            break;
         case "possible":
             r = matchDiff(cand.___tables, tgt.___tables);
+            rc = 0;
             if (Array.isArray(r)) {
                 console.log("Not possible");
                 logResult(r, options);
             }
-            else console.log("Possible");
+            else
+                console.log("Possible");
             break;
         case "fulfills":
             r = matchDiff(cand.___tables, tgt.___tables);
             // Only generate an empty response if the diff is empty
-            if (Array.isArray(r) || firstKey(r))
+            rc = 0;
+            if (Array.isArray(r) || firstKey(r)){
                 logResult(r, options);
-            break;
-        case "diff":
-            r = matchDiff(cand.___tables, tgt.___tables);
-            logResult(r, options);
+            }
             break;
         case "apply":
             break;
