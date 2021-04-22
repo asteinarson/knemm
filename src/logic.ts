@@ -4,7 +4,7 @@ const { invert: ldInvert } = pkg;
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props.js';
 
-import { slurpFile } from "./file-utils.js";
+import { fileNameOf, slurpFile } from "./file-utils.js";
 import { connect, slurpSchema } from './db-utils.js'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
@@ -56,20 +56,47 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
             let name = md[2] + "." + md[3];
             let tgt_name = path.join(state_dir, name);
             copyFileSync(f, tgt_name);
-            if( !existsSync(tgt_name) ) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
+            if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
         }
         else console.warn("storeState - failed extract filename from: " + f);
     }
 
     // And write the new state
     let m_yaml = path.join(state_dir, "___merge.yaml");
-    if( existsSync(m_yaml) ) rmSync(m_yaml);
-    writeFileSync( m_yaml, yamlDump(state) );
-    
+    if (existsSync(m_yaml)) rmSync(m_yaml);
+    writeFileSync(m_yaml, yamlDump(state));
+
     return existsSync(m_yaml);
 }
 
-export function stateToNestedDict(dir: string, quiet?:boolean):Dict<any> {
+// Rebuild the state directory from claims that are stored in the directory
+export async function rebuildState(state_dir: string, options: Dict<any>): Promise<true> {
+    if (!existsSync(state_dir))
+        return errorRv(`rebuildState - Directory ${state_dir} not found`);
+    // Build a list of modules with last versions 
+    let file_dicts: Dict<Dict<any>> = {};
+    for (const f of readdirSync(state_dir)) {
+        if (f == "___merge.yaml") continue;
+        if (f.match(re_yj)) {
+            let r = await fileToNestedDict(path.join(state_dir, f), true);
+            if (r?.id) file_dicts[f] = r;
+            else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
+        }
+    }
+    let state_base = getInitialState();
+    let dicts = await dependencySort(file_dicts, state_base, options);
+    if (!dicts) return;
+    let r = mergeClaims(dicts, state_base, options);
+    if (isDict(r)) {
+        storeState([], state_dir, r, options);
+        return true;
+    }
+    else {
+        r.forEach(e => console.error("rebuildState: " + e));
+    }
+}
+
+export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
     if (!existsSync(dir))
         return quiet ? undefined : errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
     let m_yaml = path.join(dir, "___merge.yaml");
@@ -464,21 +491,25 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
     return true;
 }
 
+const re_yj = /\.(json|yaml|JSON|YAML)$/;
+
 // Sort input trees according to dependency specification 
-export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dict<any>, options: Dict<any>): Promise<Dict<any>[]> {
+export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Promise<Dict<any>[]> {
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
-    let branches:Dict<number> = state_base ? state_base.modules : {};
-    let err_cnt = 0; 
+    let branches: Dict<number> = state_base ? state_base.modules : {};
+    let err_cnt = 0;
+    let claims_by_name: Dict<1> = {};
     for (let f in file_dicts) {
+        claims_by_name[fileNameOf(f)] = 1;
         let claim = file_dicts[f].id;
         let claim_id = getClaimId(f, claim);
         let name = claim_id.branch;
         if (name) {
             // Trying to insert claim from earlier part of history ? 
-            if( branches[name] && claim_id.version<branches[name] ){
-                console.error(`dependencySort - Branch ${name} is already at version ${branches[name]}. Trying to append v ${claim_id.version} now.`);
+            if (branches[name] && claim_id.version < branches[name]) {
+                console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${claim_id.version} to apply now. Rebuild?`);
                 err_cnt++;
             }
             // Register this claim 
@@ -506,7 +537,7 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dic
             err_cnt++;
         }
     }
-    if( err_cnt>0 ) return;
+    if (err_cnt > 0) return;
 
     // Find additional dependencies, in given path (same branch names but lower versions)
     if (options.deps != false) {
@@ -514,23 +545,24 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dic
         // To find the real claim ID:s we need to actually load them
         // (The filename ID is not decisive)
         let paths: string[] = options.paths || ["./"];
-        let re_yj = /\.(json|yaml|JSON|YAML)$/;
         for (let p of paths) {
             let files = readdirSync(p);
             for (let f of files) {
                 if (f.match(re_yj)) {
                     try {
+                        // Do not read file by same name twice 
+                        if (claims_by_name[fileNameOf(f)]) continue;
                         // It is wasteful to try parsing each file here. We could have
                         // a flag that makes us trust the filenames for claim ID. 
                         let r = await fileToNestedDict(path.join(p, f), true);
-                        if (r && r.id) {
+                        if (r?.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
-                                typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch] && 
-                                !cl_by_br[r.id.branch][r.id.version] ){
-                                    r.___tables = formatInternal(r.__tables);
-                                    cl_by_br[r.id.branch][r.id.version] = r;
-                                }
+                                typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch] &&
+                                !cl_by_br[r.id.branch][r.id.version]) {
+                                r.___tables = formatInternal(r.__tables);
+                                cl_by_br[r.id.branch][r.id.version] = r;
+                            }
                         }
                     } catch (e) {
                         // Do nothing 
@@ -554,14 +586,14 @@ export async function dependencySort(file_dicts: Dict<Dict<any>>, state_base:Dic
     return deps_ordered;
 }
 
-export function getInitialState( ){
-    return { modules: {}, ___tables:{} };
+export function getInitialState() {
+    return { modules: {}, ___tables: {} };
 }
 
 // Merge dependency ordered claims 
-export function mergeClaims(claims: Dict<any>[], merge_base:Dict<any>|null, options: Dict<any>): TableInfoOrErrors {
+export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, options: Dict<any>): TableInfoOrErrors {
     let errors: string[] = [];
-    if( !merge_base || !merge_base.___tables ) merge_base = getInitialState();
+    if (!merge_base || !merge_base.___tables) merge_base = getInitialState();
     let merge = merge_base.___tables;
     for (let claim of claims) {
         // Keep track of the current version of each module

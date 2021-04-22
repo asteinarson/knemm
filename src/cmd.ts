@@ -1,12 +1,11 @@
 import cmder, { Command } from "commander";
 
-type CmdOptionAdder = (cmd:cmder.Command) => void;
+type CmdOptionAdder = (cmd: cmder.Command) => void;
 
 function addBaseOptions(cmd: cmder.Command) {
     cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
     cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
-    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
     cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
     //cmd.option("--no-state", "Do not use a state dir, even if found");
     cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
@@ -14,16 +13,26 @@ function addBaseOptions(cmd: cmder.Command) {
 }
 
 function addJoinOptions(cmd: cmder.Command) {
-    cmd.option("--rebuild", "Rebuild stored state (___merge.yaml) from input claims");
+    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
 }
 
-let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOptionAdder[] }[] = [
+function addPruneOptions(cmd: cmder.Command) {
+}
+
+let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
     {
         name: "join",
         desc: "Join together all input claims and print them out",
         a1: "claims...",
         a2: null,
-        options:[addJoinOptions],
+        options: [addJoinOptions],
+    },
+    {
+        name: "rebuild",
+        desc: "Rebuild merged state from all claim files in state directory",
+        a1: null,
+        a2: null,
+        options: []
     },
     {
         name: "possible",
@@ -71,7 +80,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?:CmdOpti
 
 let cmd = new Command();
 for (let c of cmds) {
-    let _c:cmder.Command;
+    let _c: cmder.Command;
     if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
@@ -83,8 +92,8 @@ for (let c of cmds) {
     }
     _c.description(c.desc)
     addBaseOptions(_c);
-    if( c.options ){
-        for( let opt_f of c.options ){
+    if (c.options) {
+        for (let opt_f of c.options) {
             opt_f(_c);
         }
     }
@@ -92,11 +101,11 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict, getInitialState } from './logic.js';
+import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict, getInitialState, rebuildState } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
-import { append, Dict, firstKey, isDict } from "./utils.js";
+import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList } from "./file-utils.js";
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This adds load time
@@ -117,38 +126,26 @@ async function handleList(cmd: string, files: string[], options: any) {
     //console.log("handleList: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
-    let dirs = getDirsFromFileList(files);
-    if( !options.paths ) options.paths = dirs;
-    else options.paths = append(options.paths,dirs);
 
     let rc = 1000;
-
-    if (cmd == "join") {
-        let state_base:Dict<any>;
-        if(state_dir) state_base = stateToNestedDict(state_dir,true);
-        if( options.rebuild ){
-            if( !state_dir ){
-                console.error("The rebuild option requires a state directory (-s option)");
-                process.exit(rc);
-            }
-            state_base = getInitialState();
-        }
     
-        // Sort the files, according to dependencies, also load them. 
+    if (cmd == "join") {
+        let dirs = getDirsFromFileList(files);
+        if (!options.paths) options.paths = dirs;
+        else options.paths = append(options.paths, dirs);
+        
+        let state_base: Dict<any>;
+        if (state_dir) state_base = stateToNestedDict(state_dir, true);
         let file_dicts: Dict<Dict<any>> = {};
         for (let f of files) {
             let r = await toNestedDict(f, options);
-            if (r){
-                if( r.source=="*file" ) file_dicts[f] = r;
+            if (r) {
+                if (r.source == "*file") file_dicts[f] = r;
                 else {
-                    if( state_dir ){
-                        console.error(`join: Cannot specify additional DB or state dirs (already using state in: ${state_dir})`);
-                        process.exit(rc);
-                    }
-                    if( state_base ){
-                        console.error(`join: Cannot specify multiple DB or state dirs (already have one)`);
-                        process.exit(rc);
-                    }
+                    if (state_dir) 
+                        return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`);
+                    if (state_base) 
+                        return errorRv(`join: Cannot specify multiple DB or state dirs in <join> (already have one)`);
                     // Accept it 
                     state_base = r;
                 }
@@ -156,7 +153,7 @@ async function handleList(cmd: string, files: string[], options: any) {
             else console.error("join: could not resolve source: " + f);
         }
         let dicts = await dependencySort(file_dicts, state_base, options);
-        if (dicts) {
+            if (dicts) {
             let state_tree = mergeClaims(dicts, state_base, options);
             if (isDict(state_tree)) {
                 if (state_dir && dicts.length)
@@ -169,6 +166,13 @@ async function handleList(cmd: string, files: string[], options: any) {
             logResult(state_tree, options);
         }
         rc = 0;
+    }
+    else if (cmd == "rebuild") {
+        if (!state_dir) {
+            console.error("The rebuild option requires a state directory (-s option)");
+            process.exit(rc);
+        }
+        rebuildState(state_dir,options);
     }
     process.exit(rc);
 }

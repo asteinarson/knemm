@@ -27,7 +27,7 @@ export function slurpFile(file: string, quiet?: boolean): string | number | any[
     return null;
 }
 
-let re_path = /^(.*)\/[^/]*/;
+const re_path = /^(.*)\/[^/]*/;
 export function getDirsFromFileList(files: string[]): string[] {
     let dirs: Dict<1> = {};
     for (let f of files) {
