@@ -27,6 +27,7 @@
     "knex-schema-inspector": "^1.2.2",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
-    "pg": "^8.5.1"
+    "pg": "^8.5.1",
+    "sqlite3": "^5.0.2"
   }
 }
