@@ -82,10 +82,10 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
                 // Doing the await here (fileToNestedDict declared async without being so) 
                 // causes nested funcyion to return to the parent function (!)
                 //let r = await fileToNestedDict(path.join(state_dir, f), true);
-                let r = fileToNestedDict(path.join(state_dir, f), true);
+                let r = fileToNestedDict(path.join(state_dir, f), true,"internal");
                 if (r?.id) file_dicts[f] = r;
                 else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
-            } catch( e ){
+            } catch (e) {
                 console.error(e);
             }
         }
@@ -119,35 +119,40 @@ export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
     return r;
 }
 
-export function fileToNestedDict(file: string, quiet?: boolean): Dict<any> {
-    let r: Dict<any> = {};
+export type FormatType = "internal" | "hr-compact";
+
+export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
     if (!rf) {
         if (!quiet)
-            console.log("fileToNestedDict - file not found: " + file);
+        console.log("fileToNestedDict - file not found: " + file);
     }
-    else {
-        if (isDict(rf)) {
-            // Is it a claim with top level props, or just the tables? 
-            if (rf.___tables)
-                r = rf;
-            else
-                r.___tables = rf;
-            r.source = "*file";
-            r.file = file;
-            r.format = "?";
-            if (!r.id)
-                r.id = claimIdFromName(file);
-            else if (typeof r.id == "string")
-                r.id = claimIdFromName(r.id + ".yaml");
+    else if (isDict(rf)) {
+        // Is it a claim with top level props, or just the tables? 
+        let r: Dict<any> = {};
+        if (rf.___tables)
+            r = rf;
+        else
+            r.___tables = rf;
+        r.source = "*file";
+        r.file = file;
+        r.format = "?";
+        if (!r.id)
+            r.id = claimIdFromName(file);
+        else if (typeof r.id == "string")
+            r.id = claimIdFromName(r.id + ".yaml");
+
+        if (format && r.format != format) {
+            r.___tables = reformat(r.___tables, format);
+            r.format = format;
         }
+        return r;
     }
-    return r;
 }
 
 // Read a file, a directory or a DB into a schema state object
-export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: "internal" | "hr-compact"): Promise<Dict<any>> {
+export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: FormatType): Promise<Dict<any>> {
     if (!file_or_db) return null;
     if (!format) format = "internal";
 
@@ -201,7 +206,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
     else r = fileToNestedDict(file_or_db);
 
     if (r.___tables) {
-        if (r.format != format) {
+        if (format && r.format != format) {
             r.___tables = reformat(r.___tables, format);
             r.format = format;
         }
@@ -561,7 +566,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         if (claims_by_name[fileNameOf(f)]) continue;
                         // It is wasteful to try parsing each file here. We could have
                         // a flag that makes us trust the filenames for claim ID. 
-                        let r = fileToNestedDict(path.join(p, f), true);
+                        let r = fileToNestedDict(path.join(p, f), true, "internal");
                         if (r?.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
