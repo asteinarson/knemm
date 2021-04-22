@@ -91,7 +91,7 @@ for (let c of cmds) {
             .action((a1, options) => { handleOneArg(c.name, a1, options) });
     } else {
         // A no arg command
-        _c = cmd.command(`${c.name} <${c.a1}>`)
+        _c = cmd.command(`${c.name}`)
             .action((options) => { handleNoArg(c.name, options) });
     }
     _c.description(c.desc)

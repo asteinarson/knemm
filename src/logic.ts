@@ -78,9 +78,13 @@ export async function rebuildState(state_dir: string, options: Dict<any>): Promi
     for (const f of readdirSync(state_dir)) {
         if (f == "___merge.yaml") continue;
         if (f.match(re_yj)) {
-            let r = await fileToNestedDict(path.join(state_dir, f), true);
-            if (r?.id) file_dicts[f] = r;
-            else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
+            try {
+                let r = fileToNestedDict(path.join(state_dir, f), true);
+                if (r?.id) file_dicts[f] = r;
+                else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
+            } catch( e ){
+                console.error(e);
+            }
         }
     }
     let state_base = getInitialState();
@@ -112,7 +116,7 @@ export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
     return r;
 }
 
-export async function fileToNestedDict(file: string, quiet?: boolean): Promise<Dict<any>> {
+export function fileToNestedDict(file: string, quiet?: boolean): Dict<any> {
     let r: Dict<any> = {};
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
