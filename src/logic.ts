@@ -572,7 +572,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                             if (ver_by_br[r.id.branch] &&
                                 typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch] &&
                                 !cl_by_br[r.id.branch][r.id.version]) {
-                                r.___tables = formatInternal(r.__tables);
+                                r.___tables = formatInternal(r.___tables);
                                 cl_by_br[r.id.branch][r.id.version] = r;
                             }
                         }
