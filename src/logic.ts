@@ -12,7 +12,7 @@ import { dump as yamlDump } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc.js";
 
-export function reformat(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
+export function reformatTables(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
     return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
 }
 
@@ -121,6 +121,16 @@ export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
 
 export type FormatType = "internal" | "hr-compact";
 
+export function reformatTopLevel(claim:Dict<any>,format?:FormatType){
+    if( claim.___tables ) 
+        if (format && claim.format != format) {
+            claim.___tables = reformatTables(claim.___tables, format);
+            claim.format = format;
+        }
+    else 
+        claim.___tables = {}    
+}
+
 export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
@@ -142,11 +152,7 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
             r.id = claimIdFromName(file);
         else if (typeof r.id == "string")
             r.id = claimIdFromName(r.id + ".yaml");
-
-        if (format && r.format != format) {
-            r.___tables = reformat(r.___tables, format);
-            r.format = format;
-        }
+        reformatTopLevel(r,format);
         return r;
     }
 }
@@ -204,14 +210,8 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         }
     }
     else r = fileToNestedDict(file_or_db);
-
-    if (r.___tables) {
-        if (format && r.format != format) {
-            r.___tables = reformat(r.___tables, format);
-            r.format = format;
-        }
-        return r;
-    }
+    reformatTopLevel(r,format);
+    return r;
 }
 
 type PropType = string | number | Dict<string | number | Dict<string | number>>;
@@ -572,7 +572,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                             if (ver_by_br[r.id.branch] &&
                                 typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch] &&
                                 !cl_by_br[r.id.branch][r.id.version]) {
-                                r.___tables = formatInternal(r.___tables);
+                                reformatTopLevel(r,"internal");
                                 cl_by_br[r.id.branch][r.id.version] = r;
                             }
                         }

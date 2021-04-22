@@ -105,7 +105,10 @@ for (let c of cmds) {
 
 cmd.parse(process.argv);
 
-import { toNestedDict, reformat, matchDiff, dependencySort, mergeClaims, getStateDir, storeState, fileToNestedDict, stateToNestedDict, getInitialState, rebuildState } from './logic.js';
+import {
+    toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
+    fileToNestedDict, stateToNestedDict, getInitialState, rebuildState, reformatTables
+} from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
 import pkg from 'lodash';
@@ -137,7 +140,7 @@ async function handleNoArg(cmd: string, options: any) {
             }
             rc = rebuildState(state_dir, options) ? 0 : 101;
         }
-    } catch(e){
+    } catch (e) {
         console.log("handleNoArg - exception: " + e);
     }
     process.exit(rc);
@@ -179,7 +182,7 @@ async function handleOneArg(cmd: string, files: string[], options: any) {
                 if (state_dir && dicts.length)
                     storeState(files, state_dir, state_tree, options);
                 if (!options.internal)
-                    state_tree.___tables = reformat(state_tree.___tables, "hr-compact");
+                    state_tree.___tables = reformatTables(state_tree.___tables, "hr-compact");
                 // This is for outputting just the tables, below
                 state_tree = state_tree.___tables;
                 rc = 0;
