@@ -177,14 +177,14 @@ async function handleOneArgCmd(cmd: string, files: string[], options: any) {
         }
         let dicts = dependencySort(file_dicts, state_base, options);
         if (dicts) {
-            let state_tree = mergeClaims(dicts, state_base, options);
-            if (isDict(state_tree)) {
+            let state = mergeClaims(dicts, state_base, options);
+            if (isDict(state)) {
                 if (state_dir && dicts.length)
-                    storeState(files, state_dir, state_tree, options);
+                    storeState(files, state_dir, state, options);
                 // This is for outputting just the tables, below
-                state_tree = state_tree.___tables;
+                state = state.___tables;
             }
-            rc = logResult(state_tree, options,101);
+            rc = logResult(state, options,101);
         }
     }
     process.exit(rc);
