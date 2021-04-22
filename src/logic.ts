@@ -210,7 +210,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
                     r.___tables = rs;
                 }
             } catch( e ){
-                return errorRv(`toNestedDict - failed connect/slurpSchema: ${e}`);
+                return errorRv(`toNestedDict - failed connect/slurpSchema for <${file_or_db}>: ${e}`);
             }
         }
     }
