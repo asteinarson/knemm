@@ -141,7 +141,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 for (let col in delta[t]) {
                     let col_delta = delta[t][col];
                     if (col_delta != "*NOT") {
-                        const is_new_column = (!state[t] || !state[t][col]);
+                        const is_new_column = !state[t]?.[col];
                         let col_base: Dict<any> = is_new_column ? {} : state[t][col];
                         let column: Knex.ColumnBuilder = null;
                         // Knex needs to be given the ytype of the column (also when it already exists)
