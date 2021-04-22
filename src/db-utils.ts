@@ -4,7 +4,7 @@ import knex, { Knex } from 'knex';
 
 let knex_conn: Knex;
 export async function connect(connection: Record<string, string>, client = "pg") {
-    let conn = {
+    let conn = connection.connection ? connection : {
         client,
         connection
     }
@@ -135,12 +135,12 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
 export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
     for (let t in delta) {
         let t_delta = delta[t];
-        if( t_delta!=="*NOT" ){
+        if (t_delta !== "*NOT") {
             let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
             let r = await tbl_met(t, (table) => {
                 for (let col in delta[t]) {
                     let col_delta = delta[t][col];
-                    if( col_delta!="*NOT" ){
+                    if (col_delta != "*NOT") {
                         const is_new_column = (!state[t] || !state[t][col]);
                         let col_base: Dict<any> = is_new_column ? {} : state[t][col];
                         let column: Knex.ColumnBuilder = null;
@@ -250,7 +250,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-        } 
+        }
         else {
             let r = await conn.schema.dropTable(t);
         }

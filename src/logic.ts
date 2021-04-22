@@ -11,6 +11,7 @@ import path from 'path';
 import { dump as yamlDump } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc.js";
+import { Knex } from 'knex';
 
 export function reformatTables(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
     return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
@@ -197,15 +198,19 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
 
         // Get our dict from DB conn ? 
         if (conn_info) {
-            let client = conn_info.client ? conn_info.client : "pg";
-            if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
+            //if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
             try {
-                let connection = await connect(conn_info, client);
-                let rs = await slurpSchema(connection);
+                let knex_c:Knex;
+                if( !conn_info.connection ) knex_c = await connect(conn_info);
+                else{
+                    if( !conn_info.client ) conn_info.client = "pg";
+                    knex_c = await connect(conn_info);
+                }
+                let rs = await slurpSchema(knex_c);
                 if (rs) {
                     // Keep the connection object here - it allows later knowing it is attached to a DB
                     r.source = "*db";
-                    r.connection = connection;
+                    r.connection = knex_c;
                     r.format = "internal";
                     r.___tables = rs;
                 }
