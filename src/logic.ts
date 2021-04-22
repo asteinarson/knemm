@@ -199,14 +199,18 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         if (conn_info) {
             let client = conn_info.client ? conn_info.client : "pg";
             if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
-            let connection = await connect(conn_info, client);
-            let rs = await slurpSchema(connection);
-            if (rs) {
-                // Keep the connection object here - it allows later knowing it is attached to a DB
-                r.source = "*db";
-                r.connection = connection;
-                r.format = "internal";
-                r.___tables = rs;
+            try {
+                let connection = await connect(conn_info, client);
+                let rs = await slurpSchema(connection);
+                if (rs) {
+                    // Keep the connection object here - it allows later knowing it is attached to a DB
+                    r.source = "*db";
+                    r.connection = connection;
+                    r.format = "internal";
+                    r.___tables = rs;
+                }
+            } catch( e ){
+                return errorRv(`toNestedDict - failed connect/slurpSchema: ${e}`);
             }
         }
     }
