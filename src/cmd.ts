@@ -135,7 +135,7 @@ async function handleNoArg(cmd: string, options: any) {
                 console.error("The rebuild option requires a state directory (-s option)");
                 process.exit(rc);
             }
-            rebuildState(state_dir, options);
+            rc = rebuildState(state_dir, options) ? 0 : 101;
         }
     } catch(e){
         console.log("handleNoArg - exception: " + e);
@@ -182,10 +182,11 @@ async function handleOneArg(cmd: string, files: string[], options: any) {
                     state_tree.___tables = reformat(state_tree.___tables, "hr-compact");
                 // This is for outputting just the tables, below
                 state_tree = state_tree.___tables;
+                rc = 0;
             }
+            else rc = 101;
             logResult(state_tree, options);
         }
-        rc = 0;
     }
     process.exit(rc);
 }
@@ -193,7 +194,7 @@ async function handleOneArg(cmd: string, files: string[], options: any) {
 async function handleTwoArg(cmd: string, candidate: string, target: string, options: any) {
     //console.log(options);
     //process.exit(1);
-    //console.log("handle: " + cmd, target, candidate, options);
+    //console.log("handleTwoArgs: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
     let rc = 100;
     let cand = await toNestedDict(candidate, options, "internal");

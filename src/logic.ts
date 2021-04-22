@@ -520,7 +520,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         let name = claim_id.branch;
         if (name) {
             // Trying to insert claim from earlier part of history ? 
-            if (branches[name] && claim_id.version < branches[name]) {
+            if (branches[name] && claim_id.version <= branches[name]) {
                 console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${claim_id.version} to apply now. Rebuild?`);
                 err_cnt++;
             }
@@ -566,7 +566,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         if (claims_by_name[fileNameOf(f)]) continue;
                         // It is wasteful to try parsing each file here. We could have
                         // a flag that makes us trust the filenames for claim ID. 
-                        let r = fileToNestedDict(path.join(p, f), true, "internal");
+                        let r = fileToNestedDict(path.join(p, f), true);
                         if (r?.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
