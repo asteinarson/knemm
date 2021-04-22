@@ -496,7 +496,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         if (claims_by_name[fileNameOf(f)]) continue;
                         // It is wasteful to try parsing each file here. We could have
                         // a flag that makes us trust the filenames for claim ID. 
-                        let r = fileToNestedDict(path.join(p, f), true);
+                        let file = path.join(p, f);
+                        let r = fileToNestedDict(file, true);
                         if (r?.id) {
                             // We are only interested in our list of claims and their deps
                             if (ver_by_br[r.id.branch] &&
@@ -504,6 +505,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                                 !cl_by_br[r.id.branch][r.id.version]) {
                                 reformatTopLevel(r,"internal");
                                 cl_by_br[r.id.branch][r.id.version] = r;
+                                file_dicts[file] = r;   // Keep track of file for later updating state dir
                             }
                         }
                     } catch (e) {

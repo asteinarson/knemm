@@ -180,7 +180,7 @@ async function handleOneArgCmd(cmd: string, files: string[], options: any) {
             let state = mergeClaims(dicts, state_base, options);
             if (isDict(state)) {
                 if (state_dir && dicts.length)
-                    storeState(files, state_dir, state, options);
+                    storeState(Object.keys(file_dicts), state_dir, state, options);
                 // This is for outputting just the tables, below
                 state = state.___tables;
             }
