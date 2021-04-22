@@ -84,11 +84,15 @@ for (let c of cmds) {
     if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
-            .action((a1, a2, options) => { handle(c.name, a1, a2, options) });
-    } else {
+            .action((a1, a2, options) => { handleTwoArg(c.name, a1, a2, options) });
+    } else if (c.a1) {
         // A one arg command
         _c = cmd.command(`${c.name} <${c.a1}>`)
-            .action((a1, options) => { handleList(c.name, a1, options) });
+            .action((a1, options) => { handleOneArg(c.name, a1, options) });
+    } else {
+        // A no arg command
+        _c = cmd.command(`${c.name} <${c.a1}>`)
+            .action((options) => { handleNoArg(c.name, options) });
     }
     _c.description(c.desc)
     addBaseOptions(_c);
@@ -122,18 +126,30 @@ function logResult(r: Dict<any> | string[], options: any) {
     }
 }
 
-async function handleList(cmd: string, files: string[], options: any) {
-    //console.log("handleList: " + cmd, files, options);
+async function handleNoArg(cmd: string, options: any) {
+    let state_dir = getStateDir(options);
+    let rc = 1000;
+    if (cmd == "rebuild") {
+        if (!state_dir) {
+            console.error("The rebuild option requires a state directory (-s option)");
+            process.exit(rc);
+        }
+        rebuildState(state_dir, options);
+    }
+    process.exit(rc);
+}
+
+async function handleOneArg(cmd: string, files: string[], options: any) {
+    //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
-
     let rc = 1000;
-    
+
     if (cmd == "join") {
         let dirs = getDirsFromFileList(files);
         if (!options.paths) options.paths = dirs;
         else options.paths = append(options.paths, dirs);
-        
+
         let state_base: Dict<any>;
         if (state_dir) state_base = stateToNestedDict(state_dir, true);
         let file_dicts: Dict<Dict<any>> = {};
@@ -142,9 +158,9 @@ async function handleList(cmd: string, files: string[], options: any) {
             if (r) {
                 if (r.source == "*file") file_dicts[f] = r;
                 else {
-                    if (state_dir) 
+                    if (state_dir)
                         return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`);
-                    if (state_base) 
+                    if (state_base)
                         return errorRv(`join: Cannot specify multiple DB or state dirs in <join> (already have one)`);
                     // Accept it 
                     state_base = r;
@@ -153,7 +169,7 @@ async function handleList(cmd: string, files: string[], options: any) {
             else console.error("join: could not resolve source: " + f);
         }
         let dicts = await dependencySort(file_dicts, state_base, options);
-            if (dicts) {
+        if (dicts) {
             let state_tree = mergeClaims(dicts, state_base, options);
             if (isDict(state_tree)) {
                 if (state_dir && dicts.length)
@@ -167,17 +183,10 @@ async function handleList(cmd: string, files: string[], options: any) {
         }
         rc = 0;
     }
-    else if (cmd == "rebuild") {
-        if (!state_dir) {
-            console.error("The rebuild option requires a state directory (-s option)");
-            process.exit(rc);
-        }
-        rebuildState(state_dir,options);
-    }
     process.exit(rc);
 }
 
-async function handle(cmd: string, candidate: string, target: string, options: any) {
+async function handleTwoArg(cmd: string, candidate: string, target: string, options: any) {
     //console.log(options);
     //process.exit(1);
     //console.log("handle: " + cmd, target, candidate, options);
