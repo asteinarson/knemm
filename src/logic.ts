@@ -609,6 +609,10 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
     let merge = merge_base.___tables;
     for (let claim of claims) {
         // Keep track of the current version of each module
+        if( claim.format!="internal" ){
+            errors.push(`Claim <${claim.id.branch}:${claim.id.version}> is not in internal format`);
+            continue;
+        }
         merge_base.modules[claim.id.branch] = claim.id.version;
         let cl_tables: Dict<any> = claim.___tables;
         for (let t in cl_tables) {
