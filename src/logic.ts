@@ -122,11 +122,12 @@ export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
 export type FormatType = "internal" | "hr-compact";
 
 export function reformatTopLevel(claim:Dict<any>,format?:FormatType){
-    if( claim.___tables ) 
+    if( claim.___tables ) {
         if (format && claim.format != format) {
             claim.___tables = reformatTables(claim.___tables, format);
             claim.format = format;
         }
+    }
     else 
         claim.___tables = {}    
 }
@@ -209,7 +210,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             }
         }
     }
-    else r = fileToNestedDict(file_or_db);
+    else r = fileToNestedDict(file_or_db,false,format);
     reformatTopLevel(r,format);
     return r;
 }

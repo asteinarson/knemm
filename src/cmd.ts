@@ -111,9 +111,9 @@ import {
 } from './logic.js';
 // This works for ES module 
 import { dump as yamlDump } from 'js-yaml';
-import pkg from 'lodash';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList } from "./file-utils.js";
+import pkg from 'lodash';
 const { merge: ldMerge } = pkg;
 //import {merge as ldMerge} from 'lodash-es'; // This adds load time
 
