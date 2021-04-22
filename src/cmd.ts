@@ -19,7 +19,7 @@ function addJoinOptions(cmd: cmder.Command) {
 function addPruneOptions(cmd: cmder.Command) {
 }
 
-let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
+ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
     {
         name: "join",
         desc: "Join together all input claims and print them out",
@@ -35,6 +35,12 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
         options: []
     },
     {
+        name: "diff",
+        desc: "See diff from <candidate/DB> to <target>",
+        a1: "candidate",
+        a2: "target"
+    },
+    {
         name: "possible",
         desc: "On this <candidate/DB>, see if <target> can be applied",
         a1: "candidate",
@@ -47,12 +53,6 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
         a2: "target"
     },
     {
-        name: "diff",
-        desc: "See diff from <candidate/DB> to <target>",
-        a1: "candidate",
-        a2: "target"
-    },
-    {
         name: "info",
         desc: "Show info about this <state>",
         a1: "state",
@@ -61,7 +61,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     {
         name: "connect",
         desc: "Connect this <DB> to the given <state>",
-        a1: "db",
+        a1: "db", 
         a2: "state",
     },
     {
@@ -84,15 +84,15 @@ for (let c of cmds) {
     if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
-            .action((a1, a2, options) => { handleTwoArg(c.name, a1, a2, options) });
+            .action((a1, a2, options) => { handleTwoArgCmd(c.name, a1, a2, options) });
     } else if (c.a1) {
         // A one arg command
         _c = cmd.command(`${c.name} <${c.a1}>`)
-            .action((a1, options) => { handleOneArg(c.name, a1, options) });
+            .action((a1, options) => { handleOneArgCmd(c.name, a1, options) });
     } else {
         // A no arg command
         _c = cmd.command(`${c.name}`)
-            .action((options) => { handleNoArg(c.name, options) });
+            .action((options) => { handleNoArgCmd(c.name, options) });
     }
     _c.description(c.desc)
     addBaseOptions(_c);
@@ -125,7 +125,7 @@ function logResult(r: Dict<any> | string[], options: any) {
     }
 }
 
-async function handleNoArg(cmd: string, options: any) {
+async function handleNoArgCmd(cmd: string, options: any) {
     let state_dir = getStateDir(options);
     let rc = 100;
     try {
@@ -142,7 +142,7 @@ async function handleNoArg(cmd: string, options: any) {
     process.exit(rc);
 }
 
-async function handleOneArg(cmd: string, files: string[], options: any) {
+async function handleOneArgCmd(cmd: string, files: string[], options: any) {
     //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
@@ -190,7 +190,7 @@ async function handleOneArg(cmd: string, files: string[], options: any) {
     process.exit(rc);
 }
 
-async function handleTwoArg(cmd: string, candidate: string, target: string, options: any) {
+async function handleTwoArgCmd(cmd: string, candidate: string, target: string, options: any) {
     //console.log(options);
     //process.exit(1);
     //console.log("handleTwoArgs: " + cmd, target, candidate, options);
