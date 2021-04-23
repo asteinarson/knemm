@@ -7,6 +7,10 @@ function addBaseOptions(cmd: cmder.Command) {
     cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
 }
 
+function addCreatedbOptions(cmd: cmder.Command) {
+    cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
+}
+
 function addIncludeExcludeOptions(cmd: cmder.Command) {
     cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
     cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
@@ -67,7 +71,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     {
         name: "connect",
         desc: "Connect this <DB> to the specified state",
-        a1: "*db",
+        a1: "*db_file",
         a2: null,
     },
     {
@@ -85,16 +89,17 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     },
     {
         name: "createdb",
-        desc: "Create a DB (after checking for existence)",
-        a1: "db",
-        a2: "dbname",
+        desc: "Create a DB (after checking for existence), and optionally connect with a state",
+        a1: "db_file",
+        a2: "name_of_new_db",
+        options: [addCreatedbOptions]
     }
 ];
 
 let cmd = new Command();
 for (let c of cmds) {
     let _c: cmder.Command;
-    if( c.name=="createdb" ){
+    if (c.name == "createdb") {
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
             .action(async (db, dbname, options) => { process.exit(await handleCreateDb(db, dbname, options)) });
     } else if (c.a2) {
@@ -132,6 +137,7 @@ import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList, slurpFile } from "./file-utils.js";
 import { existsSync } from "node:fs";
+import path from "node:path";
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     if (!Array.isArray(r)) {
@@ -264,12 +270,26 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
 }
 
 async function handleCreateDb(db_file: string, dbname: string, options: any): Promise<number> {
-    let r = await createDb(db_file,dbname);
-    if( typeof r == "string" ){
-        console.log("createdb - failed: " + r );
+    let state_dir = getStateDir(options);
+    let r = await createDb(db_file, dbname);
+    if (typeof r == "string") {
+        console.log("createdb - failed: " + r);
         return 10;
     }
     console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
+    if (state_dir) {
+        if (existsSync(path.join(state_dir, "___db.yaml")) &&
+            !options.replace) {
+            console.log("Not connecting new DB. There already is a connected DB in the state: "+state_dir);
+            return 1;
+        }
+        let r1 = await connectState(state_dir,r,options);
+        if( r1!=true ){
+            console.log(r1);
+            return 2;
+        }
+        console.log("The new DB was connected to state in: "+state_dir);
+    }
     return 0;
 }
 

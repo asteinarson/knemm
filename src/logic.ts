@@ -229,14 +229,18 @@ async function dbFileToKnex(db_file: string): Promise<Knex> {
 }
 
 
-export async function connectState(state_dir: string, db_file: string, options: Dict<any>): Promise<true | string> {
-    let conn_info = parseDbFile(db_file);
+export async function connectState(state_dir: string, db_file: string | Dict<any>, options: Dict<any>): Promise<true | string> {
+    let conn_info = (typeof db_file == "string" ? parseDbFile(db_file) : db_file);
     if (!conn_info) return `connectState - Could not parse: ${db_file}`;
     let knex_c = await connect(conn_info);
     if (!knex_c) return "connectState - Could not connect to DB";
 
+    // Workaround for sqlite, which otherwise will not be able to resolve 
+    // a relative path from the state 
+    if (conn_info.client == "sqlite3") {
+        conn_info.connection.filename = path.resolve(conn_info.connection.filename);
+    }
     // All we have to do is to copy <db_file> int <state_dir>
-    //copyFileSync(db_file, path.join(state_dir,"___db"));
     writeFileSync(path.join(state_dir, "___db.yaml"), yamlDump(conn_info));
     return true;
 }
