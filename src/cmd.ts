@@ -9,6 +9,7 @@ function addBaseOptions(cmd: cmder.Command) {
 
 function addCreatedbOptions(cmd: cmder.Command) {
     cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
+    cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the created database");
 }
 
 function addIncludeExcludeOptions(cmd: cmder.Command) {
@@ -136,7 +137,7 @@ import {
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList, slurpFile } from "./file-utils.js";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
@@ -277,18 +278,37 @@ async function handleCreateDb(db_file: string, dbname: string, options: any): Pr
         return 10;
     }
     console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
+
+    if (options.outfile) {
+        if (r.client == "sqlite3") {
+            r.connection.filename = path.resolve(r.connection.filename);
+        }
+        let s: string;
+        if (options.outfile.match(/.(json|JSON)/))
+            s = JSON.stringify(r);
+        else {
+            if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
+            s = yamlDump(r);
+        }
+        writeFileSync(options.outfile, s);
+        if (!existsSync(options.outfile))
+            console.log("Failed storing new connection info to: " + options.outfile);
+        else
+            console.log("Stored new connection info to: " + options.outfile);
+    }
+
     if (state_dir) {
         if (existsSync(path.join(state_dir, "___db.yaml")) &&
             !options.replace) {
-            console.log("Not connecting new DB. There already is a connected DB in the state: "+state_dir);
+            console.log("Not connecting new DB. There already is a connected DB in the state: " + state_dir);
             return 1;
         }
-        let r1 = await connectState(state_dir,r,options);
-        if( r1!=true ){
+        let r1 = await connectState(state_dir, r, options);
+        if (r1 != true) {
             console.log(r1);
             return 2;
         }
-        console.log("The new DB was connected to state in: "+state_dir);
+        console.log("The new DB was connected to state in: " + state_dir);
     }
     return 0;
 }
