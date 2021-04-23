@@ -1,5 +1,6 @@
 
 export type Dict<T> = Record<string, T>;
+export type BaseTypes = string | number | boolean;
 
 export function remap(src: Dict<any>, transl: Dict<string>, tgt?: Dict<any>) {
     if (!tgt) tgt = {};

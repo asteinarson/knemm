@@ -1,10 +1,9 @@
 
-import { Dict } from './utils.js';
+import { Dict, BaseTypes } from './utils.js';
 
 export type ModuleId = {
     branch: string,
     version: number,
-    [key:string]: boolean
 };
 
 export type FormatType = "internal" | "hr-compact";
@@ -27,9 +26,13 @@ export type TopClaim = {
 
 export type TableProps = Dict<ColumnProps | string>;
 
+export type BTDict1 = Dict<BaseTypes> | BaseTypes;
+export type BTDict2 = Dict<BTDict1> | BaseTypes;
+export type BTDict3 = Dict<BTDict2> | BaseTypes;
+
 export type ColumnProps = {
-    ___refs?:Dict<string>,
-    ___owner?:string,
+    ___refs?: Dict<string>,
+    ___owner?: string,
     data_type?: string,
     is_nullable?: boolean,
     is_unique?: boolean,
@@ -43,23 +46,7 @@ export type ColumnProps = {
     },
     max_length?: number,
     numeric_precision?: number,
-    numeric_scale?: number
+    numeric_scale?: number,
+    [k: string]: BTDict3,
 };
 
-interface TestType {
-    a: number;
-    b: string;
-    [key:string]: number|string;
- };
-
-type TestType2 = {
-    a: number;
-    b: string;
-    [key:string]: any;
- };
-
-let tt2:TestType2 = {
-    a:14,
-    b:"car",
-    ddd:111
-}
