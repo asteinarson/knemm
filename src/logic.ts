@@ -120,7 +120,7 @@ export async function createDb(db_file: string, db_name: string): Promise<true |
     if (!conn_info) return "createDb - could not connect to DB";
 
     // Try connecting to the given DB - should fail
-    if (conn_info.client != "sqlite3")
+    if (conn_info.client == "sqlite3")
         return createDbSqlite(conn_info, db_name);
 
     // Try to connect to the DB - with named DB - should fail 
