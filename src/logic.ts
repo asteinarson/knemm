@@ -115,7 +115,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     }
 }
 
-export async function createDb(db_file: string, db_name: string): Promise<true | string> {
+export async function createDb(db_file: string, db_name: string): Promise<Dict<any> | string> {
     let conn_info = parseDbFile(db_file);
     if (!conn_info) return "createDb - could not connect to DB";
 
@@ -143,9 +143,9 @@ export async function createDb(db_file: string, db_name: string): Promise<true |
             // Then try to connect to it
             conn_info.connection.database = db_name;
             knex_c = await connect(conn_info);
-            if (knex_c){
+            if (knex_c) {
                 await knex_c.raw("SELECT 1+1");
-                return true;
+                return conn_info;
             }
             return `createDb - Failed create DB: ${db_name}`;
         }
@@ -154,36 +154,33 @@ export async function createDb(db_file: string, db_name: string): Promise<true |
     return `createDb - Failed connect to or create DB`;
 }
 
-export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<true | string> {
+export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<Dict<any> | string> {
     // Try connecting to the given DB - should fail
     if (!db_name.match(/[^.]+\.[^.]+/))
         db_name += ".sqlite";
-    conn_info.connection.filename = db_name;
 
     // Try to connect to the DB - with named DB - should fail 
-    try {
-        let knex_c = await connect(conn_info);
-        if (knex_c) return `createDbSqlite - Database ${db_name} already exists`;
-    } catch (e) { /* As it should */ }
+    // We cannot use this method with SQLite3, as it does not differentiate
+    // whether the DB exists beforehand or not. 
+    // Look for the DB file instead 
+    if (existsSync(db_name)) {
+        return `createDbSqlite - Database ${db_name} already exists`;
+    }
 
-    // Remove the DB name - and retry 
-    delete conn_info.connection.filename;
-
-    // Try to connect to the DB - without named DB - should succeed
+    // Try to connect to unnamed sqlite - it should create the named DB
     try {
+        conn_info.connection.filename = db_name;
         let knex_c = await connect(conn_info);
         if (knex_c) {
-            let r = await knex_c.raw(`.save "${db_name}"`);
-            conn_info.connection.filename = db_name;
-            knex_c = await connect(conn_info);
-            if (knex_c) return true;
-            return `createDbSqlite - Failed create DB: ${db_name}`;
+            let r = await knex_c.raw(`SELECT 1+1`);
+            return conn_info;
         }
-    } catch (e) { }
+    } catch (e) {
+        console.log("connect error", e);
+    }
 
-    return `createDbSqlite - Failed connect in order to create DB`;
+    return `createDbSqlite - Failed connect to or create DB`;
 }
-
 
 function parseDbFile(db_file: string): Dict<any> {
     // Look for a connection file - or use ENV vars 

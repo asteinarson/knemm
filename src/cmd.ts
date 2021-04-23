@@ -269,7 +269,7 @@ async function handleCreateDb(db_file: string, dbname: string, options: any): Pr
         console.log("createdb - failed: " + r );
         return 10;
     }
-    console.log(`Database <${dbname}> was created.`);
+    console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
     return 0;
 }
 
