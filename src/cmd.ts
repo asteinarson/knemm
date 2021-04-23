@@ -61,13 +61,13 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     {
         name: "info",
         desc: "Show info about this <state>",
-        a1: "state",
+        a1: null,
         a2: null,
     },
     {
         name: "connect",
         desc: "Connect this <DB> to the specified state",
-        a1: "db",
+        a1: "*db",
         a2: null,
     },
     {
@@ -94,7 +94,10 @@ for (let c of cmds) {
             .action(async (a1, a2, options) => { process.exit(await handleTwoArgCmd(c.name, a1, a2, options)) });
     } else if (c.a1) {
         // A one arg command
-        _c = cmd.command(`${c.name} <${c.a1}>`)
+        let cmd_str = c.name  + " ";
+        if( c.a1[0]=="*" ) cmd_str += `<${c.a1.slice(1)}>`;
+        else cmd_str += `[${c.a1}]`;
+        _c = cmd.command(cmd_str)
             .action(async (a1, options) => { process.exit(await handleOneArgCmd(c.name, a1, options)) });
     } else {
         // A no arg command
@@ -194,7 +197,8 @@ async function handleOneArgCmd(cmd: string, files: string[], options: any): Prom
             break;
 
         case "connect":
-            if (!state_dir);
+            if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
+            break;
 
     }
     return rc;
