@@ -6,3 +6,5 @@ db:*
 *.yaml 
 *.sql
 *.sql3
+*.sqlite
+
