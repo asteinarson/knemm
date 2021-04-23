@@ -1,3 +1,4 @@
+#! /usr/bin/env node 
 import cmder, { Command } from "commander";
 
 type CmdOptionAdder = (cmd: cmder.Command) => void;
