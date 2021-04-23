@@ -70,6 +70,17 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
     return existsSync(m_yaml);
 }
 
+const state_excludes: Dict<1> = {
+    "___merge.yaml": 1,
+    "___db.yaml": 1,
+    ".dbstate": 1,
+    "./.dbstate": 1,
+}
+
+function excludeFromState(file: string) {
+    return state_excludes[file];
+}
+
 // Rebuild the state directory from claims that are stored in the directory
 export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     if (!existsSync(state_dir))
@@ -77,7 +88,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     // Build a list of modules with last versions 
     let file_dicts: Dict<Dict<any>> = {};
     for (const f of readdirSync(state_dir)) {
-        if (f == "___merge.yaml") continue;
+        if (excludeFromState(f)) continue;
         if (f.match(re_yj)) {
             try {
                 // Doing the await here (fileToNestedDict declared async without being so) 
@@ -104,7 +115,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     }
 }
 
-function parseDbFile(db_file:string){
+function parseDbFile(db_file: string) {
     // Look for a connection file - or use ENV vars 
     let conn_info: Dict<any>;
     if (db_file != "%" && db_file.slice(3) != "%") {
@@ -145,14 +156,15 @@ async function dbFileToKnex(db_file: string): Promise<Knex> {
 }
 
 
-export async function connectState(state_dir:string, db_file: string, options: Dict<any>): Promise<true | string> {
+export async function connectState(state_dir: string, db_file: string, options: Dict<any>): Promise<true | string> {
     let conn_info = parseDbFile(db_file);
-    if( !conn_info ) return `connectState - Could not parse: ${db_file}`;
+    if (!conn_info) return `connectState - Could not parse: ${db_file}`;
     let knex_c = await connect(conn_info);
-    if( !knex_c ) return "connectState - Could not connect to DB";
+    if (!knex_c) return "connectState - Could not connect to DB";
 
     // All we have to do is to copy <db_file> int <state_dir>
-    copyFileSync(db_file, path.join(state_dir,"___db"));
+    //copyFileSync(db_file, path.join(state_dir,"___db"));
+    writeFileSync(path.join(state_dir, "___db.yaml"), yamlDump(conn_info));
     return true;
 }
 
@@ -230,9 +242,9 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         r = stateToNestedDict(state_dir);
         return r;
     }
-    else if (file_or_db=="%" || file_or_db.slice(0, 3) == "db:") {
+    else if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {
         let knex_c = await dbFileToKnex(file_or_db);
-        if( !knex_c ) return errorRv("toNestedDict - Could not connect to DB");
+        if (!knex_c) return errorRv("toNestedDict - Could not connect to DB");
         let rs = await slurpSchema(knex_c);
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
