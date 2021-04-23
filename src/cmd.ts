@@ -66,22 +66,22 @@ function addClaimOptions(cmd: cmder.Command) {
     },
     {
         name: "connect",
-        desc: "Connect this <DB> to the given <state>",
+        desc: "Connect this <DB> to the specified state",
         a1: "db", 
-        a2: "state",
+        a2: null, 
     },
     {
         name: "apply",
-        desc: "On this DB (or state), apply this claim",
-        a1: "DB",
-        a2: "target",
+        desc: "On this state (and connected DB), apply this claim",
+        a1: "state/DB",
+        a2: "claims",
         options: [addClaimOptions],
     },
     {
         name: "reverse",
-        desc: "On this DB (or state), reverse this claim ",
-        a1: "DB",
-        a2: "target",
+        desc: "On this state (and connected DB), reverse this claim",
+        a1: "state/DB",
+        a2: "undo_claim",
     },
 ];
 
@@ -114,7 +114,7 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    fileToNestedDict, stateToNestedDict, getInitialState, rebuildState, reformatTables
+    stateToNestedDict, rebuildState, reformatTables
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
