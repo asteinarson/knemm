@@ -83,7 +83,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
                 // Doing the await here (fileToNestedDict declared async without being so) 
                 // causes nested funcyion to return to the parent function (!)
                 //let r = await fileToNestedDict(path.join(state_dir, f), true);
-                let r = fileToNestedDict(path.join(state_dir, f), true,"internal");
+                let r = fileToNestedDict(path.join(state_dir, f), true, "internal");
                 if (r?.id) file_dicts[f] = r;
                 else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
             } catch (e) {
@@ -104,6 +104,58 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     }
 }
 
+function parseDbFile(db_file:string){
+    // Look for a connection file - or use ENV vars 
+    let conn_info: Dict<any>;
+    if (db_file != "%" && db_file.slice(3) != "%") {
+        let r = slurpFile(db_file);
+        if (typeof r == "object") conn_info = r as Dict<string>;
+    } else {
+        // '%' means use ENV vars
+        conn_info = {
+            host: process.env.HOST,
+            user: process.env.USER,
+            password: process.env.PASSWORD,
+        }
+        if (process.env.DATABASE)
+            conn_info.database = process.env.DATABASE;
+    }
+
+    if (!conn_info.connection) {
+        conn_info = {
+            connection: conn_info
+        };
+    }
+    if (!conn_info.client) conn_info.client = "pg";
+
+    return conn_info;
+}
+
+async function dbFileToKnex(db_file: string): Promise<Knex> {
+    let conn_info = parseDbFile(db_file);
+    // Get our dict from DB conn ? 
+    if (conn_info) {
+        //if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
+        try {
+            return await connect(conn_info);
+        } catch (e) {
+            return errorRv(`dbFileToKnex - failed connect for <${db_file}>: ${e}`);
+        }
+    }
+}
+
+
+export async function connectState(state_dir:string, db_file: string, options: Dict<any>): Promise<true | string> {
+    let conn_info = parseDbFile(db_file);
+    if( !conn_info ) return `connectState - Could not parse: ${db_file}`;
+    let knex_c = await connect(conn_info);
+    if( !knex_c ) return "connectState - Could not connect to DB";
+
+    // All we have to do is to copy <db_file> int <state_dir>
+    copyFileSync(db_file, path.join(state_dir,"___db"));
+    return true;
+}
+
 export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
     if (!existsSync(dir))
         return quiet ? undefined : errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
@@ -122,15 +174,15 @@ export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
 
 export type FormatType = "internal" | "hr-compact";
 
-export function reformatTopLevel(claim:Dict<any>,format?:FormatType){
-    if( claim.___tables ) {
+export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
+    if (claim.___tables) {
         if (format && claim.format != format) {
             claim.___tables = reformatTables(claim.___tables, format);
             claim.format = format;
         }
     }
-    else 
-        claim.___tables = {}    
+    else
+        claim.___tables = {}
 }
 
 export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
@@ -138,7 +190,7 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
     let rf = slurpFile(file, quiet);
     if (!rf) {
         if (!quiet)
-        console.log("fileToNestedDict - file not found: " + file);
+            console.log("fileToNestedDict - file not found: " + file);
     }
     else if (isDict(rf)) {
         // Is it a claim with top level props, or just the tables? 
@@ -154,7 +206,7 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
             r.id = claimIdFromName(file);
         else if (typeof r.id == "string")
             r.id = claimIdFromName(r.id + ".yaml");
-        reformatTopLevel(r,format);
+        reformatTopLevel(r, format);
         return r;
     }
 }
@@ -170,8 +222,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         let state_dir: string;
         if (file_or_db == "@") {
             if (options.state == false) {
-                console.error("toNestedDict - Cannot resolve default state (@)");
-                return;
+                return errorRv("toNestedDict - Cannot resolve default state (@)");
             }
             state_dir = options.state || "./.dbstate";
         }
@@ -179,48 +230,22 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         r = stateToNestedDict(state_dir);
         return r;
     }
-    else if (file_or_db.slice(0, 3) == "db:") {
-        // Look for a connection file - or use ENV vars 
-        let conn_info: Dict<string>;
-        if (file_or_db.slice(3) != "%") {
-            let r = slurpFile(file_or_db);
-            if (typeof r == "object") conn_info = r as Dict<string>;
-        } else {
-            // '%' means use ENV vars
-            conn_info = {
-                host: process.env.HOST,
-                user: process.env.USER,
-                password: process.env.PASSWORD,
-            }
-            if (process.env.DATABASE)
-                conn_info.database = process.env.DATABASE;
+    else if (file_or_db=="%" || file_or_db.slice(0, 3) == "db:") {
+        let knex_c = await dbFileToKnex(file_or_db);
+        if( !knex_c ) return errorRv("toNestedDict - Could not connect to DB");
+        let rs = await slurpSchema(knex_c);
+        if (rs) {
+            // Keep the connection object here - it allows later knowing it is attached to a DB
+            r.source = "*db";
+            r.connection = knex_c;
+            r.format = "internal";
+            r.___tables = rs;
         }
-
-        // Get our dict from DB conn ? 
-        if (conn_info) {
-            //if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
-            try {
-                let knex_c:Knex;
-                if( !conn_info.connection ) knex_c = await connect(conn_info);
-                else{
-                    if( !conn_info.client ) conn_info.client = "pg";
-                    knex_c = await connect(conn_info);
-                }
-                let rs = await slurpSchema(knex_c);
-                if (rs) {
-                    // Keep the connection object here - it allows later knowing it is attached to a DB
-                    r.source = "*db";
-                    r.connection = knex_c;
-                    r.format = "internal";
-                    r.___tables = rs;
-                }
-            } catch( e ){
-                return errorRv(`toNestedDict - failed connect/slurpSchema for <${file_or_db}>: ${e}`);
-            }
-        }
+        else return errorRv("toNestedDict - Failed slurpSchema");
     }
-    else r = fileToNestedDict(file_or_db,false,format);
-    reformatTopLevel(r,format);
+    else r = fileToNestedDict(file_or_db, false, format);
+    reformatTopLevel(r, format);
+
     return r;
 }
 
@@ -503,7 +528,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                             if (ver_by_br[r.id.branch] &&
                                 typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch] &&
                                 !cl_by_br[r.id.branch][r.id.version]) {
-                                reformatTopLevel(r,"internal");
+                                reformatTopLevel(r, "internal");
                                 cl_by_br[r.id.branch][r.id.version] = r;
                                 file_dicts[file] = r;   // Keep track of file for later updating state dir
                             }
@@ -541,7 +566,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
     let merge = merge_base.___tables;
     for (let claim of claims) {
         // Keep track of the current version of each module
-        if( claim.format!="internal" ){
+        if (claim.format != "internal") {
             errors.push(`Claim <${claim.id.branch}:${claim.id.version}> is not in internal format`);
             continue;
         }

@@ -117,11 +117,12 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables
+    stateToNestedDict, rebuildState, reformatTables, connectState
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
-import { getDirsFromFileList } from "./file-utils.js";
+import { getDirsFromFileList, slurpFile } from "./file-utils.js";
+import { existsSync } from "node:fs";
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     if (!Array.isArray(r)) {
@@ -153,7 +154,7 @@ async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     return rc;
 }
 
-async function handleOneArgCmd(cmd: string, files: string[], options: any): Promise<number> {
+async function handleOneArgCmd(cmd: string, a1: string|string[], options: any): Promise<number> {
     //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
@@ -161,6 +162,7 @@ async function handleOneArgCmd(cmd: string, files: string[], options: any): Prom
 
     switch (cmd) {
         case "join":
+            let files: string[] = a1 as string[];
             let dirs = getDirsFromFileList(files);
             if (!options.paths) options.paths = dirs;
             else options.paths = append(options.paths, dirs);
@@ -198,6 +200,13 @@ async function handleOneArgCmd(cmd: string, files: string[], options: any): Prom
 
         case "connect":
             if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
+            // Get the DB connection 
+            let r = await connectState(state_dir, a1 as string, options);
+            if( r==true ) return 0;
+            else{
+                console.error(r);
+                return 101;
+            }
             break;
 
     }
