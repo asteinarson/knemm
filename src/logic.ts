@@ -127,7 +127,10 @@ export async function createDb(db_file: string, db_name: string): Promise<true |
     conn_info.connection.database = db_name;
     try {
         let knex_c = await connect(conn_info);
-        if (knex_c) return `createDb - Database ${db_name} already exists`;
+        if (knex_c) {
+            await knex_c.raw("SELECT 1+1");
+            return `createDb - Database ${db_name} already exists`;
+        }
     } catch (e) { /* As it should */ }
 
     // Remove the DB name - and retry 
@@ -140,12 +143,15 @@ export async function createDb(db_file: string, db_name: string): Promise<true |
             // Then try to connect to it
             conn_info.connection.database = db_name;
             knex_c = await connect(conn_info);
-            if (knex_c) return true;
+            if (knex_c){
+                await knex_c.raw("SELECT 1+1");
+                return true;
+            }
             return `createDb - Failed create DB: ${db_name}`;
         }
     } catch (e) { }
 
-    return `createDb - Failed connect in order to create DB`;
+    return `createDb - Failed connect to or create DB`;
 }
 
 export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<true | string> {
