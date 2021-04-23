@@ -73,29 +73,38 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     {
         name: "apply",
         desc: "On this state (and connected DB), apply this claim",
-        a1: "state/DB",
-        a2: "claims",
+        a1: "claims",
+        a2: null,
         options: [addClaimOptions],
     },
     {
         name: "reverse",
         desc: "On this state (and connected DB), reverse this claim",
-        a1: "state/DB",
-        a2: "undo_claim",
+        a1: "*claim",
+        a2: null,
     },
+    {
+        name: "createdb",
+        desc: "Create a DB (after checking for existence)",
+        a1: "db",
+        a2: "dbname",
+    }
 ];
 
 let cmd = new Command();
 for (let c of cmds) {
     let _c: cmder.Command;
-    if (c.a2) {
+    if( c.name=="createdb" ){
+        _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
+            .action(async (db, dbname, options) => { process.exit(await handleCreateDb(db, dbname, options)) });
+    } else if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
             .action(async (a1, a2, options) => { process.exit(await handleTwoArgCmd(c.name, a1, a2, options)) });
     } else if (c.a1) {
         // A one arg command
-        let cmd_str = c.name  + " ";
-        if( c.a1[0]=="*" ) cmd_str += `<${c.a1.slice(1)}>`;
+        let cmd_str = c.name + " ";
+        if (c.a1[0] == "*") cmd_str += `<${c.a1.slice(1)}>`;
         else cmd_str += `[${c.a1}]`;
         _c = cmd.command(cmd_str)
             .action(async (a1, options) => { process.exit(await handleOneArgCmd(c.name, a1, options)) });
@@ -154,7 +163,7 @@ async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     return rc;
 }
 
-async function handleOneArgCmd(cmd: string, a1: string|string[], options: any): Promise<number> {
+async function handleOneArgCmd(cmd: string, a1: string | string[], options: any): Promise<number> {
     //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
@@ -202,13 +211,18 @@ async function handleOneArgCmd(cmd: string, a1: string|string[], options: any): 
             if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
             // Get the DB connection 
             let r = await connectState(state_dir, a1 as string, options);
-            if( r==true ) return 0;
-            else{
+            if (r == true) return 0;
+            else {
                 console.error(r);
                 return 101;
             }
             break;
 
+        case "apply":
+            break;
+
+        case "reverse":
+            break;
     }
     return rc;
 }
@@ -245,10 +259,11 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
                 logResult(r, options);
             }
             break;
-        case "apply":
-            break;
-        case "reverse":
-            break;
     }
     return rc;
 }
+
+async function handleCreateDb(db: string, dbname: string, options: any): Promise<number> {
+    return;
+}
+
