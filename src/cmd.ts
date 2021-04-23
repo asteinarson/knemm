@@ -263,8 +263,8 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
     return rc;
 }
 
-async function handleCreateDb(db: string, dbname: string, options: any): Promise<number> {
-    let r = await createDb(db,dbname);
+async function handleCreateDb(db_file: string, dbname: string, options: any): Promise<number> {
+    let r = await createDb(db_file,dbname);
     if( typeof r == "string" ){
         console.log("createdb - failed: " + r );
         return 10;
