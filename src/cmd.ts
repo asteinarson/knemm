@@ -3,20 +3,22 @@ import cmder, { Command } from "commander";
 type CmdOptionAdder = (cmd: cmder.Command) => void;
 
 function addBaseOptions(cmd: cmder.Command) {
-    cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
-    cmd.option("-j --json", "Generate output in JSON - not in YAML");
-    cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
     cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
-    //cmd.option("--no-state", "Do not use a state dir, even if found");
+}
+
+function addIncludeExcludeOptions(cmd: cmder.Command) {
     cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
     cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
 }
 
-function addJoinOptions(cmd: cmder.Command) {
-    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
+function addOutputOptions(cmd: cmder.Command) {
+    cmd.option("-i --internal", "Set outputs formating to internal - (instead of hrc - human readable compact)");
+    cmd.option("-j --json", "Generate output in JSON - not in YAML");
 }
 
-function addPruneOptions(cmd: cmder.Command) {
+function addClaimOptions(cmd: cmder.Command) {
+    cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
+    cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
 }
 
  let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
@@ -25,7 +27,7 @@ function addPruneOptions(cmd: cmder.Command) {
         desc: "Join together all input claims and print them out",
         a1: "claims...",
         a2: null,
-        options: [addJoinOptions],
+        options: [addClaimOptions,addOutputOptions,addIncludeExcludeOptions],
     },
     {
         name: "rebuild",
@@ -38,19 +40,22 @@ function addPruneOptions(cmd: cmder.Command) {
         name: "diff",
         desc: "See diff from <candidate/DB> to <target>",
         a1: "candidate",
-        a2: "target"
+        a2: "target",
+        options: [addClaimOptions,addOutputOptions,addIncludeExcludeOptions],
     },
     {
         name: "possible",
         desc: "On this <candidate/DB>, see if <target> can be applied",
         a1: "candidate",
         a2: "target",
+        options: [addClaimOptions, addIncludeExcludeOptions],
     },
     {
         name: "fulfills",
         desc: "See if <candidate/DB> fulfills <target>",
         a1: "candidate",
-        a2: "target"
+        a2: "target",
+        options: [addClaimOptions, addIncludeExcludeOptions],
     },
     {
         name: "info",
@@ -69,6 +74,7 @@ function addPruneOptions(cmd: cmder.Command) {
         desc: "On this DB (or state), apply this claim",
         a1: "DB",
         a2: "target",
+        options: [addClaimOptions],
     },
     {
         name: "reverse",
