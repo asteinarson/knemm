@@ -126,7 +126,7 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
@@ -264,6 +264,11 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
 }
 
 async function handleCreateDb(db: string, dbname: string, options: any): Promise<number> {
-    return;
+    let r = await createDb(db,dbname);
+    if( typeof r == "string" ){
+        console.log("createdb - failed: " + r );
+        return 10;
+    }
+    return 0;
 }
 

@@ -115,6 +115,10 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     }
 }
 
+export async function createDb(db_file:string, db_name:string ): Promise<true | string> {
+    return true;
+}
+
 function parseDbFile(db_file: string) {
     // Look for a connection file - or use ENV vars 
     let conn_info: Dict<any>;
