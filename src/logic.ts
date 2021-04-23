@@ -92,7 +92,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
         if (f.match(re_yj)) {
             try {
                 // Doing the await here (fileToNestedDict declared async without being so) 
-                // causes nested funcyion to return to the parent function (!)
+                // causes nested function to return to the parent function (!)
                 //let r = await fileToNestedDict(path.join(state_dir, f), true);
                 let r = fileToNestedDict(path.join(state_dir, f), true, "internal");
                 if (r?.id) file_dicts[f] = r;
