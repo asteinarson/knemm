@@ -1,4 +1,4 @@
-#! /usr/bin/env node 
+#! /usr/bin/env node
 import cmder, { Command } from "commander";
 
 type CmdOptionAdder = (cmd: cmder.Command) => void;
@@ -22,13 +22,13 @@ function addClaimOptions(cmd: cmder.Command) {
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
 }
 
- let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
+let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
     {
         name: "join",
         desc: "Join together all input claims and print them out",
         a1: "claims...",
         a2: null,
-        options: [addClaimOptions,addOutputOptions,addIncludeExcludeOptions],
+        options: [addClaimOptions, addOutputOptions, addIncludeExcludeOptions],
     },
     {
         name: "rebuild",
@@ -42,7 +42,7 @@ function addClaimOptions(cmd: cmder.Command) {
         desc: "See diff from <candidate/DB> to <target>",
         a1: "candidate",
         a2: "target",
-        options: [addClaimOptions,addOutputOptions,addIncludeExcludeOptions],
+        options: [addClaimOptions, addOutputOptions, addIncludeExcludeOptions],
     },
     {
         name: "possible",
@@ -67,8 +67,8 @@ function addClaimOptions(cmd: cmder.Command) {
     {
         name: "connect",
         desc: "Connect this <DB> to the specified state",
-        a1: "db", 
-        a2: null, 
+        a1: "db",
+        a2: null,
     },
     {
         name: "apply",
@@ -91,16 +91,17 @@ for (let c of cmds) {
     if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
-            .action((a1, a2, options) => { handleTwoArgCmd(c.name, a1, a2, options) });
+            .action(async (a1, a2, options) => { process.exit(await handleTwoArgCmd(c.name, a1, a2, options)) });
     } else if (c.a1) {
         // A one arg command
         _c = cmd.command(`${c.name} <${c.a1}>`)
-            .action((a1, options) => { handleOneArgCmd(c.name, a1, options) });
+            .action(async (a1, options) => { process.exit(await handleOneArgCmd(c.name, a1, options)) });
     } else {
         // A no arg command
         _c = cmd.command(`${c.name}`)
-            .action((options) => { handleNoArgCmd(c.name, options) });
+            .action(async (options) => { process.exit(await handleNoArgCmd(c.name, options)) });
     }
+    // Add command specific parts from decl table above
     _c.description(c.desc)
     addBaseOptions(_c);
     if (c.options) {
@@ -109,7 +110,6 @@ for (let c of cmds) {
         }
     }
 }
-
 cmd.parse(process.argv);
 
 import {
@@ -120,7 +120,7 @@ import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList } from "./file-utils.js";
 
-function logResult(r: Dict<any> | string[], options: any, rc_err?:number ) {
+function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     if (!Array.isArray(r)) {
         if (!options.internal)
             r = reformatTables(r, "hr-compact");
@@ -136,68 +136,71 @@ function logResult(r: Dict<any> | string[], options: any, rc_err?:number ) {
     }
 }
 
-async function handleNoArgCmd(cmd: string, options: any) {
+async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
     let rc = 100;
     try {
         if (cmd == "rebuild") {
-            if (!state_dir) {
-                console.error("The rebuild option requires a state directory (-s option)");
-                process.exit(rc);
-            }
+            if (!state_dir) return errorRv("The rebuild option requires a state directory (-s option)", 10);
             rc = rebuildState(state_dir, options) ? 0 : 101;
         }
     } catch (e) {
         console.log("handleNoArg - exception: " + e);
     }
-    process.exit(rc);
+    return rc;
 }
 
-async function handleOneArgCmd(cmd: string, files: string[], options: any) {
+async function handleOneArgCmd(cmd: string, files: string[], options: any): Promise<number> {
     //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
     let rc = 100;
 
-    if (cmd == "join") {
-        let dirs = getDirsFromFileList(files);
-        if (!options.paths) options.paths = dirs;
-        else options.paths = append(options.paths, dirs);
+    switch (cmd) {
+        case "join":
+            let dirs = getDirsFromFileList(files);
+            if (!options.paths) options.paths = dirs;
+            else options.paths = append(options.paths, dirs);
 
-        let state_base: Dict<any>;
-        if (state_dir) state_base = stateToNestedDict(state_dir, true);
-        let file_dicts: Dict<Dict<any>> = {};
-        for (let f of files) {
-            let r = await toNestedDict(f, options);
-            if (r) {
-                if (r.source == "*file") file_dicts[f] = r;
-                else {
-                    if (state_dir)
-                        return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`);
-                    if (state_base)
-                        return errorRv(`join: Cannot specify multiple DB or state dirs in <join> (already have one)`);
-                    // Accept it 
-                    state_base = r;
+            let state_base: Dict<any>;
+            if (state_dir) state_base = stateToNestedDict(state_dir, true);
+            let file_dicts: Dict<Dict<any>> = {};
+            for (let f of files) {
+                let r = await toNestedDict(f, options);
+                if (r) {
+                    if (r.source == "*file") file_dicts[f] = r;
+                    else {
+                        if (state_dir)
+                            return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`, 10);
+                        if (state_base)
+                            return errorRv(`join: Cannot specify multiple DB or state dirs in <join> (already have one)`, 10);
+                        // Accept it 
+                        state_base = r;
+                    }
                 }
+                else console.error("join: could not resolve source: " + f);
             }
-            else console.error("join: could not resolve source: " + f);
-        }
-        let dicts = dependencySort(file_dicts, state_base, options);
-        if (dicts) {
-            let state = mergeClaims(dicts, state_base, options);
-            if (isDict(state)) {
-                if (state_dir && dicts.length)
-                    storeState(Object.keys(file_dicts), state_dir, state, options);
-                // This is for outputting just the tables, below
-                state = state.___tables;
+            let dicts = dependencySort(file_dicts, state_base, options);
+            if (dicts) {
+                let state = mergeClaims(dicts, state_base, options);
+                if (isDict(state)) {
+                    if (state_dir && dicts.length)
+                        storeState(Object.keys(file_dicts), state_dir, state, options);
+                    // This is for outputting just the tables, below
+                    state = state.___tables;
+                }
+                rc = logResult(state, options, 101);
             }
-            rc = logResult(state, options,101);
-        }
+            break;
+
+        case "connect":
+            if (!state_dir);
+
     }
-    process.exit(rc);
+    return rc;
 }
 
-async function handleTwoArgCmd(cmd: string, candidate: string, target: string, options: any) {
+async function handleTwoArgCmd(cmd: string, candidate: string, target: string, options: any): Promise<number> {
     //console.log(options);
     //process.exit(1);
     //console.log("handleTwoArgs: " + cmd, target, candidate, options);
@@ -225,7 +228,7 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
             r = matchDiff(cand.___tables, tgt.___tables);
             // Only generate an empty response if the diff is empty
             rc = 0;
-            if (Array.isArray(r) || firstKey(r)){
+            if (Array.isArray(r) || firstKey(r)) {
                 logResult(r, options);
             }
             break;
@@ -234,5 +237,5 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
         case "reverse":
             break;
     }
-    process.exit(rc);
+    return rc;
 }
