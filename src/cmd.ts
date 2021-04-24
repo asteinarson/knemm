@@ -250,11 +250,13 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
                 // See that DB currently fulfills existing claims
                 let rs = await syncDbWith(state_base, conn_info, options);
                 if (rs != true) return logResult(rs, options, 101);
+                console.log("apply - DB synced with existing state");
 
                 // Apply new claims on state 
 
                 // See that DB fulfills those claims
 
+                rc = 0;
                 break;
             }
 

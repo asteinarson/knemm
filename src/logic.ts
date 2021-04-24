@@ -495,6 +495,8 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
     // Do the diff 
     let diff = matchDiff(state_db, state.___tables);
     if (isArray(diff)) return diff;
+    if( !firstKey(diff) ) return true; 
+    
     // So we have a minimal diff to apply one the DB 
     try {
         let r = await modifySchema(knex_c, diff, state_db);

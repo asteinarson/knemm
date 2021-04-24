@@ -136,8 +136,8 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
     for (let t in delta) {
         let t_delta = delta[t];
         if (t_delta !== "*NOT") {
-            // Predicament of using either createTable / alterTable leads us here
-            let change_fn = (table:any) => {
+            //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
+            let r = await conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
                     let col_delta = delta[t][col];
                     if (col_delta != "*NOT") {
@@ -249,11 +249,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         table.dropColumn(col);
                     }
                 }
-            }
-            let rr:any;
-            if( state[t] ) rr = await conn.schema.alterTable( t, change_fn );
-            else rr = await conn.schema.createTable(t, change_fn);
-            rr = 1;
+            });
         }
         else {
             let r = await conn.schema.dropTable(t);
