@@ -27,6 +27,10 @@ function addClaimOptions(cmd: cmder.Command) {
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
 }
 
+function addDbOption(cmd: cmder.Command) {
+    cmd.option("-d --database <db_file>", "Use this DB connection - instead of default");
+}
+
 let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
     {
         name: "join",
@@ -80,7 +84,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
         desc: "On this state (and connected DB), apply this/these claim(s)",
         a1: "claims...",
         a2: null,
-        options: [addClaimOptions],
+        options: [addClaimOptions,addDbOption],
     },
     {
         name: "reverse",
@@ -233,8 +237,9 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
             if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
             state_base = stateToNestedDict(state_dir, true);
             if( !state_base ) return errorRv("Failed reading state in: "+state_dir, 10);
-            // !! Check for an explicit DB conn here first 
-            let conn_info = slurpFile(path.join(state_dir, "___db.yaml"));
+            // Check for an explicit DB conn here first 
+            let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
+            let conn_info = slurpFile(db_file);
             if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
 
             // See that DB currently fulfills existing claims
@@ -304,7 +309,7 @@ async function handleCreateDb(db_file: string, dbname: string, options: any): Pr
         }
         let s: string;
         if (options.outfile.match(/.(json|JSON)/))
-            s = JSON.stringify(r);
+            s = JSON.stringify(r,null,2);
         else {
             if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
             s = yamlDump(r);
