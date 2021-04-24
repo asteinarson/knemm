@@ -136,13 +136,14 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
 import { getDirsFromFileList, slurpFile } from "./file-utils.js";
 import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { isArray } from "lodash";
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     if (!Array.isArray(r)) {
@@ -209,6 +210,10 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
                     }
                     else console.error("join: could not resolve source: " + f);
                 }
+                let state = sortMergeStoreState(file_dicts, state_dir, state_base, options);
+                if (isDict(state)) state = state_base.___tables;
+                rc = logResult(state, options, 101);
+                /*
                 let dicts = dependencySort(file_dicts, state_base, options);
                 if (dicts) {
                     let state = mergeClaims(dicts, state_base, options);
@@ -219,7 +224,7 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
                         state = state.___tables;
                     }
                     rc = logResult(state, options, 101);
-                }
+                }*/
                 break;
             }
 
@@ -253,11 +258,28 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
                 console.log("apply - DB synced with existing state");
 
                 // Apply new claims on state 
+                if (files.length) {
+                    let file_dicts: Dict<Dict<any>> = {};
+                    let es: string[] = [];
+                    for (let f of files) {
+                        let r = await fileToNestedDict(f, options);
+                        if (r) file_dicts[f] = r;
+                        else es.push("apply - failed parsing claim: " + f);
+                    }
+                    if (es.length) return logResult(es,options,101);
+                    let state = sortMergeStoreState(file_dicts,state_dir,state_base,options);
+                    if( isArray(state) ) return logResult(state,options,102);
+                    console.log("apply - New claims merged into state state");
 
-                // See that DB fulfills those claims
+                    // See that DB fulfills those claims
+                    let rs = await syncDbWith(state_base, conn_info, options);
+                    if (rs != true) return logResult(rs, options, 103);
+                    console.log("apply - DB synced with new claims merged into state");
 
-                rc = 0;
-                break;
+                    rc = 0;
+                    break;
+                }
+
             }
 
         case "reverse":

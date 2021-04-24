@@ -115,6 +115,23 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     }
 }
 
+export function sortMergeStoreState(
+    file_dicts: Dict<Dict<any>>,
+    state_dir: string,
+    state_base: Dict<any>,
+    options: Dict<any>): true | string {
+    let dicts = dependencySort(file_dicts, state_base, options);
+    if (!dicts) return "sortMergeStoreState - Failed dependencySort";
+    if (!dicts.length) return true;
+    
+    let state = mergeClaims(dicts, state_base, options);
+    if (isDict(state)) {
+        if (state_dir && dicts.length)
+            storeState(Object.keys(file_dicts), state_dir, state, options);
+    }
+    else return state.join("\n");
+}
+
 export async function createDb(db_file: string, db_name: string): Promise<Dict<any> | string> {
     let conn_info = parseDbFile(db_file);
     if (!conn_info) return "createDb - could not connect to DB";
@@ -495,8 +512,8 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
     // Do the diff 
     let diff = matchDiff(state_db, state.___tables);
     if (isArray(diff)) return diff;
-    if( !firstKey(diff) ) return true; 
-    
+    if (!firstKey(diff)) return true;
+
     // So we have a minimal diff to apply one the DB 
     try {
         let r = await modifySchema(knex_c, diff, state_db);
