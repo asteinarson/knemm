@@ -1,11 +1,11 @@
 import { Dict, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys } from './utils.js';
-import pkg from 'lodash';
+import pkg, { isArray } from 'lodash';
 const { invert: ldInvert } = pkg;
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props.js';
 
 import { fileNameOf, slurpFile } from "./file-utils.js";
-import { connect, slurpSchema } from './db-utils.js'
+import { connect, modifySchema, slurpSchema } from './db-utils.js'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { dump as yamlDump } from 'js-yaml';
@@ -479,6 +479,30 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
         }
     }
     return errors.length ? errors : r;
+}
+
+export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string[]> {
+    // Prepare
+    if (typeof db_conn == "string") {
+        db_conn = parseDbFile(db_conn);
+        if (!db_conn) return ["syncDbWith - Failed parseDbFile for: " + db_conn];
+    }
+    let knex_c = await connect(db_conn);
+    if (!knex_c) return ["syncDbWith - Failed connect"];
+    let state_db = await slurpSchema(knex_c, options.includes, options.excludes);
+    if (!state_db) return ["syncDbWith - Failed slurpSchema"];
+
+    // Do the diff 
+    let diff = matchDiff(state_db, state.___tables);
+    if (isArray(diff)) return diff;
+    // So we have a minimal diff to apply one the DB 
+    try {
+        let r = await modifySchema(knex_c, diff, state_db);
+    } catch (e) {
+        return ["syncDbWith: exception in modifySchema", e.toString()];
+    }
+
+    return true;
 }
 
 // Regular expression to extract claim (name,number) from a string/filename

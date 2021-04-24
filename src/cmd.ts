@@ -132,7 +132,7 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
@@ -233,10 +233,13 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
             if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
             state_base = stateToNestedDict(state_dir, true);
             if( !state_base ) return errorRv("Failed reading state in: "+state_dir, 10);
+            // !! Check for an explicit DB conn here first 
             let conn_info = slurpFile(path.join(state_dir, "___db.yaml"));
-            if (!conn_info) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
+            if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
 
             // See that DB currently fulfills existing claims
+            let rs = await syncDbWith(state_base, conn_info, options); 
+            if( rs!=true ) return logResult(rs,options,101);
 
             // Apply new claims on state 
 
