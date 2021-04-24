@@ -77,14 +77,14 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     },
     {
         name: "apply",
-        desc: "On this state (and connected DB), apply this claim",
-        a1: "claims",
+        desc: "On this state (and connected DB), apply this/these claim(s)",
+        a1: "claims...",
         a2: null,
         options: [addClaimOptions],
     },
     {
         name: "reverse",
-        desc: "On this state (and connected DB), reverse this claim",
+        desc: "On this state (and connected DB), reverse this/these claim(s)",
         a1: "*claim",
         a2: null,
     },
@@ -176,13 +176,16 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
     let state_dir = getStateDir(options);
     let rc = 100;
 
+    let files: string[];
+    if (cmd == "join" || cmd == "apply") {
+        files = a1 as string[];
+        let dirs = getDirsFromFileList(files);
+        if (!options.paths) options.paths = dirs;
+        else options.paths = append(options.paths, dirs);
+    }
+
     switch (cmd) {
         case "join":
-            let files: string[] = a1 as string[];
-            let dirs = getDirsFromFileList(files);
-            if (!options.paths) options.paths = dirs;
-            else options.paths = append(options.paths, dirs);
-
             let state_base: Dict<any>;
             if (state_dir) state_base = stateToNestedDict(state_dir, true);
             let file_dicts: Dict<Dict<any>> = {};
@@ -226,6 +229,19 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
             break;
 
         case "apply":
+            // Prepare state and DB conn 
+            if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
+            state_base = stateToNestedDict(state_dir, true);
+            if( !state_base ) return errorRv("Failed reading state in: "+state_dir, 10);
+            let conn_info = slurpFile(path.join(state_dir, "___db.yaml"));
+            if (!conn_info) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
+
+            // See that DB currently fulfills existing claims
+
+            // Apply new claims on state 
+
+            // See that DB fulfills those claims
+            
             break;
 
         case "reverse":
