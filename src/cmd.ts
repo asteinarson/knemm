@@ -84,7 +84,7 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
         desc: "On this state (and connected DB), apply this/these claim(s)",
         a1: "claims...",
         a2: null,
-        options: [addClaimOptions,addDbOption],
+        options: [addClaimOptions, addDbOption],
     },
     {
         name: "reverse",
@@ -190,67 +190,73 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
 
     switch (cmd) {
         case "join":
-            let state_base: Dict<any>;
-            if (state_dir) state_base = stateToNestedDict(state_dir, true);
-            let file_dicts: Dict<Dict<any>> = {};
-            for (let f of files) {
-                let r = await toNestedDict(f, options);
-                if (r) {
-                    if (r.source == "*file") file_dicts[f] = r;
-                    else {
-                        if (state_dir)
-                            return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`, 10);
-                        if (state_base)
-                            return errorRv(`join: Cannot specify multiple DB or state dirs in <join> (already have one)`, 10);
-                        // Accept it 
-                        state_base = r;
+            {
+                let state_base: Dict<any>;
+                if (state_dir) state_base = stateToNestedDict(state_dir, true);
+                let file_dicts: Dict<Dict<any>> = {};
+                for (let f of files) {
+                    let r = await toNestedDict(f, options);
+                    if (r) {
+                        if (r.source == "*file") file_dicts[f] = r;
+                        else {
+                            if (state_dir)
+                                return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`, 10);
+                            if (state_base)
+                                return errorRv(`join: Cannot specify multiple DB or state dirs in <join> (already have one)`, 10);
+                            // Accept it 
+                            state_base = r;
+                        }
                     }
+                    else console.error("join: could not resolve source: " + f);
                 }
-                else console.error("join: could not resolve source: " + f);
-            }
-            let dicts = dependencySort(file_dicts, state_base, options);
-            if (dicts) {
-                let state = mergeClaims(dicts, state_base, options);
-                if (isDict(state)) {
-                    if (state_dir && dicts.length)
-                        storeState(Object.keys(file_dicts), state_dir, state, options);
-                    // This is for outputting just the tables, below
-                    state = state.___tables;
+                let dicts = dependencySort(file_dicts, state_base, options);
+                if (dicts) {
+                    let state = mergeClaims(dicts, state_base, options);
+                    if (isDict(state)) {
+                        if (state_dir && dicts.length)
+                            storeState(Object.keys(file_dicts), state_dir, state, options);
+                        // This is for outputting just the tables, below
+                        state = state.___tables;
+                    }
+                    rc = logResult(state, options, 101);
                 }
-                rc = logResult(state, options, 101);
+                break;
             }
-            break;
 
         case "connect":
-            if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
-            // Get the DB connection 
-            let r = await connectState(state_dir, a1 as string, options);
-            if (r == true) return 0;
-            else {
-                console.error(r);
-                return 101;
+            {
+                if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
+                // Get the DB connection 
+                let r = await connectState(state_dir, a1 as string, options);
+                if (r == true) return 0;
+                else {
+                    console.error(r);
+                    return 101;
+                }
+                break;
             }
-            break;
 
         case "apply":
-            // Prepare state and DB conn 
-            if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
-            state_base = stateToNestedDict(state_dir, true);
-            if( !state_base ) return errorRv("Failed reading state in: "+state_dir, 10);
-            // Check for an explicit DB conn here first 
-            let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
-            let conn_info = slurpFile(db_file);
-            if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
+            {
+                // Prepare state and DB conn 
+                if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
+                let state_base = stateToNestedDict(state_dir, true);
+                if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
+                // Check for an explicit DB conn here first 
+                let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
+                let conn_info = slurpFile(db_file);
+                if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
 
-            // See that DB currently fulfills existing claims
-            let rs = await syncDbWith(state_base, conn_info, options); 
-            if( rs!=true ) return logResult(rs,options,101);
+                // See that DB currently fulfills existing claims
+                let rs = await syncDbWith(state_base, conn_info, options);
+                if (rs != true) return logResult(rs, options, 101);
 
-            // Apply new claims on state 
+                // Apply new claims on state 
 
-            // See that DB fulfills those claims
-            
-            break;
+                // See that DB fulfills those claims
+
+                break;
+            }
 
         case "reverse":
             break;
@@ -309,7 +315,7 @@ async function handleCreateDb(db_file: string, dbname: string, options: any): Pr
         }
         let s: string;
         if (options.outfile.match(/.(json|JSON)/))
-            s = JSON.stringify(r,null,2);
+            s = JSON.stringify(r, null, 2);
         else {
             if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
             s = yamlDump(r);
