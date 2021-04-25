@@ -98,15 +98,26 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
         a1: "db_file",
         a2: "name_of_new_db",
         options: [addCreatedbOptions]
+    },
+    {
+        name: "dropdb",
+        desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
+        a1: "db_file",
+        a2: "name_of_db",
+        options: [addCreatedbOptions]
     }
 ];
 
 let cmd = new Command();
+let create_drop_cmds: Dict<1> = {
+    createdb: 1,
+    dropdb: 1
+}
 for (let c of cmds) {
     let _c: cmder.Command;
-    if (c.name == "createdb") {
+    if (create_drop_cmds[c.name]) {
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
-            .action(async (db, dbname, options) => { process.exit(await handleCreateDb(db, dbname, options)) });
+            .action(async (db, dbname, options) => { process.exit(await handleCreateDropDb(c.name, db, dbname, options)) });
     } else if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
@@ -136,7 +147,7 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
@@ -266,9 +277,9 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
                         if (r) file_dicts[f] = r;
                         else es.push("apply - failed parsing claim: " + f);
                     }
-                    if (es.length) return logResult(es,options,101);
-                    let state = sortMergeStoreState(file_dicts,state_dir,state_base,options);
-                    if( isArray(state) ) return logResult(state,options,102);
+                    if (es.length) return logResult(es, options, 101);
+                    let state = sortMergeStoreState(file_dicts, state_dir, state_base, options);
+                    if (isArray(state)) return logResult(state, options, 102);
                     console.log("apply - New claims merged into state state");
 
                     // See that DB fulfills those claims
@@ -324,45 +335,62 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
     return rc;
 }
 
-async function handleCreateDb(db_file: string, dbname: string, options: any): Promise<number> {
+async function handleCreateDropDb(cmd: string, db_file: string, dbname: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
-    let r = await createDb(db_file, dbname);
-    if (typeof r == "string") {
-        console.log("createdb - failed: " + r);
-        return 10;
-    }
-    console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
+    switch (cmd) {
+        case "createdb":
+            {
+                let r = await createDb(db_file, dbname);
+                if (typeof r == "string") {
+                    console.log("createdb - failed: " + r);
+                    return 10;
+                }
+                console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
 
-    if (options.outfile) {
-        if (r.client == "sqlite3") {
-            r.connection.filename = path.resolve(r.connection.filename);
-        }
-        let s: string;
-        if (options.outfile.match(/.(json|JSON)/))
-            s = JSON.stringify(r, null, 2);
-        else {
-            if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
-            s = yamlDump(r);
-        }
-        writeFileSync(options.outfile, s);
-        if (!existsSync(options.outfile))
-            console.log("Failed storing new connection info to: " + options.outfile);
-        else
-            console.log("Stored new connection info to: " + options.outfile);
-    }
+                if (options.outfile) {
+                    if (r.client == "sqlite3") {
+                        r.connection.filename = path.resolve(r.connection.filename);
+                    }
+                    let s: string;
+                    if (options.outfile.match(/.(json|JSON)/))
+                        s = JSON.stringify(r, null, 2);
+                    else {
+                        if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
+                        s = yamlDump(r);
+                    }
+                    writeFileSync(options.outfile, s);
+                    if (!existsSync(options.outfile))
+                        console.log("Failed storing new connection info to: " + options.outfile);
+                    else
+                        console.log("Stored new connection info to: " + options.outfile);
+                }
 
-    if (state_dir) {
-        if (existsSync(path.join(state_dir, "___db.yaml")) &&
-            !options.replace) {
-            console.log("Not connecting new DB. There already is a connected DB in the state: " + state_dir);
-            return 1;
-        }
-        let r1 = await connectState(state_dir, r, options);
-        if (r1 != true) {
-            console.log(r1);
-            return 2;
-        }
-        console.log("The new DB was connected to state in: " + state_dir);
+                if (state_dir) {
+                    if (existsSync(path.join(state_dir, "___db.yaml")) &&
+                        !options.replace) {
+                        console.log("Not connecting new DB. There already is a connected DB in the state: " + state_dir);
+                        return 1;
+                    }
+                    let r1 = await connectState(state_dir, r, options);
+                    if (r1 != true) {
+                        console.log(r1);
+                        return 2;
+                    }
+                    console.log("The new DB was connected to state in: " + state_dir);
+                }
+                break;
+            }
+
+        case "dropdb":
+            {
+                let r = await dropDb(db_file, dbname);
+                if (!isDict(r)) {
+                    console.log("createdb - failed: " + r);
+                    return 10;
+                }
+                console.log(`Database <${dbname}> on client type <${r}> was dropped.`);
+                break;
+            }
     }
     return 0;
 }
