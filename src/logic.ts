@@ -190,7 +190,7 @@ export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Pro
     return `createDbSqlite - Failed connect to or create DB`;
 }
 
-export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
+export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<true | string> {
     let conn_info = isDict(db) ? db : parseDbFile(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
     if (db_name) conn_info.connection.database = db_name;
@@ -204,15 +204,25 @@ export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<
     // And drop the DB
     try {
         let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
-        return conn_info;
+        return true;
     } catch (e) { 
-        return `dropDb - Failed executing DRO DATABASE`;
+        return `dropDb - Failed executing DROP DATABASE`;
     }
-
 }
 
-export async function dropDbSqlite(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
-    return;
+export function dropDbSqlite(db: string | Dict<any>, db_name?: string): true | string {
+    if( !db_name ){
+
+    }
+    if( existsSync(db_name) ){
+        rmSync(db_name);
+        return true;
+    }
+    if( existsSync(db_name+".sqlite") ){
+        rmSync(db_name+".sqlite");
+        return true;
+    }
+    return "dropDbSqLite: DB not found: " + db_name;
 }
 
 function parseDbFile(db_file: string): Dict<any> {
