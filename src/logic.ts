@@ -5,7 +5,7 @@ const { invert: ldInvert } = pkg;
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props.js';
 
 import { fileNameOf, slurpFile } from "./file-utils.js";
-import { connect, modifySchema, slurpSchema } from './db-utils.js'
+import { connect, connectCheck, modifySchema, slurpSchema } from './db-utils.js'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { dump as yamlDump } from 'js-yaml';
@@ -119,17 +119,18 @@ export function sortMergeStoreState(
     file_dicts: Dict<Dict<any>>,
     state_dir: string,
     state_base: Dict<any>,
-    options: Dict<any>): true | string {
+    options: Dict<any>)
+    : Dict<any> | string[] {
     let dicts = dependencySort(file_dicts, state_base, options);
-    if (!dicts) return "sortMergeStoreState - Failed dependencySort";
-    if (!dicts.length) return true;
-    
+    if (!dicts) return ["sortMergeStoreState - Failed dependencySort"];
+    if (!dicts.length) return state_base;
+
     let state = mergeClaims(dicts, state_base, options);
     if (isDict(state)) {
         if (state_dir && dicts.length)
             storeState(Object.keys(file_dicts), state_dir, state, options);
     }
-    else return state.join("\n");
+    return state;
 }
 
 export async function createDb(db_file: string, db_name: string): Promise<Dict<any> | string> {
@@ -197,6 +198,31 @@ export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Pro
     }
 
     return `createDbSqlite - Failed connect to or create DB`;
+}
+
+export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
+    let conn_info = isDict(db) ? db : parseDbFile(db);
+    if (!conn_info) return "dropDb - could not parse DB connect info";
+    if (db_name) conn_info.connection.database = db_name;
+
+    if (conn_info.client == "sqlite3")
+        return dropDbSqlite(conn_info);
+
+    let knex_c = await connectCheck(conn_info);
+    if (!knex_c) return "dropDb: Failed connecting to the database"
+
+    // And drop the DB
+    try {
+        let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
+        return conn_info;
+    } catch (e) { 
+        return `dropDb - Failed executing DRO DATABASE`;
+    }
+
+}
+
+export async function dropDbSqlite(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
+    return;
 }
 
 function parseDbFile(db_file: string): Dict<any> {
