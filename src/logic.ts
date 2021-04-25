@@ -143,30 +143,20 @@ export async function createDb(db_file: string, db_name: string): Promise<Dict<a
 
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
-    try {
-        let knex_c = await connect(conn_info);
-        if (knex_c) {
-            await knex_c.raw("SELECT 1+1");
-            return `createDb - Database ${db_name} already exists`;
-        }
-    } catch (e) { /* As it should */ }
+    if( await connectCheck(conn_info) ) 
+        return `createDb - Database ${db_name} already exists`;
 
     // Remove the DB name - and retry 
-    // Try to connect to the DB - with named DB - should fail 
     delete conn_info.connection.database;
+    let knex_c = await connectCheck(conn_info);
+    if( !knex_c ) return `createDb - Failed connect without DB name (${db_name})`;
     try {
-        let knex_c = await connect(conn_info);
-        if (knex_c) {
-            let r = await knex_c.raw(`CREATE DATABASE "${db_name}"`);
-            // Then try to connect to it
-            conn_info.connection.database = db_name;
-            knex_c = await connect(conn_info);
-            if (knex_c) {
-                await knex_c.raw("SELECT 1+1");
-                return conn_info;
-            }
-            return `createDb - Failed create DB: ${db_name}`;
-        }
+        let r = await knex_c.raw(`CREATE DATABASE "${db_name}"`);
+        // Then try to connect to it
+        conn_info.connection.database = db_name;
+        knex_c = await connectCheck(conn_info);
+        if( knex_c ) return conn_info;
+        return `createDb - Failed create DB: ${db_name}`;
     } catch (e) { }
 
     return `createDb - Failed connect to or create DB`;
