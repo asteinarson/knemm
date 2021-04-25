@@ -387,7 +387,7 @@ async function handleCreateDropDb(cmd: string, db_file: string, dbname: string, 
                     console.log("createdb - failed: " + r);
                     return 10;
                 }
-                console.log(`Database <${dbname}> on client type <${r}> was dropped.`);
+                console.log(`Database <${dbname}> on client type <${r.client}> was dropped.`);
                 break;
             }
     }
