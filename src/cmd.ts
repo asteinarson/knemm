@@ -150,11 +150,10 @@ import {
     stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
-import { append, Dict, errorRv, firstKey, isDict } from "./utils.js";
+import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils.js";
 import { getDirsFromFileList, slurpFile } from "./file-utils.js";
 import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { isArray } from "lodash";
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     if (!Array.isArray(r)) {
