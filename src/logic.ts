@@ -190,13 +190,13 @@ export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Pro
     return `createDbSqlite - Failed connect to or create DB`;
 }
 
-export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
+export async function dropDb(db: string | Dict<any>, db_name: string): Promise<Dict<any> | string> {
     let conn_info = isDict(db) ? db : parseDbFile(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
     if (db_name) conn_info.connection.database = db_name;
 
     if (conn_info.client == "sqlite3")
-        return dropDbSqlite(conn_info);
+        return dropDbSqlite(conn_info,db_name);
 
     let knex_c = await connectCheck(conn_info);
     if (!knex_c) return "dropDb: Failed connecting to the database"
@@ -213,11 +213,9 @@ export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<
     }
 }
 
-export function dropDbSqlite(db: string | Dict<any>, db_name?: string): Dict<any> | string {
+export function dropDbSqlite(db: string | Dict<any>, db_name: string): Dict<any> | string {
     let conn_info = isDict(db) ? db : parseDbFile(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
-    if (!db_name) {
-    }
     for( let fn of [db_name,db_name+".sqlite"] ){
         if (existsSync(fn)) {
             rmSync(fn);
