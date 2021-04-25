@@ -34,21 +34,21 @@ function addDbOption(cmd: cmder.Command) {
 let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
     {
         name: "join",
-        desc: "Join together all input claims and print them out",
+        desc: "Join together all input claims and print them out. Optionally create a state dir (-s)",
         a1: "claims...",
         a2: null,
         options: [addClaimOptions, addOutputOptions, addIncludeExcludeOptions],
     },
     {
         name: "rebuild",
-        desc: "Rebuild merged state from all claim files in state directory",
+        desc: "Rebuild merged state from all claim files in state dir",
         a1: null,
         a2: null,
         options: []
     },
     {
         name: "diff",
-        desc: "See diff from <candidate/DB> to <target>",
+        desc: "See if diff from <candidate/DB> to <target> is possible, and print it if so",
         a1: "candidate",
         a2: "target",
         options: [addClaimOptions, addOutputOptions, addIncludeExcludeOptions],
@@ -388,6 +388,7 @@ async function handleCreateDropDb(cmd: string, db_file: string, dbname: string, 
                     return 10;
                 }
                 console.log(`Database <${dbname}> on client type <${r.client}> was dropped.`);
+                // !! Remove ___db.yaml in state, if it matches the DB just dropped.
                 break;
             }
     }
