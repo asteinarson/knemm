@@ -8,8 +8,23 @@ export async function connect(connection: Record<string, string>, client = "pg")
         client,
         connection
     }
-    knex_conn = knex(conn);
-    return knex_conn;
+    try {
+        knex_conn = knex(conn);
+        return knex_conn;
+    }
+    catch(e){
+    }
+}
+
+export async function connectCheck(connection: Record<string, string>, client = "pg") {
+    let knex_c = await connect(connection,client);
+    if( !knex_c ) return;
+    try {
+        await knex_c.raw("SELECT 1+1");
+        return knex_c;
+    }
+    catch(e){
+    }
 }
 
 
