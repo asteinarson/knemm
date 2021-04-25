@@ -203,6 +203,7 @@ export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<
 
     // And drop the DB - need a new connection - w.o. specific DB for that 
     try {
+        await knex_c.destroy();
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
         let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
