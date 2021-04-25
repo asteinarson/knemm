@@ -143,19 +143,19 @@ export async function createDb(db_file: string, db_name: string): Promise<Dict<a
 
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
-    if( await connectCheck(conn_info) ) 
+    if (await connectCheck(conn_info))
         return `createDb - Database ${db_name} already exists`;
 
     // Remove the DB name - and retry 
     delete conn_info.connection.database;
     let knex_c = await connectCheck(conn_info);
-    if( !knex_c ) return `createDb - Failed connect without DB name (${db_name})`;
+    if (!knex_c) return `createDb - Failed connect without DB name (${db_name})`;
     try {
         let r = await knex_c.raw(`CREATE DATABASE "${db_name}"`);
         // Then try to connect to it
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
-        if( knex_c ) return conn_info;
+        if (knex_c) return conn_info;
         return `createDb - Failed create DB: ${db_name}`;
     } catch (e) { }
 
@@ -205,22 +205,20 @@ export async function dropDb(db: string | Dict<any>, db_name?: string): Promise<
     try {
         let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
         return true;
-    } catch (e) { 
+    } catch (e) {
         return `dropDb - Failed executing DROP DATABASE`;
     }
 }
 
 export function dropDbSqlite(db: string | Dict<any>, db_name?: string): true | string {
-    if( !db_name ){
+    if (!db_name) {
 
     }
-    if( existsSync(db_name) ){
-        rmSync(db_name);
-        return true;
-    }
-    if( existsSync(db_name+".sqlite") ){
-        rmSync(db_name+".sqlite");
-        return true;
+    for( let fn of [db_name,db_name+".sqlite"] ){
+        if (existsSync(fn)) {
+            rmSync(fn);
+            if (!existsSync(fn)) return true;
+        }
     }
     return "dropDbSqLite: DB not found: " + db_name;
 }
