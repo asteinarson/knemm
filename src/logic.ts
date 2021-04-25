@@ -151,7 +151,7 @@ export async function createDb(db_file: string, db_name: string): Promise<Dict<a
     let knex_c = await connectCheck(conn_info);
     if (!knex_c) return `createDb - Failed connect without DB name (${db_name})`;
     try {
-        let r = await knex_c.raw(`CREATE DATABASE "${db_name}"`);
+        let r = await knex_c.raw(`CREATE DATABASE ${db_name}`);
         // Then try to connect to it
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
@@ -206,7 +206,7 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
         await knex_c.destroy();
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
-        let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
+        let r = await knex_c.raw(`DROP DATABASE ${db_name}`);
         return conn_info;
     } catch (e) {
         return `dropDb - Failed executing DROP DATABASE`;
