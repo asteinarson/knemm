@@ -3,6 +3,20 @@ import { isObject } from "lodash";
 export type Dict<T> = Record<string, T>;
 export type BaseTypes = string | number | boolean;
 
+
+// Invert keys and values of 1-level deep object
+export function invert(o: Dict<BaseTypes>) {
+    let tgt:Dict<string> = {};
+    for (let k in o) {
+        let v = o[k];
+        if( !isString(v) ) v = v.toString();
+        tgt[v] = k;
+    }
+    return tgt;
+}
+
+// With <transl> as a key dictionary, remap the <src> object
+// into the <tgt> object
 export function remap(src: Dict<any>, transl: Dict<string>, tgt?: Dict<any>) {
     if (!tgt) tgt = {};
     for (let [ks, kt] of Object.entries(transl)) {
