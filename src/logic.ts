@@ -1,4 +1,4 @@
-import { Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys } from './utils.js';
+import { Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString } from './utils.js';
 import pkg from 'lodash';
 const { invert: ldInvert } = pkg;
 
@@ -133,9 +133,42 @@ export function sortMergeStoreState(
     return state;
 }
 
-export async function createDb(db_file: string, db_name: string): Promise<Dict<any> | string> {
-    let conn_info = parseDbFile(db_file);
+export async function existsDb(db_file: string | Dict<any>, db_name?: string): Promise<boolean|string> {
+    let conn_info: Dict<any> = normalizeConnInfo(db_file);
+    if (!conn_info) return "existsDb - could not get DB connection info";
+    if( !db_name ){
+        db_name = conn_info.connection.database;
+        if( !db_name ) return "existsDb - no name given, for DB to check for";
+    }
+
+    if (conn_info.client == "sqlite3")
+        return existsDbSqlite(conn_info);
+
+    // Try to connect to the DB - with named DB - should fail 
+    conn_info.connection.database = db_name;
+    if (await connectCheck(conn_info)) return true;
+}
+
+function existsDbSqlite(conn_info:Dict<any>, db_name?:string){
+    if( !db_name ) db_name = conn_info?.connection?.database;
+    if( !db_name ) return;
+
+    for (let fn of [db_name, db_name + ".sqlite"]) {
+        if( existsSync(fn) ){
+            // We do not do a connectCheck here - 
+            // as it would create the DB.
+            return true;
+        }
+    }
+}
+
+export async function createDb(db: string|Dict<any>, db_name?: string): Promise<Dict<any> | string> {
+    let conn_info: Dict<any> = normalizeConnInfo(db);
     if (!conn_info) return "createDb - could not connect to DB";
+    if( !db_name ){
+        db_name = conn_info.connection.database;
+        if( !db_name ) return "createDb - no name given, for DB to be created";
+    }
 
     // Try connecting to the given DB - should fail
     if (conn_info.client == "sqlite3")
@@ -162,7 +195,7 @@ export async function createDb(db_file: string, db_name: string): Promise<Dict<a
     return `createDb - Failed connect to or create DB`;
 }
 
-export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<Dict<any> | string> {
+async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<Dict<any> | string> {
     // Try connecting to the given DB - should fail
     if (!db_name.match(/[^.]+\.[^.]+/))
         db_name += ".sqlite";
@@ -191,12 +224,13 @@ export async function createDbSqlite(conn_info: Dict<any>, db_name: string): Pro
 }
 
 export async function dropDb(db: string | Dict<any>, db_name: string): Promise<Dict<any> | string> {
-    let conn_info = isDict(db) ? db : parseDbFile(db);
+    let conn_info: Dict<any> = normalizeConnInfo(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
-    if (db_name) conn_info.connection.database = db_name;
+    if (!db_name) return "dropDb - explicit DB name required to drop ";
+    conn_info.connection.database = db_name;
 
     if (conn_info.client == "sqlite3")
-        return dropDbSqlite(conn_info,db_name);
+        return dropDbSqlite(conn_info, db_name);
 
     let knex_c = await connectCheck(conn_info);
     if (!knex_c) return "dropDb: Failed connecting to the database"
@@ -213,16 +247,41 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
     }
 }
 
-export function dropDbSqlite(db: string | Dict<any>, db_name: string): Dict<any> | string {
+function dropDbSqlite(db: string | Dict<any>, db_name: string): Dict<any> | string {
     let conn_info = isDict(db) ? db : parseDbFile(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
-    for( let fn of [db_name,db_name+".sqlite"] ){
+    for (let fn of [db_name, db_name + ".sqlite"]) {
         if (existsSync(fn)) {
             rmSync(fn);
             if (!existsSync(fn)) return conn_info;
         }
     }
     return "dropDbSqLite: DB not found: " + db_name;
+}
+
+export function normalizeConnInfo(conn_info: Dict<any> | string) {
+    if (!conn_info) return;
+    if( isString(conn_info) ){
+        // Mutual recursion is OK - progress in each step
+        return parseDbFile(conn_info);
+    }
+
+    if (!conn_info.connection) {
+        conn_info = {
+            connection: conn_info
+        };
+    }
+    if (!conn_info.client) {
+        // Some logic to get a specific DB client type
+        let client = process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT;
+        if (!client) {
+            // We could do something fancy here, as a dynamic import, 
+            // looking for each client type, but no...
+            client = "pg";
+        }
+        conn_info.client = client;
+    }
+    return conn_info;
 }
 
 function parseDbFile(db_file: string): Dict<any> {
@@ -246,23 +305,13 @@ function parseDbFile(db_file: string): Dict<any> {
         if (process.env.DATABASE)
             conn_info.database = process.env.DATABASE;
     }
-
-    if (conn_info) {
-        if (!conn_info.connection) {
-            conn_info = {
-                connection: conn_info
-            };
-        }
-        if (!conn_info.client) conn_info.client = "pg";
-        return conn_info;
-    }
+    return normalizeConnInfo(conn_info);
 }
 
 async function dbFileToKnex(db_file: string): Promise<Knex> {
     let conn_info = parseDbFile(db_file);
     // Get our dict from DB conn ? 
     if (conn_info) {
-        //if (conn_info.connection) conn_info = conn_info.connection as any as Dict<string>;
         try {
             return await connect(conn_info);
         } catch (e) {
