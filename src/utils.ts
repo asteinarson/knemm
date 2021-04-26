@@ -1,3 +1,4 @@
+import { isObject } from "lodash";
 
 export type Dict<T> = Record<string, T>;
 export type BaseTypes = string | number | boolean;
@@ -78,6 +79,13 @@ export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof key
                 r[k] = 1;
         return firstKey(r) ? r : null;
     }
+}
+
+// Let each type contain an 'empty' value (0, "", [], null, {}, ...)
+export function isEmpty(v:any){
+    if( !v ) return true;
+    if( isArray(v) ) return !v.length;
+    if( isDict(v) ) return !firstKey(v);
 }
 
 export function isString(s: any): s is String {
