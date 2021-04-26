@@ -7,6 +7,13 @@
   "scripts": {
     "test": "jest"
   },
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx)$",
+    "moduleFileExtensions": ["ts", "tsx", "js"]
+  },
   "bin": {
     "knemum": "./lib/cmd.js"
   },
