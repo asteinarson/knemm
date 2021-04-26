@@ -1,7 +1,10 @@
 import {
     invert, remap, toLut, tryGet, firstKey, inLut, notInLut,
     isEmpty, isString, isNumber, isDict, isArray,
-    Dict
+    Dict,
+    isDictWithKeys,
+    isArrayWithElems,
+    append
 } from '../utils';
 
 test("invert test", () => {
@@ -68,7 +71,7 @@ test("notInLut test", () => {
     let keys = Object.keys(src);
     expect(notInLut(keys, src)).toBeFalsy();
     expect(notInLut(["city", "tested"], src)).toEqual(expect.arrayContaining(["city"]));
-    expect(notInLut({city:"A", tested:"B"}, src)).toMatchObject({city:1});
+    expect(notInLut({ city: "A", tested: "B" }, src)).toMatchObject({ city: 1 });
 });
 
 test("isEmpty test", () => {
@@ -83,17 +86,91 @@ test("isEmpty test", () => {
     expect(isEmpty(1)).toBeFalsy();
     expect(isEmpty("abc")).toBeFalsy();
     expect(isEmpty([14])).toBeFalsy();
-    expect(isEmpty({a:"A"})).toBeFalsy();
+    expect(isEmpty({ a: "A" })).toBeFalsy();
     expect(isEmpty(true)).toBeFalsy();
 });
 
-test("isSTring test", () => {
+test("isString test", () => {
     expect(isString("")).toBe(true);
     expect(isString("abc")).toBe(true);
-    expect(isString([3,9].join("-"))).toBe(true);
+    expect(isString([3, 9].join("-"))).toBe(true);
     expect(isString(0)).toBeFalsy();
     expect(isString(null)).toBeFalsy();
     expect(isString({})).toBeFalsy();
     expect(isString(undefined)).toBeFalsy();
-    expect(isString([3,7])).toBeFalsy();
-} );
+    expect(isString([3, 7])).toBeFalsy();
+});
+
+test("isNumber test", () => {
+    expect(isNumber(11)).toBe(true);
+    expect(isNumber(0.0)).toBe(true);
+    expect(isNumber([3, 9].length)).toBe(true);
+    expect(isNumber(-2.3)).toBe(true);
+    expect(isNumber(NaN)).toBe(true);
+    expect(isNumber(Number("143.9"))).toBe(true);
+    expect(isNumber(null)).toBeFalsy();
+    expect(isNumber({})).toBeFalsy();
+    expect(isNumber(undefined)).toBeFalsy();
+    expect(isNumber([3, 7])).toBeFalsy();
+    expect(isNumber("the cat")).toBeFalsy();
+});
+
+test("isDict test", () => {
+    expect(isDict({})).toBe(true);
+    expect(isDict({ a: 13, b: "cat" })).toBe(true);
+    // null could be either (?)
+    //expect(isDict(null)).toBeFalsy();
+    expect(isDict(0)).toBeFalsy();
+    expect(isDict("www")).toBeFalsy();
+    expect(isDict(NaN)).toBeFalsy();
+    expect(isDict(undefined)).toBeFalsy();
+    expect(isDict([3, 7])).toBeFalsy();
+});
+
+test("isDictWithKeys test", () => {
+    expect(isDictWithKeys({ a: 13, b: "cat" })).toBeTruthy();
+    expect(isDictWithKeys({ a: undefined })).toBeTruthy();
+    expect(isDictWithKeys({})).toBeFalsy();
+    expect(isDictWithKeys(null)).toBeFalsy();
+    expect(isDictWithKeys(0)).toBeFalsy();
+    expect(isDictWithKeys("www")).toBeFalsy();
+});
+
+test("isArray test", () => {
+    expect(isArray([3, 7])).toBe(true);
+    expect(isArray([])).toBe(true);
+    // null could be either (?)
+    expect(isArray(null)).toBeFalsy();
+    expect(isArray(0)).toBeFalsy();
+    expect(isArray("www")).toBeFalsy();
+    expect(isArray(NaN)).toBeFalsy();
+    expect(isArray(undefined)).toBeFalsy();
+    expect(isArray({ a: 11 })).toBeFalsy();
+    expect(isArray({ "0": 1 })).toBeFalsy();
+});
+
+test("isArrayWithElems test", () => {
+    expect(isArrayWithElems([3, 7])).toBe(true);
+    expect(isArrayWithElems([])).toBeFalsy();
+    // null could be either (?)
+    expect(isArrayWithElems(null)).toBeFalsy();
+    expect(isArrayWithElems(0)).toBeFalsy();
+    expect(isArrayWithElems("www")).toBeFalsy();
+});
+
+test("append test", () => {
+    expect(append({}, { a: 1, c: 13 })).toMatchObject({ a: 1, c: 13 });
+    expect(append({ b: 5 }, { a: 1, c: 13 })).toMatchObject({ a: 1, b: 5, c: 13 });
+
+    let o1 = { b: 5 };
+    append(o1, { a: 1, c: 13 });
+    expect(o1).toMatchObject({ a: 1, b: 5, c: 13 });
+
+    expect(append([], ["a", 17])).toStrictEqual(["a", 17]);
+    expect(append(["b"], ["a", 15])).toStrictEqual(["b", "a", 15]);
+
+    let a1 = [3, "c"];
+    append(a1, ["d", 17]);
+    expect(a1).toMatchObject([3, "c", "d", 17]);
+});
+
