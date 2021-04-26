@@ -45,7 +45,7 @@ export function toLut<T>(keys: string[], v: T | T[]): Dict<T> {
 
 export function tryGet<T>(k: string, dict: Dict<T>, fallback_value?: T) {
     if (typeof dict == "object") {
-        let r = dict[k];
+        let r = dict?.[k];
         return r != undefined ? r : fallback_value;
     }
 }
@@ -59,7 +59,7 @@ export function firstKey(o: object): any {
     }
 }
 
-// Find keys/values in <keys> not in <lut>
+// Find keys/values in <keys> in <lut>
 export function inLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof keys {
     if (Array.isArray(keys)) {
         let r: string[] = [];
@@ -82,7 +82,7 @@ export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof key
     if (Array.isArray(keys)) {
         let r: string[] = [];
         for (let k of keys)
-            if (!lut[k])
+            if (lut[k]==undefined)
                 r.push(k);
         return r.length > 0 ? r : null;
     }
@@ -100,6 +100,7 @@ export function isEmpty(v:any){
     if( !v ) return true;
     if( isArray(v) ) return !v.length;
     if( isDict(v) ) return !firstKey(v);
+    return false;
 }
 
 export function isString(s: any): s is String {
