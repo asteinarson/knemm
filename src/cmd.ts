@@ -108,6 +108,8 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
     }
 ];
 
+// The command name is in process.argv[1]
+// differentiate <knemm> and <knedb> 
 let cmd = new Command();
 let create_drop_cmds: Dict<1> = {
     createdb: 1,
