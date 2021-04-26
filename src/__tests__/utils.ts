@@ -87,3 +87,13 @@ test("isEmpty test", () => {
     expect(isEmpty(true)).toBeFalsy();
 });
 
+test("isSTring test", () => {
+    expect(isString("")).toBe(true);
+    expect(isString("abc")).toBe(true);
+    expect(isString([3,9].join("-"))).toBe(true);
+    expect(isString(0)).toBeFalsy();
+    expect(isString(null)).toBeFalsy();
+    expect(isString({})).toBeFalsy();
+    expect(isString(undefined)).toBeFalsy();
+    expect(isString([3,7])).toBeFalsy();
+} );
