@@ -165,12 +165,12 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb, parseDbFile
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils.js";
 import { getDirsFromFileList, slurpFile } from "./file-utils.js";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
@@ -418,7 +418,20 @@ async function handleDbCmd(cmd: string, db_file: string, dbname: string, options
                     break;
                 }
                 console.log(`Database <${dbname}> on client type <${r.client}> was dropped.`);
-                // !! Remove ___db.yaml in state, if it matches the DB just dropped.
+                
+                // Remove ___db.yaml in state, if it matches the DB just dropped.
+                if( state_dir ){
+                    let state_db = path.join(state_dir,"___db.yaml");
+                    let conn_info = parseDbFile(state_db);
+                    if( conn_info ){
+                        if( conn_info.client==r.client && 
+                            conn_info.connection.database==dbname ){
+                                rmSync(state_db);
+                            }
+                            else console.warn(`drop: Client or DB in ${state_db} does not match`);
+                    }
+                    else console.warn(`drop: failed parsing ${state_db}`);
+                }
                 break;
             }
     }
