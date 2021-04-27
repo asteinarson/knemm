@@ -12,7 +12,11 @@
       ".(ts|tsx)": "ts-jest"
     },
     "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx)$",
-    "moduleFileExtensions": ["ts", "tsx", "js"]
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
   },
   "bin": {
     "knemm": "./lib/cmd.js",
@@ -34,6 +38,7 @@
   },
   "dependencies": {
     "commander": "^7.2.0",
+    "dotenv": "^8.2.0",
     "js-yaml": "^4.0.0",
     "knex": "^0.95.4",
     "knex-schema-inspector": "^1.2.2",

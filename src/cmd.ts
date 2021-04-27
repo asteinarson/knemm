@@ -120,6 +120,10 @@ let cmds_db: CmdDesc[] = [
     }
 ];
 
+// Read .env 
+import dotenv from "dotenv";
+dotenv.config();
+
 // The CLI command name is in process.argv[1]
 // differentiate <knemm> and <knedb> 
 let re_db = /knedb$/;
