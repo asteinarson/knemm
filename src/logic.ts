@@ -26,8 +26,8 @@ export function getStateDir(options: any) {
             state_dir = "./.dbstate";
         else {
             state_dir = options.state;
-            if (state_dir.slice(-9) != "/.dbstate")
-                state_dir += "/.dbstate";
+            //if (state_dir.slice(-9) != "/.dbstate")
+            //    state_dir += "/.dbstate";
         }
         if (!existsSync(state_dir)) {
             mkdirSync(state_dir);   // Does not give a return value (?)
@@ -284,7 +284,7 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
     return conn_info;
 }
 
-function parseDbFile(db_file: string): Dict<any> {
+export function parseDbFile(db_file: string): Dict<any> {
     // Look for a connection file - or use ENV vars 
     let conn_info: Dict<any>;
     if (db_file != "%" && db_file.slice(3) != "%") {
