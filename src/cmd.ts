@@ -418,7 +418,7 @@ async function handleDbCmd(cmd: string, db_file: string, dbname: string, options
                     break;
                 }
                 console.log(`Database <${dbname}> on client type <${r.client}> was dropped.`);
-                
+
                 // Remove ___db.yaml in state, if it matches the DB just dropped.
                 if( state_dir ){
                     let state_db = path.join(state_dir,"___db.yaml");
@@ -427,6 +427,7 @@ async function handleDbCmd(cmd: string, db_file: string, dbname: string, options
                         if( conn_info.client==r.client && 
                             conn_info.connection.database==dbname ){
                                 rmSync(state_db);
+                                console.log("The DB connection was removed from: "+state_dir);
                             }
                             else console.warn(`drop: Client or DB in ${state_db} does not match`);
                     }
