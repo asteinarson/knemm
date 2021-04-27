@@ -165,7 +165,7 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb, parseDbFile
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils.js";
@@ -222,7 +222,7 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
             {
                 let state_base: Dict<any>;
                 if (state_dir) state_base = stateToNestedDict(state_dir, true);
-                if( !state_base ) state_base = {};
+                if( !state_base ) state_base = getInitialState();
                 let file_dicts: Dict<Dict<any>> = {};
                 for (let f of files) {
                     let r = await toNestedDict(f, options);

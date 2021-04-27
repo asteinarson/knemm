@@ -672,8 +672,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
-    let branches: Dict<number> = state_base?.modules;
-    if( !branches ) branches = {};
+    let branches: Dict<number> = state_base.modules;
+    if( !branches ) state_base.modules = branches = {};
+
     let err_cnt = 0;
     let claims_by_name: Dict<1> = {};
     for (let f in file_dicts) {
