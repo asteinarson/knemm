@@ -31,7 +31,9 @@ function addDbOption(cmd: cmder.Command) {
     cmd.option("-d --database <db_file>", "Use this DB connection - instead of default");
 }
 
-let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] }[] = [
+type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
+
+let cmds_mm: CmdDesc[] = [
     {
         name: "join",
         desc: "Join together all input claims and print them out. Optionally create a state dir (-s)",
@@ -92,15 +94,25 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
         a1: "*claim",
         a2: null,
     },
+];
+
+let cmds_db: CmdDesc[] = [
     {
-        name: "createdb",
+        name: "exists",
+        desc: "Checking if a DB exists",
+        a1: "db_file",
+        a2: "name_of_db",
+        options: [addCreatedbOptions]
+    },
+    {
+        name: "create",
         desc: "Create a DB (after checking for existence), and optionally connect with a state",
         a1: "db_file",
         a2: "name_of_new_db",
         options: [addCreatedbOptions]
     },
     {
-        name: "dropdb",
+        name: "drop",
         desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
         a1: "db_file",
         a2: "name_of_db",
@@ -110,14 +122,15 @@ let cmds: { name: string, a1: string, a2: string, desc: string, options?: CmdOpt
 
 // The command name is in process.argv[1]
 // differentiate <knemm> and <knedb> 
+let re_db = /knedb$/;
+let cmds = cmds_mm;
+if( process.argv[0].match(re_db) || process.argv[1].match(re_db) )
+    cmds = cmds_db;
+
 let cmd = new Command();
-let create_drop_cmds: Dict<1> = {
-    createdb: 1,
-    dropdb: 1
-}
 for (let c of cmds) {
     let _c: cmder.Command;
-    if (create_drop_cmds[c.name]) {
+    if (cmds == cmds_db) {
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
             .action(async (db, dbname, options) => { process.exit(await handleCreateDropDb(c.name, db, dbname, options)) });
     } else if (c.a2) {
@@ -175,7 +188,7 @@ function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
 
 async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
-    let rc = 100;
+    let rc = 100;  
     try {
         if (cmd == "rebuild") {
             if (!state_dir) return errorRv("The rebuild option requires a state directory (-s option)", 10);

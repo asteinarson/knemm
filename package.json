@@ -15,7 +15,8 @@
     "moduleFileExtensions": ["ts", "tsx", "js"]
   },
   "bin": {
-    "knemum": "./lib/cmd.js"
+    "knemm": "./lib/cmd.js",
+    "knedb": "./lib/cmd.js"
   },
   "keywords": [],
   "author": "",
