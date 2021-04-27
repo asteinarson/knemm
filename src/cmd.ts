@@ -102,21 +102,21 @@ let cmds_db: CmdDesc[] = [
         desc: "Checking if a DB exists",
         a1: "db_file",
         a2: "name_of_db",
-        options: [addCreatedbOptions]
+        options: []
     },
     {
         name: "create",
         desc: "Create a DB (after checking for existence), and optionally connect with a state",
         a1: "db_file",
         a2: "*name_of_new_db",
-        options: [addCreatedbOptions]
+        options: [addBaseOptions,addCreatedbOptions]
     },
     {
         name: "drop",
         desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
         a1: "db_file",
         a2: "*name_of_db",
-        options: [addCreatedbOptions]
+        options: [addBaseOptions]
     }
 ];
 
@@ -154,7 +154,8 @@ for (let c of cmds) {
     }
     // Add command specific parts from decl table above
     _c.description(c.desc)
-    addBaseOptions(_c);
+    if( cmds!=cmds_db)
+        addBaseOptions(_c);
     if (c.options) {
         for (let opt_f of c.options) {
             opt_f(_c);
@@ -428,7 +429,7 @@ async function handleDbCmd(cmd: string, db_file: string, dbname: string, options
                         if( conn_info.client==r.client && 
                             conn_info.connection.database==dbname ){
                                 rmSync(state_db);
-                                console.log("The DB connection was removed from: "+state_dir);
+                                console.log(`The DB connection was removed from <${state_dir}>`);
                             }
                             else console.warn(`drop: Client or DB in ${state_db} does not match`);
                     }
