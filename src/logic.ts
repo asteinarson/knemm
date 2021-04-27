@@ -23,7 +23,7 @@ export function getStateDir(options: any) {
     let state_dir: string;
     if (options.state) {
         if (options.state == true)
-            state_dir = "./.dbstate";
+            state_dir = "./"; //.dbstate";
         else {
             state_dir = options.state;
             //if (state_dir.slice(-9) != "/.dbstate")
@@ -73,8 +73,8 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
 const state_excludes: Dict<1> = {
     "___merge.yaml": 1,
     "___db.yaml": 1,
-    ".dbstate": 1,
-    "./.dbstate": 1,
+    //".dbstate": 1,
+    //"./.dbstate": 1,
 }
 
 function excludeFromState(file: string) {
@@ -124,6 +124,7 @@ export function sortMergeStoreState(
     let dicts = dependencySort(file_dicts, state_base, options);
     if (!dicts) return ["sortMergeStoreState - Failed dependencySort"];
     if (!dicts.length) return state_base;
+    console.log(state_base.abc.def);
 
     let state = mergeClaims(dicts, state_base, options);
     if (isDict(state)) {
@@ -405,7 +406,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
             if (options.state == false) {
                 return errorRv("toNestedDict - Cannot resolve default state (@)");
             }
-            state_dir = options.state || "./.dbstate";
+            state_dir = options.state || "./"; //.dbstate";
         }
         else state_dir = file_or_db.slice(6);
         r = stateToNestedDict(state_dir);
@@ -672,7 +673,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
     let ver_by_br: Dict<number> = {};
-    let branches: Dict<number> = state_base ? state_base.modules : {};
+    let branches: Dict<number> = state_base?.modules;
+    if( !branches ) branches = {};
     let err_cnt = 0;
     let claims_by_name: Dict<1> = {};
     for (let f in file_dicts) {

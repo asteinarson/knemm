@@ -4,7 +4,7 @@ import cmder, { Command } from "commander";
 type CmdOptionAdder = (cmd: cmder.Command) => void;
 
 function addBaseOptions(cmd: cmder.Command) {
-    cmd.option("-s --state [dir]", "Manage merged state in this dir (defaults to: ./.dbstate)");
+    cmd.option("-s --state <dir>", "Manage merged state in this dir ");
 }
 
 function addCreatedbOptions(cmd: cmder.Command) {
@@ -222,6 +222,7 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
             {
                 let state_base: Dict<any>;
                 if (state_dir) state_base = stateToNestedDict(state_dir, true);
+                if( !state_base ) state_base = {};
                 let file_dicts: Dict<Dict<any>> = {};
                 for (let f of files) {
                     let r = await toNestedDict(f, options);
