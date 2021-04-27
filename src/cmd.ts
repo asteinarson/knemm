@@ -132,7 +132,7 @@ for (let c of cmds) {
     let _c: cmder.Command;
     if (cmds == cmds_db) {
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
-            .action(async (db, dbname, options) => { process.exit(await handleCreateDropDb(c.name, db, dbname, options)) });
+            .action(async (db, dbname, options) => { process.exit(await handleDbCmd(c.name, db, dbname, options)) });
     } else if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
@@ -162,7 +162,7 @@ cmd.parse(process.argv);
 
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb
+    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils.js";
@@ -349,15 +349,25 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
     return rc;
 }
 
-async function handleCreateDropDb(cmd: string, db_file: string, dbname: string, options: any): Promise<number> {
+async function handleDbCmd(cmd: string, db_file: string, dbname: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
+    let rc = 0;
     switch (cmd) {
-        case "createdb":
+        case "exists":
+            {
+                let r = await existsDb(db_file, dbname);
+                if( r==true ) console.log("yes");
+                else if (!r ) console.log("no");
+                else console.log("error: "+r);
+                break;
+            }
+        case "create":
             {
                 let r = await createDb(db_file, dbname);
                 if (typeof r == "string") {
                     console.log("createdb - failed: " + r);
-                    return 10;
+                    rc = 10;
+                    break;
                 }
                 console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
 
@@ -383,30 +393,32 @@ async function handleCreateDropDb(cmd: string, db_file: string, dbname: string, 
                     if (existsSync(path.join(state_dir, "___db.yaml")) &&
                         !options.replace) {
                         console.log("Not connecting new DB. There already is a connected DB in the state: " + state_dir);
-                        return 1;
+                        rc = 1;
+                        break;
                     }
                     let r1 = await connectState(state_dir, r, options);
                     if (r1 != true) {
                         console.log(r1);
-                        return 2;
+                        rc = 2;
+                        break;
                     }
                     console.log("The new DB was connected to state in: " + state_dir);
                 }
                 break;
             }
-
-        case "dropdb":
+        case "drop":
             {
                 let r = await dropDb(db_file, dbname);
                 if (!isDict(r)) {
                     console.log("createdb - failed: " + r);
-                    return 10;
+                    rc = 10;
+                    break;
                 }
                 console.log(`Database <${dbname}> on client type <${r.client}> was dropped.`);
                 // !! Remove ___db.yaml in state, if it matches the DB just dropped.
                 break;
             }
     }
-    return 0;
+    return rc;
 }
 
