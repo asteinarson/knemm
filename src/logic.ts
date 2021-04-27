@@ -124,7 +124,6 @@ export function sortMergeStoreState(
     let dicts = dependencySort(file_dicts, state_base, options);
     if (!dicts) return ["sortMergeStoreState - Failed dependencySort"];
     if (!dicts.length) return state_base;
-    console.log(state_base.abc.def);
 
     let state = mergeClaims(dicts, state_base, options);
     if (isDict(state)) {
