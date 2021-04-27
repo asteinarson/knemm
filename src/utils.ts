@@ -100,7 +100,6 @@ export function isEmpty(v:any){
     if( !v ) return true;
     if( isArray(v) ) return !v.length;
     if( isDict(v) ) return !firstKey(v);
-    return false;
 }
 
 export function isString(s: any): s is String {
