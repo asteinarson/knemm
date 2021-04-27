@@ -194,7 +194,7 @@ function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     }
 }
 
-async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
+export async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
     let rc = 100;  
     try {
@@ -208,7 +208,7 @@ async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     return rc;
 }
 
-async function handleOneArgCmd(cmd: string, a1: string | string[], options: any): Promise<number> {
+export async function handleOneArgCmd(cmd: string, a1: string | string[], options: any): Promise<number> {
     //console.log("handleOneArg: " + cmd, files, options);
     //console.log("cwd: "+process.cwd());
     let state_dir = getStateDir(options);
@@ -322,7 +322,7 @@ async function handleOneArgCmd(cmd: string, a1: string | string[], options: any)
     return rc;
 }
 
-async function handleTwoArgCmd(cmd: string, candidate: string, target: string, options: any): Promise<number> {
+export async function handleTwoArgCmd(cmd: string, candidate: string, target: string, options: any): Promise<number> {
     //console.log(options);
     //process.exit(1);
     //console.log("handleTwoArgs: " + cmd, target, candidate, options);
@@ -358,7 +358,7 @@ async function handleTwoArgCmd(cmd: string, candidate: string, target: string, o
     return rc;
 }
 
-async function handleDbCmd(cmd: string, db_file: string, dbname: string, options: any): Promise<number> {
+export async function handleDbCmd(cmd: string, db_file: string, dbname: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
     let rc = 0;
     switch (cmd) {
