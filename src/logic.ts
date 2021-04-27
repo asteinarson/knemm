@@ -1,6 +1,6 @@
-import { Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString } from './utils.js';
-import pkg from 'lodash';
-const { invert: ldInvert } = pkg;
+import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString } from './utils.js';
+//import pkg from 'lodash';
+//const { invert: ldInvert } = pkg;
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props.js';
 
