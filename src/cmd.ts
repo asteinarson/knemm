@@ -31,7 +31,7 @@ function addDbOption(cmd: cmder.Command) {
     cmd.option("-d --database <db_file>", "Use this DB connection - instead of default");
 }
 
-type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
+export type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
 
 let cmds_mm: CmdDesc[] = [
     {
@@ -108,19 +108,19 @@ let cmds_db: CmdDesc[] = [
         name: "create",
         desc: "Create a DB (after checking for existence), and optionally connect with a state",
         a1: "db_file",
-        a2: "name_of_new_db",
+        a2: "*name_of_new_db",
         options: [addCreatedbOptions]
     },
     {
         name: "drop",
         desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
         a1: "db_file",
-        a2: "name_of_db",
+        a2: "*name_of_db",
         options: [addCreatedbOptions]
     }
 ];
 
-// The command name is in process.argv[1]
+// The CLI command name is in process.argv[1]
 // differentiate <knemm> and <knedb> 
 let re_db = /knedb$/;
 let cmds = cmds_mm;
@@ -131,7 +131,10 @@ let cmd = new Command();
 for (let c of cmds) {
     let _c: cmder.Command;
     if (cmds == cmds_db) {
-        _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
+        let cmd_str = `${c.name} <${c.a1}> `;
+        if (c.a2[0] == "*") cmd_str += `<${c.a2.slice(1)}>`;
+        else cmd_str += `[${c.a2}]`;
+        _c = cmd.command(cmd_str)
             .action(async (db, dbname, options) => { process.exit(await handleDbCmd(c.name, db, dbname, options)) });
     } else if (c.a2) {
         // A two arg command
