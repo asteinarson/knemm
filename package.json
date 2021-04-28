@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "test": "jest"
   },
   "jest": {
-    "transform": {
-    },
+    "transform": {},
     "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx)$",
     "moduleFileExtensions": [
       "ts",
@@ -18,8 +17,8 @@
     ]
   },
   "bin": {
-    "knemm": "./lib/cmd.js",
-    "knedb": "./lib/cmd.js"
+    "knemm": "./shell/knemm",
+    "knedb": "./shell/knedb"
   },
   "keywords": [],
   "author": "",

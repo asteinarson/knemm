@@ -1,11 +1,6 @@
-#! /usr/bin/env node
+
 import cmder, { Command } from "commander";
 
-type CmdOptionAdder = (cmd: cmder.Command) => void;
-
-function addBaseOptions(cmd: cmder.Command) {
-    cmd.option("-s --state <dir>", "Manage merged state in this dir ");
-}
 
 function addCreatedbOptions(cmd: cmder.Command) {
     cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
@@ -31,7 +26,7 @@ function addDbOption(cmd: cmder.Command) {
     cmd.option("-d --database <db_file>", "Use this DB connection - instead of default");
 }
 
-export type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
+import { CmdDesc, addBaseOptions } from './cmd-handlers';
 
 let cmds_mm: CmdDesc[] = [
     {
@@ -96,54 +91,17 @@ let cmds_mm: CmdDesc[] = [
     },
 ];
 
-let cmds_db: CmdDesc[] = [
-    {
-        name: "exists",
-        desc: "Checking if a DB exists",
-        a1: "db_file",
-        a2: "name_of_db",
-        options: []
-    },
-    {
-        name: "create",
-        desc: "Create a DB (after checking for existence), and optionally connect with a state",
-        a1: "db_file",
-        a2: "*name_of_new_db",
-        options: [addBaseOptions,addCreatedbOptions]
-    },
-    {
-        name: "drop",
-        desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
-        a1: "db_file",
-        a2: "*name_of_db",
-        options: [addBaseOptions]
-    }
-];
-
 // Read .env 
 //import dotenv from "dotenv";
 import * as dotenv from 'dotenv'
 dotenv.config();
 
-import {handleNoArgCmd, handleOneArgCmd, handleTwoArgCmd, handleDbCmd} from "./cmd-handlers.js"
-
-// The CLI command name is in process.argv[1]
-// differentiate <knemm> and <knedb> 
-let re_db = /knedb$/;
-let cmds = cmds_mm;
-if( process.argv[0].match(re_db) || process.argv[1].match(re_db) )
-    cmds = cmds_db;
+import { handleNoArgCmd, handleOneArgCmd, handleTwoArgCmd, handleDbCmd } from "./cmd-handlers"
 
 let cmd = new Command();
-for (let c of cmds) {
+for (let c of cmds_mm) {
     let _c: cmder.Command;
-    if (cmds == cmds_db) {
-        let cmd_str = `${c.name} <${c.a1}> `;
-        if (c.a2[0] == "*") cmd_str += `<${c.a2.slice(1)}>`;
-        else cmd_str += `[${c.a2}]`;
-        _c = cmd.command(cmd_str)
-            .action(async (db, dbname, options) => { process.exit(await handleDbCmd(c.name, db, dbname, options)) });
-    } else if (c.a2) {
+    if (c.a2) {
         // A two arg command
         _c = cmd.command(`${c.name} <${c.a1}> <${c.a2}>`)
             .action(async (a1, a2, options) => { process.exit(await handleTwoArgCmd(c.name, a1, a2, options)) });
@@ -161,8 +119,7 @@ for (let c of cmds) {
     }
     // Add command specific parts from decl table above
     _c.description(c.desc)
-    if( cmds!=cmds_db)
-        addBaseOptions(_c);
+    addBaseOptions(_c);
     if (c.options) {
         for (let opt_f of c.options) {
             opt_f(_c);

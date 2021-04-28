@@ -1,16 +1,16 @@
-import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString } from './utils.js';
+import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString } from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
-import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props.js';
+import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { fileNameOf, slurpFile } from "./file-utils.js";
-import { connect, connectCheck, modifySchema, slurpSchema } from './db-utils.js'
+import { fileNameOf, slurpFile } from "./file-utils";
+import { connect, connectCheck, modifySchema, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { dump as yamlDump } from 'js-yaml';
 
-import { formatInternal, formatHrCompact } from "./hrc.js";
+import { formatInternal, formatHrCompact } from "./hrc";
 import { Knex } from 'knex';
 
 export function reformatTables(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {

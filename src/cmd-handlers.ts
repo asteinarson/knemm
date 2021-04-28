@@ -3,10 +3,21 @@ import {
     stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
 } from './logic.js';
 import { dump as yamlDump } from 'js-yaml';
-import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils.js";
+import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
 import { getDirsFromFileList, slurpFile } from "./file-utils.js";
 import { existsSync, rmSync, writeFileSync } from "fs";
 import path from "path";
+
+import cmder, { Command } from "commander";
+export type CmdOptionAdder = (cmd: cmder.Command) => void;
+export type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
+
+export function addBaseOptions(cmd: cmder.Command) {
+    cmd.option("-s --state <dir>", "Manage merged state in this dir ");
+}
+
+
+
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
     if (!Array.isArray(r)) {
