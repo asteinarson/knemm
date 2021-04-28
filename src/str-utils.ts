@@ -1,4 +1,4 @@
-import { Dict } from './utils.js';
+import { Dict } from './utils';
 
 
 function multiReplaceInternal(s: string, dict: Dict<string>, keys: string[], pos: number): string {

@@ -1,10 +1,10 @@
 import {
     toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
     stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
-} from './logic.js';
+} from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
-import { getDirsFromFileList, slurpFile } from "./file-utils.js";
+import { getDirsFromFileList, slurpFile } from "./file-utils";
 import { existsSync, rmSync, writeFileSync } from "fs";
 import path from "path";
 

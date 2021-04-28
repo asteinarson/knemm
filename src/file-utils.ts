@@ -1,7 +1,7 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
-import { Dict } from './utils.js';
+import { Dict } from './utils';
 
 export function slurpFile(file: string, quiet?: boolean): string | number | any[] | Record<string, any> {
     if (existsSync(file)) {

@@ -1,10 +1,10 @@
 
-import { invert as ldInvert, Dict, firstKey, notInLut } from './utils.js';
+import { invert as ldInvert, Dict, firstKey, notInLut } from './utils';
 
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
-import { multiReplace } from "./str-utils.js";
+import { multiReplace } from "./str-utils";
 
 //let re_enc_needed = /[_ \(\)]/;
 //let re_dec_needed = /([_]|\\\(|\\\))/;
@@ -34,7 +34,7 @@ function string_arg_decode(s: string) {
 
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
-import { db_column_flags, db_type_args, db_with_args, isNumeric, isString } from './db-props.js';
+import { db_column_flags, db_type_args, db_with_args, isNumeric, isString } from './db-props';
 
 
 // Expand any nested data flattened to a string  

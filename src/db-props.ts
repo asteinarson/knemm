@@ -1,5 +1,5 @@
 
-import { Dict, tryGet } from './utils.js';
+import { Dict, tryGet } from './utils';
 
 // short form boolean flags 
 export let db_column_flags: Dict<string> = {

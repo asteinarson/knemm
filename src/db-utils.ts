@@ -28,7 +28,7 @@ export async function connectCheck(connection: Record<string, string>, client = 
 }
 
 
-import { Dict } from "./utils.js";
+import { Dict } from "./utils";
 
 // column props that are by default true 
 const default_true_props: Dict<boolean> = {

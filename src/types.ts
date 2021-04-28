@@ -1,5 +1,5 @@
 
-import { Dict, BaseTypes } from './utils.js';
+import { Dict, BaseTypes } from './utils';
 
 export type ModuleId = {
     branch: string,

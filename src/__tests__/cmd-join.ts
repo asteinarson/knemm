@@ -1,5 +1,5 @@
-import { handleNoArgCmd, handleOneArgCmd, handleTwoArgCmd, handleDbCmd } from '../cmd-handlers.js';
-import { Dict } from '../utils.js';
+import { handleNoArgCmd, handleOneArgCmd, handleTwoArgCmd, handleDbCmd } from '../cmd-handlers';
+import { Dict } from '../utils';
 
 import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
