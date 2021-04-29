@@ -833,7 +833,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                 if (p == "data_type") {
                                     // Accept same or more narrow datatype 
                                     if (!typeContainsLoose(m_col[p], col[p]))
-                                        errors.push(`${t}:${c_name} - reference type ${col[p]} does not fit in declared type ${m_col[p]}`);
+                                        errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
                                     else {
                                         // Make a ref in the merge tree
                                         m_col.___refs ||= {};
