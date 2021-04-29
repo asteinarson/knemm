@@ -792,6 +792,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                     is_ref = true;
                     merge[t].___refs ||= {};
                     merge[t].___refs[claim.id.branch] ||= [];
+                    merge[t].___refs[claim.id.branch].push(claim.id.version);
                 }
             }
             else merge[t] = { ___owner: claim.id.branch };
@@ -833,6 +834,12 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                     // Accept same or more narrow datatype 
                                     if (!typeContainsLoose(m_col[p], col[p]))
                                         errors.push(`${t}:${c_name} - reference type ${col[p]} does not fit in declared type ${m_col[p]}`);
+                                    else {
+                                        // Make a ref in the merge tree
+                                        m_col.___refs ||= {};
+                                        m_col.___refs[claim.id.branch] ||= [];
+                                        m_col.___refs[claim.id.branch].push(claim.id.version);
+                                    }
                                 } else {
                                     if (!db_column_words[p])
                                         errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);

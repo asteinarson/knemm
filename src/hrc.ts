@@ -188,7 +188,8 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 if (firstKey(unhandled)) {
                     console.warn(`formatHrCompact(${col_name}) - unhandled: ${unhandled}`);
                     // We make a subtree, but keep the default line in key "*" 
-                    let small_node: Dict<string> = { "*": table[col_name] };
+                    let small_node: Dict<string> = { };
+                    if( table[col_name] ) small_node["*"] = table[col_name];
                     for (let k in unhandled)
                         small_node[k] = col[k];
                     table[col_name] = small_node;
