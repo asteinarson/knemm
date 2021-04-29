@@ -1,5 +1,5 @@
 import { handleNoArgCmd, handleOneArgCmd, handleTwoArgCmd, handleDbCmd } from '../cmd-handlers';
-import { Dict } from '../utils';
+import { Dict, firstKey, isDict } from '../utils';
 
 import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
@@ -8,6 +8,7 @@ import path from 'path';
 import os from 'os';
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import rimraf from 'rimraf';
+import { matchDiff } from '../logic';
 
 // Get somewhere to store temporary claims 
 let temp_claim_dir = path.join(os.tmpdir(), "claims");
@@ -37,15 +38,17 @@ let claim_s1 = {
         version: 1
     },
     ___tables: {
-        id: {
-            data_type: "int",
-            is_primary_key: true,
-            has_auto_increment: true
+        person: {
+            id: {
+                data_type: "int",
+                is_primary_key: true,
+                has_auto_increment: true
+            },
+            name: {
+                data_type: "varchar",
+                max_length: 32,
+            },
         },
-        name: {
-            data_type: "varchar",
-            max_length: 32,
-        }
     }
 };
 
@@ -71,4 +74,23 @@ function capture_stop(){
     old_log = null; 
     return capture;
 }
+
+capture_start();
+let r = await handleOneArgCmd("join",[fileOf(claim_s1)],{internal:true});
+let y_s = capture_stop();
+console.log( "test return code: " + r );
+
+try {
+    let o = yamlLoad(y_s);
+    if( isDict(o)){
+        // The merge should be identical with the one claim 
+        let d1 = matchDiff(claim_s1.___tables,o);
+        if( firstKey(d1) ) console.log("Expected empty diff1");
+        let d2 = matchDiff(o,claim_s1.___tables);
+        if( firstKey(d2) ) console.log("Expected empty diff2");
+    }
+}catch(e){
+    console.error("Failed yamlLoad");
+}
+
 
