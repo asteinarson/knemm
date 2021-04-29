@@ -828,7 +828,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                             if (es) errors = [...errors, ...es];
                         } else {
                             // Make claims on a column of another branch/module
-                            for (let p of col) {
+                            for (let p in col) {
                                 if (p == "data_type") {
                                     // Accept same or more narrow datatype 
                                     if (!typeContainsLoose(m_col[p], col[p]))
