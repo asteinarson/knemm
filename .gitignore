@@ -1,6 +1,7 @@
 node_modules/
 lib/
 .vscode/
+tsconfig.tsbuildinfo
 .env
 @
 db:*
