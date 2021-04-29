@@ -382,7 +382,7 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
             r.___tables = rf;
         r.source = "*file";
         r.file = file;
-        r.format = "?";
+        r.format ||=  "?";
         if (!r.id)
             r.id = claimIdFromName(file);
         else if (typeof r.id == "string")
