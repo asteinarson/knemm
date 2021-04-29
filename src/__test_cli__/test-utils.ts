@@ -3,12 +3,13 @@ import { Dict, firstKey, isDict } from '../utils';
 
 import { dump as yamlDump } from 'js-yaml';
 
-import path from 'path';
-import os from 'os';
+import { join as pJoin } from 'path';
+//import os from 'os';
+import { tmpdir } from 'os';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 
 // Get somewhere to store temporary claims 
-let temp_claim_dir = path.join(os.tmpdir(), "claims");
+let temp_claim_dir = pJoin(tmpdir(), "claims");
 if (!existsSync(temp_claim_dir))
     mkdirSync(temp_claim_dir);
 
@@ -17,7 +18,7 @@ export function getClaimDir() {
 }
 
 export function fileOf(cl: Dict<any>) {
-    return path.join(temp_claim_dir, `${cl.id.branch}.${cl.id.version}.yaml`);
+    return pJoin(temp_claim_dir, `${cl.id.branch}.${cl.id.version}.yaml`);
 }
 
 export function claimsToFile(claims: Dict<any>[]) {
