@@ -2,7 +2,7 @@
 export let claim_p1 = {
     format: "internal",
     id: {
-        branch: "cmd-join",
+        branch: "p",
         version: 1
     },
     ___tables: {
