@@ -600,9 +600,9 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 }
 
 // Regular expression to extract claim (name,number) from a string/filename
-let re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
-let re_name_ext = /^([^/]+\/)*(.*)\.([a-zA-Z_-]+)$/;
-let re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
+const re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
+const re_name_ext = /^([^/]+\/)*(.*)\.([a-zA-Z_-]+)$/;
+const re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 
 type ClaimId = { branch: string, version: number };
 
