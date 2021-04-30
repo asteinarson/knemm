@@ -623,7 +623,7 @@ function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     let md = name.match(re_name_num_oext);
     if (md)
         return { branch: md[2], version: Number(md[3]) };
-    if( allow_loose ){
+    if (allow_loose) {
         // Then only a name
         md = name.match(re_name_oext);
         if (md)
@@ -634,11 +634,11 @@ function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
 function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: boolean): ClaimId {
     if (!name && isString(claim_id))
         name = claim_id;
-    let file_cl_id = claimIdFromName(name,allow_loose);
+    let file_cl_id = claimIdFromName(name, allow_loose);
     if (!allow_loose) return file_cl_id;
     if (claim_id) {
         // With loose naming, we prefer the ID given inside the claim
-        let r:ClaimId;
+        let r: ClaimId;
         if (isDict(claim_id)) {
             r = {
                 // The ID is stored using <name> while the dep list can use <branch>
@@ -648,10 +648,10 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
         }
         else {
             if (typeof claim_id != "string")
-            return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
+                return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
             // Assume it is a string like: invoice.14
-            if( !claim_id.match(re_ext) ) claim_id += ".yaml";
-            r = claimIdFromName(claim_id,allow_loose);
+            if (!claim_id.match(re_ext)) claim_id += ".yaml";
+            r = claimIdFromName(claim_id, allow_loose);
         }
         if (file_cl_id && r && !propEqual(file_cl_id, r))
             console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
@@ -690,12 +690,58 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
     return true;
 }
 
-const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
-type BranchSpec = {
-    branch: string,
-    version: number
-};
+// Iterate available paths, look for additional potential deps 
+function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
+    let cl_opt: Dict<Dict<any>[]> = {};
+    if (options.deps == false) return;
+
+    // Look for any dependencies in provided paths. 
+    // To find the real claim ID:s we need to actually load them
+    // (The filename ID is not decisive)
+    let paths: string[] = options.paths || ["./"];
+    for (let p of paths) {
+        let files = readdirSync(p);
+        for (let f of files) {
+            let id: ClaimId;
+            let claim: Dict<any>;
+            if (!options.looseNames) {
+                id = claimIdFromName(f);
+                if (id) {
+                    // Have it already? 
+                    if (cl_by_br[id.branch]?.[id.version]) continue;
+                    try {
+                        claim = fileToNestedDict(path.join(p, f), true);
+                    } catch (e) {
+                        // Do nothing 
+                        let _e = e;
+                    }
+                }
+            }
+            else {
+                // Have to try load, to get the claim ID - this can mean loading completely unrelated JSON / YAML
+                try {
+                    let claim = fileToNestedDict(path.join(p, f), true);
+                    if (claim) 
+                        id = getClaimId(f, claim.id, true);
+                } catch (e) {
+                    // Do nothing 
+                    let _e = e;
+                }
+            }
+            if (claim) {
+                cl_opt[id.branch] ||= [];
+                if (!cl_opt[id.branch][id.version])
+                    cl_opt[id.branch][id.version] = claim;
+                else
+                    console.warn(`findOptionalClaims - Claim with ID <${id.branch}.${id.version}> encountered more than once`);
+            }
+        }
+    }
+
+    return cl_opt;
+}
+const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
@@ -707,8 +753,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let branches: Dict<number> = state_base.modules;
     if (!branches) state_base.modules = branches = {};
     let ver_by_br: Dict<number> = {};
-
-    let br_switch: Dict<Record<number, BranchSpec>> = {};
 
     let err_cnt = 0;
     let claims_by_name: Dict<1> = {};
@@ -741,9 +785,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     }
                     if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
                         ver_by_br[d.branch] = d.version;
-                    // Record a branch switch 
-                    br_switch[d.branch] ||= {}
-                    br_switch[d.branch][d.version] = { branch: name, version: ver }
                 });
             }
             /*if (claim.weak_depends) {
@@ -757,40 +798,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     if (err_cnt > 0) return;
 
     // Find additional dependencies, in given path (same branch names but lower versions)
-    if (options.deps != false) {
-        // Look for any dependencies in provided paths. 
-        // To find the real claim ID:s we need to actually load them
-        // (The filename ID is not decisive)
-        let paths: string[] = options.paths || ["./"];
-        for (let p of paths) {
-            let files = readdirSync(p);
-            for (let f of files) {
-                if (f.match(re_yj)) {
-                    try {
-                        // Do not read file by same name twice 
-                        if (claims_by_name[fileNameOf(f)]) continue;
-                        // It is wasteful to try parsing each file here. We could have
-                        // a flag that makes us trust the filenames for claim ID. 
-                        let file = path.join(p, f);
-                        let r = fileToNestedDict(file, true);
-                        if (r?.id) {
-                            // We are only interested in our list of claims and their deps
-                            if (ver_by_br[r.id.branch] &&
-                                typeof r.id.version == "number" && r.id.version <= ver_by_br[r.id.branch] &&
-                                !cl_by_br[r.id.branch][r.id.version]) {
-                                reformatTopLevel(r, "internal");
-                                cl_by_br[r.id.branch][r.id.version] = r;
-                                file_dicts[file] = r;   // Keep track of file for later updating state dir
-                            }
-                        }
-                    } catch (e) {
-                        // Do nothing 
-                        let _e = e;
-                    }
-                }
-            }
-        }
-    }
 
     // And now do full linear ordering
     let deps_ordered: Dict<any>[] = [];
