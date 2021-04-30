@@ -52,7 +52,7 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
 
     // Copy input files here     
     for (let f of files) {
-        let md = f.match(re_name_ext);
+        let md = f.match(re_name_oext);
         if (md) {
             let name = md[2] + "." + md[3];
             let tgt_name = path.join(state_dir, name);
@@ -600,27 +600,41 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 }
 
 // Regular expression to extract claim (name,number) from a string/filename
-const re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
-const re_name_ext = /^([^/]+\/)*(.*)\.([a-zA-Z_-]+)$/;
+// Matches /some/path/claim.7.json 
+const re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)(\.[a-zA-Z_-]+)?$/;
+
+//const re_name_num_oext1 = /^([^/]+\/)*(.*)-(([\d]+)(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
+
+// This matches:
+//   /path/to/claim-osc_14.12.yaml
+//   /path/to/claim-osc_15.json
+//   claim-osc_15.yaml
+//   claim:abc_16
+//   cust_17.1
+//   cust_16.yaml
+const re_name_num_oext = /([^/^_^.]*)_(([\d]+)(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
+const re_name_oext = /([^/^_^.]*)(\.[a-zA-Z_-]+)?$/;
 const re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 
 type ClaimId = { branch: string, version: number };
 
-function claimIdFromName(name: string): ClaimId {
+function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     // Name plus version ? 
-    let md = name.match(re_name_num_ext);
+    let md = name.match(re_name_num_oext);
     if (md)
         return { branch: md[2], version: Number(md[3]) };
-    // Then only a name
-    md = name.match(re_name_ext);
-    if (md)
-        return { branch: md[2], version: 0 };
+    if( allow_loose ){
+        // Then only a name
+        md = name.match(re_name_oext);
+        if (md)
+            return { branch: md[2], version: 0 };
+    }
 }
 
 function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: boolean): ClaimId {
     if (!name && isString(claim_id))
         name = claim_id;
-    let file_cl_id = claimIdFromName(name);
+    let file_cl_id = claimIdFromName(name,allow_loose);
     if (!allow_loose) return file_cl_id;
     if (claim_id) {
         // With loose naming, we prefer the ID given inside the claim
@@ -637,7 +651,7 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
             return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
             // Assume it is a string like: invoice.14
             if( !claim_id.match(re_ext) ) claim_id += ".yaml";
-            r = claimIdFromName(claim_id);
+            r = claimIdFromName(claim_id,allow_loose);
         }
         if (file_cl_id && r && !propEqual(file_cl_id, r))
             console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
