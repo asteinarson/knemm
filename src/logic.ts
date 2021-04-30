@@ -12,6 +12,7 @@ import { dump as yamlDump } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc";
 import { Knex } from 'knex';
+import { stringify } from 'node:querystring';
 
 export function reformatTables(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
     return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
@@ -80,6 +81,8 @@ const state_excludes: Dict<1> = {
 function excludeFromState(file: string) {
     return state_excludes[file];
 }
+
+const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
 // Rebuild the state directory from claims that are stored in the directory
 export function rebuildState(state_dir: string, options: Dict<any>): boolean {
@@ -383,10 +386,11 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
         r.source = "*file";
         r.file = file;
         r.format ||= "?";
+        // ! This should use the looseNames flag
         if (!r.id)
             r.id = claimIdFromName(file);
         else if (typeof r.id == "string")
-            r.id = claimIdFromName(r.id + ".yaml");
+            r.id = claimIdFromName(r.id);
         reformatTopLevel(r, format);
         return r;
     }
@@ -694,7 +698,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 // Iterate available paths, look for additional potential deps 
 function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
     let cl_opt: Dict<Dict<any>[]> = {};
-    if (options.deps == false) return;
+    if (options.deps == false) return cl_opt;
 
     // Look for any dependencies in provided paths. 
     // To find the real claim ID:s we need to actually load them
@@ -722,7 +726,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
                 // Have to try load, to get the claim ID - this can mean loading completely unrelated JSON / YAML
                 try {
                     let claim = fileToNestedDict(path.join(p, f), true);
-                    if (claim){
+                    if (claim) {
                         id = getClaimId(f, claim.id, true);
                         if (id && cl_by_br[id.branch]?.[id.version]) continue;
                     }
@@ -743,11 +747,10 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
 
     return cl_opt;
 }
-const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
-    // Do initial registration based on branch name and version 
+    // This holds all versions numbers of a given branch we will merge
     let cl_by_br: Dict<Dict<any>[]> = {};
 
     // branches and ver_by_br contains the same thing, a lookup from branch name to version.
@@ -756,48 +759,80 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     if (!branches) state_base.modules = branches = {};
     let ver_by_br: Dict<number> = {};
 
+    let includeClaim = (name: string, ver: number, claim: Dict<any>) => {
+        cl_by_br[name] ||= [];
+        // Already have it ? 
+        if (cl_by_br[name][ver]) return;
+        cl_by_br[name][ver] = claim;
+        // See if it is highest version of its branch 
+        if (!ver_by_br[name] || ver > ver_by_br[name])
+            ver_by_br[name] = ver;
+        return true;
+    }
+
+    // Iterate claims we were explicitely give
     let err_cnt = 0;
-    let claims_by_name: Dict<1> = {};
     for (let f in file_dicts) {
-        claims_by_name[fileNameOf(f)] = 1;
-        let claim = file_dicts[f].id;
-        let claim_id = getClaimId(f, claim, options.looseNames);
-        let name = claim_id.branch;
+        let id = getClaimId(f, file_dicts[f].id, options.looseNames);
+        let name = id.branch;
         if (name) {
             // Trying to insert claim from earlier part of history ? 
-            if (branches[name] && claim_id.version <= branches[name]) {
-                console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${claim_id.version} to apply now. Rebuild?`);
+            if (branches[name] && id.version <= branches[name]) {
+                console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${id.version} to apply now. Rebuild?`);
                 err_cnt++;
                 continue;
             }
             // Register this claim 
-            let ver = claim_id.version || 0;
-            cl_by_br[name] ||= [];
-            cl_by_br[name][ver] = file_dicts[f];
-            // See if it is highest version of its branch 
-            if (!ver_by_br[name] || ver > ver_by_br[name])
-                ver_by_br[name] = ver;
-            // Record highest versions of the dependencies we need 
-            if (claim.depends) {
-                let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
-                nest_deps.forEach((d, ix) => {
-                    if (typeof d == "string") {
-                        d = claimIdFromName(d + ".yaml");
-                        nest_deps[ix] = d;
-                    }
-                    if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
-                        ver_by_br[d.branch] = d.version;
-                });
-            }
-            /*if (claim.weak_depends) {
-                // Weak depends are only looked for (and run) if that module has been previously 
-                // included/installed. 
-            }*/
+            includeClaim(name, id.version, file_dicts[f]);
         } else {
+            console.error(`dependencySort - No name found (parse failed) for claim: ${f}`);
             err_cnt++;
         }
     }
     if (err_cnt > 0) return;
+
+    // Get additional claims, we possibly need as deps 
+    let opt_dicts = findOptionalClaims(cl_by_br, options);
+
+    // Now we need to see what to use, from our optional claims 
+    // Since claim_keys will be extended in the loop, we need 
+    // a dynamic loop condition 
+    let claim_keys = Object.keys(file_dicts);
+    for (let ix = 0; ix < claim_keys.length; ix++) {
+        let k = claim_keys[ix];
+        let claim = file_dicts[k];
+        if (claim.depends) {
+            let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
+            nest_deps.forEach((d, ix) => {
+                if (isString(d)) {
+                    d = claimIdFromName(d);
+                    nest_deps[ix] = d;
+                }
+                let dep_claim = opt_dicts[d.branch]?.[d.version];
+                if (dep_claim) {
+                    if (includeClaim(d.branch, d.version,dep_claim)) {
+                        // Then also scan that one for dependencies 
+                        file_dicts[dep_claim.file] = dep_claim;
+                        claim_keys.push(dep_claim.file);
+                    }
+                }
+                else {
+                    console.error(`dependencySort - Bot found, dependent claim: <${d.branch}:${d.version}>`);
+                    err_cnt++;
+                }
+                if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
+                    ver_by_br[d.branch] = d.version;
+            });
+        }
+    }
+
+    // Record highest versions of the dependencies we need 
+    /*if (claim.depends) {
+    }*/
+    /*if (claim.weak_depends) {
+        // Weak depends are only looked for (and run) if that module has been previously 
+        // included/installed. 
+    }*/
 
     // Find additional dependencies, in given path (same branch names but lower versions)
 
