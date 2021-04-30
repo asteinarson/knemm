@@ -82,6 +82,6 @@ test("cmd join test (branch 2) - 4", async () => {
     let y_s = logGet();
     let o = yamlLoad(y_s);
 
-    expect(r).toBe(0);
+    expect(r).not.toBe(0);
     expect(isArray(o)).toBe(true);
 });
