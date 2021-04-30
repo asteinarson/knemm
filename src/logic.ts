@@ -635,17 +635,17 @@ function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     }
 }
 
-function safeClaimId(claim:Dict<any>|string): ClaimId {
-    if (isDict(claim)) {
+function safeClaimId(claim_id: Dict<any> | string): ClaimId {
+    if (isDict(claim_id)) {
         return {
             // The ID is stored using <name> while the dep list can use <branch>
-            branch: claim.id.name || claim.id.branch,
-            version: Number(claim.id.version)
+            branch: claim_id.name || claim_id.branch,
+            version: Number(claim_id.version)
         };
     }
-    if ( !isString(claim) )
-        return errorRv(`safeClaimId: Unhandled claim ID type: ${claim}:${typeof claim}`);
-    return claimIdFromName(claim);
+    if (!isString(claim_id))
+        return errorRv(`safeClaimId: Unhandled claim ID type: ${claim_id}: ${typeof claim_id}`);
+    return claimIdFromName(claim_id);
 }
 
 function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: boolean): ClaimId {
@@ -802,6 +802,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         let claim = file_dicts[k];
         if (claim.depends) {
             let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
+            let o_id = safeClaimId(claim.id);
             nest_deps.forEach((d, ix) => {
                 if (isString(d)) {
                     d = claimIdFromName(d);
@@ -809,14 +810,14 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 }
                 let dep_claim = opt_dicts[d.branch]?.[d.version];
                 if (dep_claim) {
-                    if (includeClaim(d.branch, d.version,dep_claim)) {
+                    if (includeClaim(d.branch, d.version, dep_claim)) {
                         // Then also scan that one for dependencies 
                         file_dicts[dep_claim.file] = dep_claim;
                         claim_keys.push(dep_claim.file);
                     }
                     // Insert the dependee link (opposite direction of dependency link)
                     dep_claim.___dependee ||= {};
-                    dep_claim.___dependee[claim.id.branch] = claim.id.version;
+                    dep_claim.___dependee[o_id.branch] = o_id.version;
                 }
                 else {
                     console.error(`dependencySort - Bot found, dependent claim: <${d.branch}:${d.version}>`);
