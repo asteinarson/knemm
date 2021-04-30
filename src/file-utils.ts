@@ -42,8 +42,8 @@ export function getDirsFromFileList(files: string[]): string[] {
     }, {}));*/
 }
 
-const re_fn = /^.*\/([^/]*)$/;
+const re_fn = /^(.*\/)?([^/]*)$/;
 export function fileNameOf(path:string){
     let md = path.match(re_fn);
-    return md?.[1];
+    return md?.[2];
 }
