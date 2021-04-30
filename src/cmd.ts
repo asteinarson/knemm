@@ -2,11 +2,6 @@
 import cmder, { Command } from "commander";
 
 
-function addCreatedbOptions(cmd: cmder.Command) {
-    cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
-    cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the created database");
-}
-
 function addIncludeExcludeOptions(cmd: cmder.Command) {
     cmd.option("-X --exclude <patterns...>", "Exclude tables/columns according to this pattern");
     cmd.option("-I --include <patterns...>", "Include tables/columns according to this pattern");
@@ -20,6 +15,7 @@ function addOutputOptions(cmd: cmder.Command) {
 function addClaimOptions(cmd: cmder.Command) {
     cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
+    cmd.option("-L --loose-names", "Allow loose naming of claim files (with version inside)");
 }
 
 function addDbOption(cmd: cmder.Command) {
