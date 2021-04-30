@@ -382,7 +382,7 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
             r.___tables = rf;
         r.source = "*file";
         r.file = file;
-        r.format ||=  "?";
+        r.format ||= "?";
         if (!r.id)
             r.id = claimIdFromName(file);
         else if (typeof r.id == "string")
@@ -602,8 +602,9 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 // Regular expression to extract claim (name,number) from a string/filename
 let re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)\.[a-zA-Z_-]+$/;
 let re_name_ext = /^([^/]+\/)*(.*)\.([a-zA-Z_-]+)$/;
+let re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 
-type ClaimId = { branch: string, version?: number };
+type ClaimId = { branch: string, version: number };
 
 function claimIdFromName(name: string): ClaimId {
     // Name plus version ? 
@@ -613,26 +614,36 @@ function claimIdFromName(name: string): ClaimId {
     // Then only a name
     md = name.match(re_name_ext);
     if (md)
-        return { branch: md[2] };
+        return { branch: md[2], version: 0 };
 }
 
-function getClaimId(name: string, claim_id: Dict<any>): ClaimId {
+function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: boolean): ClaimId {
+    if (!name && isString(claim_id))
+        name = claim_id;
+    let file_cl_id = claimIdFromName(name);
+    if (!allow_loose) return file_cl_id;
     if (claim_id) {
-        if (typeof claim_id == "object")
-            return {
+        // With loose naming, we prefer the ID given inside the claim
+        let r:ClaimId;
+        if (isDict(claim_id)) {
+            r = {
                 // The ID is stored using <name> while the dep list can use <branch>
                 branch: claim_id.name || claim_id.branch,
                 version: Number(claim_id.version)
             };
+        }
         else {
             if (typeof claim_id != "string")
-                return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
+            return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
             // Assume it is a string like: invoice.14
-            // Let the code below do the work 
-            name = claim_id + ".yaml";
+            if( !claim_id.match(re_ext) ) claim_id += ".yaml";
+            r = claimIdFromName(claim_id);
         }
+        if (file_cl_id && r && !propEqual(file_cl_id, r))
+            console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
+        return r;
     }
-    return claimIdFromName(name);
+    return file_cl_id;
 }
 
 // Order dependencies on branch <which> up to <number>. Nest and do sub dependencies.
@@ -667,13 +678,23 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 
 const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
+type BranchSpec = {
+    branch: string,
+    version: number
+};
+
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
     // Do initial registration based on branch name and version 
     let cl_by_br: Dict<Dict<any>[]> = {};
-    let ver_by_br: Dict<number> = {};
+
+    // branches and ver_by_br contains the same thing, a lookup from branch name to version.
+    // However, branches is the current state (state_base) and ver_by_br where we're going to.
     let branches: Dict<number> = state_base.modules;
-    if( !branches ) state_base.modules = branches = {};
+    if (!branches) state_base.modules = branches = {};
+    let ver_by_br: Dict<number> = {};
+
+    let br_switch: Dict<Record<number, BranchSpec>> = {};
 
     let err_cnt = 0;
     let claims_by_name: Dict<1> = {};
@@ -687,10 +708,11 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             if (branches[name] && claim_id.version <= branches[name]) {
                 console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${claim_id.version} to apply now. Rebuild?`);
                 err_cnt++;
+                continue;
             }
             // Register this claim 
             let ver = claim_id.version || 0;
-            if (!cl_by_br[name]) cl_by_br[name] = [];
+            cl_by_br[name] ||= [];
             cl_by_br[name][ver] = file_dicts[f];
             // See if it is highest version of its branch 
             if (!ver_by_br[name] || ver > ver_by_br[name])
@@ -699,16 +721,21 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             if (claim.depends) {
                 let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
                 nest_deps.forEach((d, ix) => {
-                    if (typeof d == "string") d = claimIdFromName(d + ".yaml");
-                    nest_deps[ix] = d;
+                    if (typeof d == "string") {
+                        d = claimIdFromName(d + ".yaml");
+                        nest_deps[ix] = d;
+                    }
                     if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
                         ver_by_br[d.branch] = d.version;
+                    // Record a branch switch 
+                    br_switch[d.branch] ||= {}
+                    br_switch[d.branch][d.version] = { branch: name, version: ver }
                 });
             }
-            if (claim.weak_depends) {
+            /*if (claim.weak_depends) {
                 // Weak depends are only looked for (and run) if that module has been previously 
                 // included/installed. 
-            }
+            }*/
         } else {
             err_cnt++;
         }
