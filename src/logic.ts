@@ -635,6 +635,19 @@ function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     }
 }
 
+function safeClaimId(claim:Dict<any>|string): ClaimId {
+    if (isDict(claim)) {
+        return {
+            // The ID is stored using <name> while the dep list can use <branch>
+            branch: claim.id.name || claim.id.branch,
+            version: Number(claim.id.version)
+        };
+    }
+    if ( !isString(claim) )
+        return errorRv(`safeClaimId: Unhandled claim ID type: ${claim}:${typeof claim}`);
+    return claimIdFromName(claim);
+}
+
 function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: boolean): ClaimId {
     if (!name && isString(claim_id))
         name = claim_id;
@@ -642,21 +655,7 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
     if (!allow_loose) return file_cl_id;
     if (claim_id) {
         // With loose naming, we prefer the ID given inside the claim
-        let r: ClaimId;
-        if (isDict(claim_id)) {
-            r = {
-                // The ID is stored using <name> while the dep list can use <branch>
-                branch: claim_id.name || claim_id.branch,
-                version: Number(claim_id.version)
-            };
-        }
-        else {
-            if (typeof claim_id != "string")
-                return errorRv(`getClaimId: Unhandled claim ID type: ${name}:${typeof claim_id}`);
-            // Assume it is a string like: invoice.14
-            if (!claim_id.match(re_ext)) claim_id += ".yaml";
-            r = claimIdFromName(claim_id, allow_loose);
-        }
+        let r = safeClaimId(claim_id);
         if (file_cl_id && r && !propEqual(file_cl_id, r))
             console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
         return r;
@@ -815,6 +814,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         file_dicts[dep_claim.file] = dep_claim;
                         claim_keys.push(dep_claim.file);
                     }
+                    // Insert the dependee link (opposite direction of dependency link)
+                    dep_claim.___dependee ||= {};
+                    dep_claim.___dependee[claim.id.branch] = claim.id.version;
                 }
                 else {
                     console.error(`dependencySort - Bot found, dependent claim: <${d.branch}:${d.version}>`);
