@@ -722,8 +722,10 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
                 // Have to try load, to get the claim ID - this can mean loading completely unrelated JSON / YAML
                 try {
                     let claim = fileToNestedDict(path.join(p, f), true);
-                    if (claim) 
+                    if (claim){
                         id = getClaimId(f, claim.id, true);
+                        if (id && cl_by_br[id.branch]?.[id.version]) continue;
+                    }
                 } catch (e) {
                     // Do nothing 
                     let _e = e;
