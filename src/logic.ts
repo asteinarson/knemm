@@ -701,7 +701,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     for (let f in file_dicts) {
         claims_by_name[fileNameOf(f)] = 1;
         let claim = file_dicts[f].id;
-        let claim_id = getClaimId(f, claim);
+        let claim_id = getClaimId(f, claim, options.looseNames);
         let name = claim_id.branch;
         if (name) {
             // Trying to insert claim from earlier part of history ? 
