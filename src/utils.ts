@@ -6,10 +6,10 @@ export type BaseTypes = string | number | boolean;
 
 // Invert keys and values of 1-level deep object
 export function invert(o: Dict<BaseTypes>) {
-    let tgt:Dict<string> = {};
+    let tgt: Dict<string> = {};
     for (let k in o) {
         let v = o[k];
-        if( !isString(v) ) v = v.toString();
+        if (!isString(v)) v = v.toString();
         tgt[v] = k;
     }
     return tgt;
@@ -82,7 +82,7 @@ export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof key
     if (Array.isArray(keys)) {
         let r: string[] = [];
         for (let k of keys)
-            if (lut[k]==undefined)
+            if (lut[k] == undefined)
                 r.push(k);
         return r.length > 0 ? r : null;
     }
@@ -96,10 +96,10 @@ export function notInLut(keys: string[] | Dict<any>, lut: Dict<any>): typeof key
 }
 
 // Let each type contain an 'empty' value (0, "", [], null, {}, ...)
-export function isEmpty(v:any){
-    if( !v ) return true;
-    if( isArray(v) ) return !v.length;
-    if( isDict(v) ) return !firstKey(v);
+export function isEmpty(v: any) {
+    if (!v) return true;
+    if (isArray(v)) return !v.length;
+    if (isDict(v)) return !firstKey(v);
 }
 
 export function isString(s: any): s is String {
@@ -143,12 +143,18 @@ export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof a
 // This assumes a densely spaced input array. Only indeces in the range 
 // -a.length < pos < a.length 
 // are valid 
-export function dArrAt<T>(a:T[],pos:number){
-    if( pos<0 )
+export function dArrAt<T>(a: T[], pos: number) {
+    if (pos < 0)
         pos += a.length;
     return a[pos];
 }
 
+export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
+    return Object.keys(o).reduce(function (r, k) {
+        r[k] = f(o[k])
+        return r
+    }, {} as Dict<U>)
+}
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;

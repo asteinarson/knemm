@@ -1,4 +1,4 @@
-import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt } from './utils';
+import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt, objectMap } from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
@@ -821,6 +821,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 
     // Get additional claims, we possibly need as deps 
     let opt_dicts = findOptionalClaims(cl_by_br, options, branches);
+    // We make a consumable array of keys, per module, to avoid O2 iteration below
+    let opt_keys = objectMap( opt_dicts, v => Object.keys(v).map(v => Number(v)) );
 
     // Now we need to see what to use, from our optional claims 
     // Since claim_keys will be extended in the loop, we need 
@@ -832,14 +834,18 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 
         // Pull in previous steps of this claim 
         let branch = claim.id.branch;
-        for (let ix in opt_dicts[branch]) {
-            let od = opt_dicts[branch][ix];
+        //for (let ix in opt_dicts[branch]) {
+        //    let od = opt_dicts[branch][ix];
+        for( let opt_ver of opt_keys[branch] ){
+            let od = opt_dicts[branch][opt_ver];
             // If we don't have it, and if the version is in the range... 
             // then include it 
             if( checkIncludeClaim(od, "in_range") ){
                 // Then also scan that one for dependencies 
                 file_dicts[od.file] = od;
                 claim_keys.push(od.file);
+                // And consume it 
+                delete opt_keys[branch][opt_ver];
             }
         }
 
