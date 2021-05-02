@@ -675,37 +675,6 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
     return file_cl_id;
 }
 
-// Order dependencies on branch <which> up to <number>. Nest and do sub dependencies.
-function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?: number, depth?: number) {
-    if (!depth) depth = 0;
-    if (depth++ > 500) return errorRv("orderDeps2 - Infinite recursion?");
-
-    let branch = deps[which];
-    if (!branch) return errorRv("orderDeps2 - branch not found: " + which);
-
-    for (let ix = 0; ix < branch.length && (ix <= upto || upto == null); ix++) {
-        let claim = branch[ix];
-        if (claim && !claim["*ordered"]) {
-            if (claim.depends) {
-                // Get the nested dependencies 
-                let nest_deps = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
-                for (let d of nest_deps) {
-                    let claim_id = getClaimId("", d);
-                    if (claim_id) {
-                        if (!orderDeps(deps, claim_id.branch, r, claim_id.version, depth))
-                            return;
-                    }
-                    else console.warn("orderDeps2 - Could not resolve claim: " + claim_id.toString());
-                }
-            }
-            claim["*ordered"] = true;
-            r.push(claim);
-        }
-    }
-    return true;
-}
-
-
 // Iterate available paths, look for additional potential deps 
 function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, above?: Dict<number>) {
     let cl_opt: Dict<Dict<any>[]> = {};
