@@ -1,4 +1,4 @@
-import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString } from './utils';
+import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt } from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
@@ -807,7 +807,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             nest_deps.forEach((d, ix) => {
                 if (isString(d)) {
                     d = claimIdFromName(d);
-                    //nest_deps[ix] = d;
+                    nest_deps[ix] = d;
                 }
                 let dep_claim = opt_dicts[d.branch]?.[d.version];
                 if (dep_claim) {
@@ -830,6 +830,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
                     ver_by_br[d.branch] = d.version;
             });
+            // In case turned into an array or string => ClaimId 
+            claim.depends = nest_deps;
         }
     }
 
@@ -838,15 +840,79 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         // Weak depends are only looked for (and run) if that module has been previously 
         // included/installed. 
     }*/
+    if (err_cnt) return;
 
-    // And now do full linear ordering
-    let deps_ordered: Dict<any>[] = [];
+    type BranchClaims = {
+        branch: string;
+        ix: number; // This is position in <sorted_versions> not the version itself 
+        version_last: number;
+        sorted_versions: number[];
+        claims: Record<number, Dict<any>>;
+    }
+
+    // Prepare the branches 
+    let branch_claims: Dict<BranchClaims> = {};
     for (let branch in cl_by_br) {
-        let dep = cl_by_br[branch];
-        if (!dep[dep.length - 1]["*ordered"]) {
-            if (!orderDeps(cl_by_br, branch, deps_ordered, ver_by_br[branch]))
-                return errorRv("dependencySort - orderDeps2 - failed");
+        // Since versions may be decimal - and the array non dense, we need to do this 
+        let sorted_versions = Object.keys(cl_by_br).map(e => Number(e)).sort();
+        branch_claims[branch] = {
+            branch,
+            ix: 0,
+            version_last: dArrAt(sorted_versions, -1),
+            sorted_versions,
+            claims: cl_by_br[branch]
+        };
+    }
+
+
+    // Collect full linear ordering here
+    let deps_ordered: Dict<any>[] = [];
+
+    let sortBranchUpTo = (bc: BranchClaims, version?: number) => {
+        while (bc.ix < bc.sorted_versions.length) {
+            let v = bc.sorted_versions[bc.ix];
+            // Reached as high in version as we want? 
+            if (version && v > version) return;
+            // Increment version here, in order to avoid a dependee call to execute 
+            // this once again.
+            bc.ix++;
+            let claim = bc.claims[v];
+            if (claim) {
+                // Do any dependencies first ? 
+                if (claim.depends) {
+                    let deps: ClaimId[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
+                    for (let dep of deps) {
+                        // And run the dependence up to specific version 
+                        let bc_dep = branch_claims[dep.branch];
+                        if (bc_dep)
+                            sortBranchUpTo(bc_dep, dep.version);
+                        else { console.error(`runBranchTo - dependency not found: ${dep.branch}`); err_cnt++; }
+                    }
+                }
+                // Now put us in the linear ordering 
+                deps_ordered.push(claim);
+                // If we are a dependence, then make sure our dependee is actually sorted now 
+                if (claim.___dependee) {
+                    for (let dee_branch in claim.___dependee) {
+                        // This will be a direct return, if we were called as a dependence 
+                        let bc_dee = branch_claims[dee_branch];
+                        if (bc_dee)
+                            sortBranchUpTo(bc_dee, claim.___dependee[dee_branch]);
+                        else { console.error(`runBranchTo - dependendee not found: ${dee_branch}`); err_cnt++; }
+                    }
+                }
+            }
+            else {
+                console.error(`dependencySort-runBranchTo: Failed locating claim: <${bc.branch}:${version}>`);
+                err_cnt++;
+            }
         }
+    }
+
+    for (let branch in branch_claims) {
+        // Run each branch to its end, considering the dependencies 
+        let bc = branch_claims[branch];
+        sortBranchUpTo(bc);
     }
 
     return deps_ordered;
