@@ -428,9 +428,20 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         }
         else return errorRv("toNestedDict - Failed slurpSchema");
     }
-    else r = fileToNestedDict(file_or_db, false, format);
+    else { 
+        // Try the various paths supplied 
+        let paths = path.isAbsolute(file_or_db) ? [""] : options.path as string[];
+        for( let p of paths ){
+            let fn = p ? path.join(p,file_or_db) : file_or_db;
+            if( existsSync(file_or_db) ){
+                r = fileToNestedDict(file_or_db, false, format);
+                break;
+            }
+        }
+        if( !r ) return errorRv(`fileToNestedDict - File not found: ${file_or_db}`);
+    }
+    
     reformatTopLevel(r, format);
-
     return r;
 }
 
