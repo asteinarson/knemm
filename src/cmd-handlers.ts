@@ -61,6 +61,9 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         let dirs = getDirsFromFileList(files);
         if (!options.path) options.path = dirs;
         else options.path = append(options.path, dirs);
+        // Trim paths 
+        for( let ix in options.path )
+            options.path[ix] = options.path[ix].trim();
     }
 
     switch (cmd) {
