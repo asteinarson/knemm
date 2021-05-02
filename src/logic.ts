@@ -907,6 +907,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         sortBranchUpTo(bc);
     }
 
+    if (err_cnt) return;
     return deps_ordered;
 }
 
