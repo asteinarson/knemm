@@ -774,11 +774,20 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let branches: Dict<number> = state_base.modules;
     let ver_by_br: Dict<number> = {};
 
-    let includeClaim = (claim: Dict<any>) => {
+    let checkIncludeClaim = (claim: Dict<any>, type?: "in_range") => {
         let { branch: name, version: ver } = claim.id;
         cl_by_br[name] ||= [];
+
         // Already have it ? 
         if (cl_by_br[name][ver]) return;
+        // Are we already past this one ? 
+        if (branches[name] && branches[name] >= ver) return;
+        if (type == "in_range") {
+            // Is it in current range ?
+            if (!ver_by_br[name] || ver_by_br[name] <= ver) return;
+        }
+
+        // So include it 
         cl_by_br[name][ver] = claim;
         // See if it is the max version ? 
         if (!ver_by_br[name] || ver_by_br[name] < ver)
@@ -798,8 +807,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 err_cnt++;
                 continue;
             }
-            // Register this claim 
-            includeClaim(file_dicts[f]);
+            // Register this claim - with explicit flag
+            checkIncludeClaim(file_dicts[f]);
         } else {
             console.error(`dependencySort - No name found (parse failed) for claim: ${f}`);
             err_cnt++;
@@ -820,14 +829,14 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 
         // Pull in previous steps of this claim 
         let branch = claim.id.branch;
-        for (let od of opt_dicts[branch]) {
+        for (let ix in opt_dicts[branch]) {
+            let od = opt_dicts[branch][ix];
             // If we don't have it, and if the version is in the range... 
             // then include it 
-            let o_ver = od.id.version;
-            if ((!branches[branch] || branches[branch] < o_ver) &&
-                ver_by_br[branch] > o_ver) {
-                includeClaim(od);
-            }
+            checkIncludeClaim(od, "in_range");
+            // Then also scan that one for dependencies 
+            file_dicts[od.file] = od;
+            claim_keys.push(od.file);
         }
 
         // And pull in branch dependencies 
@@ -837,7 +846,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let d_ver = nest_deps[d_branch];
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
             if (dep_claim) {
-                if (includeClaim(dep_claim)) {
+                if (checkIncludeClaim(dep_claim)) {
                     // First time we know it's used. Make sure it is in internal format 
                     reformatTopLevel(dep_claim, "internal");
 
