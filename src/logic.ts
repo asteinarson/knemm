@@ -863,8 +863,13 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         for (let d_branch in nest_deps) {
             let d_ver = nest_deps[d_branch];
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
-            if (dep_claim) {
+            if (dep_claim) 
                 checkIncludeDep(dep_claim);
+            else {
+                // Could have been included already
+                dep_claim = cl_by_br[d_branch]?.[d_ver];
+            }
+            if( dep_claim ){
                 // Insert the dependee link (opposite direction of dependency link)
                 dep_claim.___dependee ||= {};
                 dep_claim.___dependee[o_id.branch] = o_id.version;
