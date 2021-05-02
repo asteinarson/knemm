@@ -862,6 +862,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     // Then also scan that one for dependencies 
                     file_dicts[dep_claim.file] = dep_claim;
                     claim_keys.push(dep_claim.file);
+                    delete opt_keys[d_branch][d_ver];
                 }
                 // Insert the dependee link (opposite direction of dependency link)
                 dep_claim.___dependee ||= {};
