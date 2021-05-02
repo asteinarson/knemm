@@ -707,7 +707,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 
 
 // Iterate available paths, look for additional potential deps 
-function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
+function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, above?:Dict<number>) {
     let cl_opt: Dict<Dict<any>[]> = {};
     if (options.deps == false) return cl_opt;
 
@@ -746,12 +746,15 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
                     let _e = e;
                 }
             }
-            if (claim) {
-                cl_opt[id.branch] ||= [];
-                if (!cl_opt[id.branch][id.version])
-                    cl_opt[id.branch][id.version] = claim;
-                else
-                    console.warn(`findOptionalClaims - Claim with ID <${id.branch}.${id.version}> encountered more than once`);
+            if (claim ) {
+                // Check against the above limit
+                if( !above || !above[id.branch] || id.version>above[id.branch] ){
+                    cl_opt[id.branch] ||= [];
+                    if (!cl_opt[id.branch][id.version])
+                        cl_opt[id.branch][id.version] = claim;
+                    else
+                        console.warn(`findOptionalClaims - Claim with ID <${id.branch}.${id.version}> encountered more than once`);
+                }
             }
         }
     }
@@ -817,7 +820,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     if (err_cnt > 0) return;
 
     // Get additional claims, we possibly need as deps 
-    let opt_dicts = findOptionalClaims(cl_by_br, options);
+    let opt_dicts = findOptionalClaims(cl_by_br, options, branches);
 
     // Now we need to see what to use, from our optional claims 
     // Since claim_keys will be extended in the loop, we need 
