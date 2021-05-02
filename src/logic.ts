@@ -759,6 +759,12 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
     return cl_opt;
 }
 
+function getClaimDeps(claim: Dict<any>): Dict<number> {
+    let d = claim.depends;
+    if (!d) return {};
+    if (isDict(d)) return d as any;
+}
+
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
     // This holds all versions numbers of a given branch we will merge
@@ -768,8 +774,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let branches: Dict<number> = state_base.modules;
     let ver_by_br: Dict<number> = {};
 
-    let includeClaim = (id: ClaimId, claim: Dict<any>) => {
-        let { branch: name, version: ver } = id;
+    let includeClaim = (claim: Dict<any>) => {
+        let { branch: name, version: ver } = claim.id;
         cl_by_br[name] ||= [];
         // Already have it ? 
         if (cl_by_br[name][ver]) return;
@@ -793,7 +799,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 continue;
             }
             // Register this claim 
-            includeClaim(id, file_dicts[f]);
+            includeClaim(file_dicts[f]);
         } else {
             console.error(`dependencySort - No name found (parse failed) for claim: ${f}`);
             err_cnt++;
@@ -811,7 +817,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     for (let ix = 0; ix < claim_keys.length; ix++) {
         let k = claim_keys[ix];
         let claim = file_dicts[k];
-        
+
         // Pull in previous steps of this claim 
         let branch = claim.id.branch;
         for (let od of opt_dicts[branch]) {
@@ -820,41 +826,34 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let o_ver = od.id.version;
             if ((!branches[branch] || branches[branch] < o_ver) &&
                 ver_by_br[branch] > o_ver) {
-                includeClaim(od.id,od);
+                includeClaim(od);
             }
         }
 
         // And pull in branch dependencies 
-        if (claim.depends) {
-            let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
-            let o_id = safeClaimId(claim.id);
-            nest_deps.forEach((d, ix) => {
-                if (isString(d)) {
-                    d = claimIdFromName(d);
-                    nest_deps[ix] = d;
-                }
-                let dep_claim = opt_dicts[d.branch]?.[d.version];
-                if (dep_claim) {
-                    if (includeClaim(d, dep_claim)) {
-                        // First time we know it's used. Make sure it is in internal format 
-                        reformatTopLevel(dep_claim, "internal");
+        let nest_deps = getClaimDeps(claim);
+        let o_id = safeClaimId(claim.id);
+        for (let d_branch in nest_deps) {
+            let d_ver = nest_deps[d_branch];
+            let dep_claim = opt_dicts[d_branch]?.[d_ver];
+            if (dep_claim) {
+                if (includeClaim(dep_claim)) {
+                    // First time we know it's used. Make sure it is in internal format 
+                    reformatTopLevel(dep_claim, "internal");
 
-                        // Then also scan that one for dependencies 
-                        file_dicts[dep_claim.file] = dep_claim;
-                        claim_keys.push(dep_claim.file);
-                    }
-                    // Insert the dependee link (opposite direction of dependency link)
-                    dep_claim.___dependee ||= {};
-                    dep_claim.___dependee[o_id.branch] = o_id.version;
+                    // Then also scan that one for dependencies 
+                    file_dicts[dep_claim.file] = dep_claim;
+                    claim_keys.push(dep_claim.file);
                 }
-                else {
-                    console.error(`dependencySort - Not found, dependent claim: <${d.branch}:${d.version}>`);
-                    err_cnt++;
-                }
-            });
-            // In case turned into an array or string => ClaimId 
-            claim.depends = nest_deps;
-        }
+                // Insert the dependee link (opposite direction of dependency link)
+                dep_claim.___dependee ||= {};
+                dep_claim.___dependee[o_id.branch] = o_id.version;
+            }
+            else {
+                console.error(`dependencySort - Not found, dependent claim: <${d_branch}:${d_ver}>`);
+                err_cnt++;
+            }
+        };
     }
 
     // Now that we did all strong deps, we can decide if any weak deps should be added
@@ -901,15 +900,13 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let claim = bc.claims[v];
             if (claim) {
                 // Do any dependencies first ? 
-                if (claim.depends) {
-                    let deps: ClaimId[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
-                    for (let dep of deps) {
-                        // And run the dependence up to specific version 
-                        let bc_dep = branch_claims[dep.branch];
-                        if (bc_dep)
-                            sortBranchUpTo(bc_dep, dep.version);
-                        else { console.error(`runBranchTo - dependency not found: ${dep.branch}`); err_cnt++; }
-                    }
+                let deps = getClaimDeps(claim);
+                for (let d_branch in deps) {
+                    // And run the dependence up to specific version 
+                    let bc_dep = branch_claims[d_branch];
+                    if (bc_dep)
+                        sortBranchUpTo(bc_dep, deps[d_branch]);
+                    else { console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++; }
                 }
                 // Now put us in the linear ordering 
                 deps_ordered.push(claim);
