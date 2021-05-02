@@ -752,11 +752,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     // This holds all versions numbers of a given branch we will merge
     let cl_by_br: Dict<Dict<any>[]> = {};
 
-    // branches and ver_by_br contains the same thing, a lookup from branch name to version.
-    // However, branches is the current state (state_base) and ver_by_br where we're going to.
+    // To be able to see if we're given claims that are already included
     let branches: Dict<number> = state_base.modules;
-    if (!branches) state_base.modules = branches = {};
-    let ver_by_br: Dict<number> = {};
 
     let includeClaim = (id: ClaimId, claim: Dict<any>) => {
         let { branch: name, version: ver } = id;
@@ -764,9 +761,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         // Already have it ? 
         if (cl_by_br[name][ver]) return;
         cl_by_br[name][ver] = claim;
-        // See if it is highest version of its branch 
-        if (!ver_by_br[name] || ver > ver_by_br[name])
-            ver_by_br[name] = ver;
         return true;
     }
 
@@ -827,8 +821,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     console.error(`dependencySort - Not found, dependent claim: <${d.branch}:${d.version}>`);
                     err_cnt++;
                 }
-                if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
-                    ver_by_br[d.branch] = d.version;
             });
             // In case turned into an array or string => ClaimId 
             claim.depends = nest_deps;
