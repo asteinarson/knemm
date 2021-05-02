@@ -707,7 +707,7 @@ function orderDeps(deps: Dict<Dict<any>[]>, which: string, r: Dict<any>[], upto?
 
 
 // Iterate available paths, look for additional potential deps 
-function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, above?:Dict<number>) {
+function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, above?: Dict<number>) {
     let cl_opt: Dict<Dict<any>[]> = {};
     if (options.deps == false) return cl_opt;
 
@@ -746,9 +746,9 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
                     let _e = e;
                 }
             }
-            if (claim ) {
+            if (claim) {
                 // Check against the above limit
-                if( !above || !above[id.branch] || id.version>above[id.branch] ){
+                if (!above || !above[id.branch] || id.version > above[id.branch]) {
                     cl_opt[id.branch] ||= [];
                     if (!cl_opt[id.branch][id.version])
                         cl_opt[id.branch][id.version] = claim;
@@ -791,6 +791,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         }
 
         // So include it 
+        // First time we know it's used. Make sure it is in internal format 
+        reformatTopLevel(claim, "internal");
         cl_by_br[name][ver] = claim;
         // See if it is the max version ? 
         if (!ver_by_br[name] || ver_by_br[name] < ver)
@@ -821,8 +823,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 
     // Get additional claims, we possibly need as deps 
     let opt_dicts = findOptionalClaims(cl_by_br, options, branches);
-    // We make a consumable array of keys, per module, to avoid O2 iteration below
-    let opt_keys = objectMap( opt_dicts, v => Object.keys(v).map(v => Number(v)) );
+    // We make a consumable array of keys, per module, to avoid O(2) iteration below
+    let opt_keys = objectMap(opt_dicts, v => toLut(Object.keys(v), true));
+
 
     // Now we need to see what to use, from our optional claims 
     // Since claim_keys will be extended in the loop, we need 
@@ -834,19 +837,17 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 
         // Pull in previous steps of this claim 
         let branch = claim.id.branch;
-        //for (let ix in opt_dicts[branch]) {
-        //    let od = opt_dicts[branch][ix];
-        for( let opt_ver of opt_keys[branch] ){
-            if( opt_ver==undefined ) continue;
-            let od = opt_dicts[branch][opt_ver];
+        for (let opt_ver in opt_keys[branch]) {
+            if (opt_ver == undefined) continue;
+            let od = opt_dicts[branch][Number(opt_ver)];
             // If we don't have it, and if the version is in the range... 
             // then include it 
-            if( checkIncludeClaim(od, "in_range") ){
+            if (checkIncludeClaim(od, "in_range")) {
                 // Then also scan that one for dependencies 
                 file_dicts[od.file] = od;
                 claim_keys.push(od.file);
-                // And consume it - it is not optimal
-                opt_keys[branch][opt_ver] = undefined;
+                // And consume it 
+                delete opt_keys[branch][opt_ver];
             }
         }
 
@@ -858,9 +859,6 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
             if (dep_claim) {
                 if (checkIncludeClaim(dep_claim)) {
-                    // First time we know it's used. Make sure it is in internal format 
-                    reformatTopLevel(dep_claim, "internal");
-
                     // Then also scan that one for dependencies 
                     file_dicts[dep_claim.file] = dep_claim;
                     claim_keys.push(dep_claim.file);

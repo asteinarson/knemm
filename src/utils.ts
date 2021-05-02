@@ -149,6 +149,8 @@ export function dArrAt<T>(a: T[], pos: number) {
     return a[pos];
 }
 
+// Inspired by: 
+// https://stackoverflow.com/questions/14810506/map-function-for-objects-instead-of-arrays
 export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
     return Object.keys(o).reduce(function (r, k) {
         r[k] = f(o[k])
