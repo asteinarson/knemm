@@ -833,10 +833,11 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let od = opt_dicts[branch][ix];
             // If we don't have it, and if the version is in the range... 
             // then include it 
-            checkIncludeClaim(od, "in_range");
-            // Then also scan that one for dependencies 
-            file_dicts[od.file] = od;
-            claim_keys.push(od.file);
+            if( checkIncludeClaim(od, "in_range") ){
+                // Then also scan that one for dependencies 
+                file_dicts[od.file] = od;
+                claim_keys.push(od.file);
+            }
         }
 
         // And pull in branch dependencies 
