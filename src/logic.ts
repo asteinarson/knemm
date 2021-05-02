@@ -833,8 +833,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let claim_keys = Object.keys(file_dicts);
 
     // Helper include function, to update local state
-    let checkIncludeDep = (d: Dict<any>) => {
-        if( !checkIncludeClaim(d, "in_range") ) return;
+    let checkIncludeDep = (d: Dict<any>, type?:"in_range") => {
+        if( !checkIncludeClaim(d, type) ) return;
         // Then also scan the new one for dependencies 
         file_dicts[d.file] = d;
         claim_keys.push(d.file);
@@ -854,7 +854,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let od = opt_dicts[branch][Number(opt_ver)];
             // If we don't have it, and if the version is in the range... 
             // then include it 
-            checkIncludeDep(od);
+            checkIncludeDep(od,"in_range");
         }
 
         // And pull in branch dependencies 
