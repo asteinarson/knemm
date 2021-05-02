@@ -758,7 +758,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     if (!branches) state_base.modules = branches = {};
     let ver_by_br: Dict<number> = {};
 
-    let includeClaim = (name: string, ver: number, claim: Dict<any>) => {
+    let includeClaim = (id: ClaimId, claim: Dict<any>) => {
+        let { branch: name, version: ver } = id;
         cl_by_br[name] ||= [];
         // Already have it ? 
         if (cl_by_br[name][ver]) return;
@@ -782,7 +783,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 continue;
             }
             // Register this claim 
-            includeClaim(name, id.version, file_dicts[f]);
+            includeClaim(id, file_dicts[f]);
         } else {
             console.error(`dependencySort - No name found (parse failed) for claim: ${f}`);
             err_cnt++;
@@ -806,11 +807,14 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             nest_deps.forEach((d, ix) => {
                 if (isString(d)) {
                     d = claimIdFromName(d);
-                    nest_deps[ix] = d;
+                    //nest_deps[ix] = d;
                 }
                 let dep_claim = opt_dicts[d.branch]?.[d.version];
                 if (dep_claim) {
-                    if (includeClaim(d.branch, d.version, dep_claim)) {
+                    if (includeClaim(d, dep_claim)) {
+                        // First time we know it's used. Make sure it is in internal format 
+                        reformatTopLevel(dep_claim, "internal");
+
                         // Then also scan that one for dependencies 
                         file_dicts[dep_claim.file] = dep_claim;
                         claim_keys.push(dep_claim.file);
@@ -820,7 +824,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     dep_claim.___dependee[o_id.branch] = o_id.version;
                 }
                 else {
-                    console.error(`dependencySort - Bot found, dependent claim: <${d.branch}:${d.version}>`);
+                    console.error(`dependencySort - Not found, dependent claim: <${d.branch}:${d.version}>`);
                     err_cnt++;
                 }
                 if (!ver_by_br[d.branch] || d.version > ver_by_br[d.branch])
@@ -829,15 +833,11 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         }
     }
 
-    // Record highest versions of the dependencies we need 
-    /*if (claim.depends) {
-    }*/
+    // Now that we did all strong deps, we can decide if any weak deps should be added
     /*if (claim.weak_depends) {
         // Weak depends are only looked for (and run) if that module has been previously 
         // included/installed. 
     }*/
-
-    // Find additional dependencies, in given path (same branch names but lower versions)
 
     // And now do full linear ordering
     let deps_ordered: Dict<any>[] = [];
