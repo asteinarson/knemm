@@ -47,7 +47,7 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
             let s: string;
             if (typeof table[col_name] == "object") {
                 col = table[col_name];
-                s = col["*"];
+                s = col?.["*"];
             } else {
                 s = table[col_name];
                 col = {};
