@@ -13,6 +13,7 @@ import { dump as yamlDump } from 'js-yaml';
 import { formatInternal, formatHrCompact } from "./hrc";
 import { Knex } from 'knex';
 import { stringify } from 'node:querystring';
+import { builtinModules } from 'node:module';
 
 export function reformatTables(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
     return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
@@ -428,17 +429,17 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         }
         else return errorRv("toNestedDict - Failed slurpSchema");
     }
-    else { 
+    else {
         // Try the various paths supplied 
         let paths = path.isAbsolute(file_or_db) ? [""] : options.path as string[];
-        for( let p of paths ){
-            let fn = p ? path.join(p,file_or_db) : file_or_db;
-            if( existsSync(fn) ){
+        for (let p of paths) {
+            let fn = p ? path.join(p, file_or_db) : file_or_db;
+            if (existsSync(fn)) {
                 r = fileToNestedDict(fn, false, format);
                 break;
             }
         }
-        if( !r ) return errorRv(`fileToNestedDict - File not found: ${file_or_db}`);
+        if (!r) return errorRv(`fileToNestedDict - File not found: ${file_or_db}`);
     }
 
     reformatTopLevel(r, format);
@@ -765,6 +766,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 
     // To be able to see if we're given claims that are already included
     let branches: Dict<number> = state_base.modules;
+    let ver_by_br: Dict<number> = {};
 
     let includeClaim = (id: ClaimId, claim: Dict<any>) => {
         let { branch: name, version: ver } = id;
@@ -772,6 +774,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         // Already have it ? 
         if (cl_by_br[name][ver]) return;
         cl_by_br[name][ver] = claim;
+        // See if it is the max version ? 
+        if (!ver_by_br[name] || ver_by_br[name] < ver)
+            ver_by_br[name] = ver;
         return true;
     }
 
@@ -806,6 +811,20 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     for (let ix = 0; ix < claim_keys.length; ix++) {
         let k = claim_keys[ix];
         let claim = file_dicts[k];
+        
+        // Pull in previous steps of this claim 
+        let branch = claim.id.branch;
+        for (let od of opt_dicts[branch]) {
+            // If we don't have it, and if the version is in the range... 
+            // then include it 
+            let o_ver = od.id.version;
+            if ((!branches[branch] || branches[branch] < o_ver) &&
+                ver_by_br[branch] > o_ver) {
+                includeClaim(od.id,od);
+            }
+        }
+
+        // And pull in branch dependencies 
         if (claim.depends) {
             let nest_deps: (ClaimId | string)[] = Array.isArray(claim.depends) ? claim.depends : [claim.depends];
             let o_id = safeClaimId(claim.id);

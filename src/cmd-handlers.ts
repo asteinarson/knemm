@@ -76,7 +76,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 for (let f of files) {
                     let r = await toNestedDict(f, options);
                     if (r) {
-                        if (r.source == "*file") file_dicts[f] = r;
+                        if (r.source == "*file") file_dicts[r.file] = r;
                         else {
                             if (state_dir)
                                 return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`, 10);
