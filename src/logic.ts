@@ -831,6 +831,18 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     // Since claim_keys will be extended in the loop, we need 
     // a dynamic loop condition 
     let claim_keys = Object.keys(file_dicts);
+
+    // Helper include function, to update local state
+    let checkIncludeDep = (d: Dict<any>) => {
+        if( !checkIncludeClaim(d, "in_range") ) return;
+        // Then also scan the new one for dependencies 
+        file_dicts[d.file] = d;
+        claim_keys.push(d.file);
+        // And consume it 
+        delete opt_keys[d.id.branch][d.id.version];
+        return true;
+    }
+
     for (let ix = 0; ix < claim_keys.length; ix++) {
         let k = claim_keys[ix];
         let claim = file_dicts[k];
@@ -842,13 +854,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let od = opt_dicts[branch][Number(opt_ver)];
             // If we don't have it, and if the version is in the range... 
             // then include it 
-            if (checkIncludeClaim(od, "in_range")) {
-                // Then also scan that one for dependencies 
-                file_dicts[od.file] = od;
-                claim_keys.push(od.file);
-                // And consume it 
-                delete opt_keys[branch][opt_ver];
-            }
+            checkIncludeDep(od);
         }
 
         // And pull in branch dependencies 
@@ -858,12 +864,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let d_ver = nest_deps[d_branch];
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
             if (dep_claim) {
-                if (checkIncludeClaim(dep_claim)) {
-                    // Then also scan that one for dependencies 
-                    file_dicts[dep_claim.file] = dep_claim;
-                    claim_keys.push(dep_claim.file);
-                    delete opt_keys[d_branch][d_ver];
-                }
+                checkIncludeDep(dep_claim);
                 // Insert the dependee link (opposite direction of dependency link)
                 dep_claim.___dependee ||= {};
                 dep_claim.___dependee[o_id.branch] = o_id.version;
