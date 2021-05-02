@@ -637,12 +637,12 @@ function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     // Name plus version ? 
     let md = name.match(re_name_num_oext);
     if (md)
-        return { branch: md[2], version: Number(md[3]) };
+        return { branch: md[1], version: Number(md[2]) };
     if (allow_loose) {
         // Then only a name
         md = name.match(re_name_oext);
         if (md)
-            return { branch: md[2], version: 0 };
+            return { branch: md[1], version: 0 };
     }
 }
 
