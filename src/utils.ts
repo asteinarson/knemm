@@ -140,6 +140,15 @@ export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof a
     return acc;
 }
 
+// This assumes a densely spaced input array. Only indeces in the range 
+// -a.length < pos < a.length 
+// are valid 
+export function dArrAt<T>(a:T[],pos:number){
+    if( pos<0 )
+        pos += a.length;
+    return a[pos];
+}
+
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
