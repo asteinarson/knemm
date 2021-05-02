@@ -885,7 +885,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let branch_claims: Dict<BranchClaims> = {};
     for (let branch in cl_by_br) {
         // Since versions may be decimal - and the array non dense, we need to do this 
-        let sorted_versions = Object.keys(cl_by_br).map(e => Number(e)).sort();
+        let sorted_versions = Object.keys(cl_by_br[branch]).map(e => Number(e)).sort();
         branch_claims[branch] = {
             branch,
             ix: 0,
