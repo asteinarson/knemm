@@ -837,6 +837,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         //for (let ix in opt_dicts[branch]) {
         //    let od = opt_dicts[branch][ix];
         for( let opt_ver of opt_keys[branch] ){
+            if( opt_ver==undefined ) continue;
             let od = opt_dicts[branch][opt_ver];
             // If we don't have it, and if the version is in the range... 
             // then include it 
@@ -844,8 +845,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 // Then also scan that one for dependencies 
                 file_dicts[od.file] = od;
                 claim_keys.push(od.file);
-                // And consume it 
-                delete opt_keys[branch][opt_ver];
+                // And consume it - it is not optimal
+                opt_keys[branch][opt_ver] = undefined;
             }
         }
 
