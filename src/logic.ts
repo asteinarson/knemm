@@ -702,9 +702,9 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>) {
     // Look for any dependencies in provided paths. 
     // To find the real claim ID:s we need to actually load them
     // (The filename ID is not decisive)
-    let paths: string[] = options.paths || ["./"];
+    let paths: string[] = options.path || ["./"];
     for (let p of paths) {
-        let files = readdirSync(p);
+        let files = readdirSync(p.trim());
         for (let f of files) {
             let id: ClaimId;
             let claim: Dict<any>;

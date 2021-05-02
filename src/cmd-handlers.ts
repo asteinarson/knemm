@@ -59,8 +59,8 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
     if (cmd == "join" || cmd == "apply") {
         files = a1 as string[];
         let dirs = getDirsFromFileList(files);
-        if (!options.paths) options.paths = dirs;
-        else options.paths = append(options.paths, dirs);
+        if (!options.path) options.path = dirs;
+        else options.path = append(options.path, dirs);
     }
 
     switch (cmd) {
