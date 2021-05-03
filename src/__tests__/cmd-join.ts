@@ -14,7 +14,9 @@ function logGet() {
     s_log = "";
     return s;
 }
-const jest_log = jest.spyOn(console, "log").mockImplementation((v) => { s_log += v.toString() + "\n" });
+const jest_log = jest.spyOn(console, "log").mockImplementation(
+    v => { s_log += v.toString() + "\n" }
+);
 
 import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from './claims';
 
