@@ -90,3 +90,11 @@ test("cmd join test (branch 2) - 4", async () => {
     expect(r).not.toBe(0);
     expect(isDict(o)).toBe(false);
 });
+
+test("cmd join test - state 1 - 5", async () => {
+    // Test generation of a state (just from claims)
+});
+
+test("cmd join test - state 1 - 6", async () => {
+    // Test extending a state (existing state + new claims)
+});
