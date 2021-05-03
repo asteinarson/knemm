@@ -717,7 +717,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
             }
             if (claim) {
                 // Check against the above limit
-                if (!above || !above[id.branch] || id.version > above[id.branch]) {
+                if (!above?.[id.branch] || id.version > above[id.branch]) {
                     cl_opt[id.branch] ||= [];
                     if (!cl_opt[id.branch][id.version])
                         cl_opt[id.branch][id.version] = claim;
