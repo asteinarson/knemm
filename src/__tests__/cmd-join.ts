@@ -6,7 +6,7 @@ import { load as yamlLoad } from 'js-yaml';
 
 import { matchDiff } from '../logic';
 
-import { claimsToFile, fileOf } from '../__test_cli__/test-utils';
+import { claimsToFile, fileOf } from './test-utils';
 
 let s_log = "";
 function logGet() {
@@ -16,7 +16,7 @@ function logGet() {
 }
 const jest_log = jest.spyOn(console, "log").mockImplementation((v) => { s_log += v.toString() + "\n" });
 
-import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from '../__test_cli__/claims';
+import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from './claims';
 
 test("cmd join test - 1", async () => {
     claimsToFile([claim_p1]);

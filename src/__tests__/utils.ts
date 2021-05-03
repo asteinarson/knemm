@@ -4,7 +4,9 @@ import {
     Dict,
     isDictWithKeys,
     isArrayWithElems,
-    append
+    append,
+    dArrAt,
+    objectMap
 } from '../utils';
 
 test("invert test", () => {
@@ -174,3 +176,16 @@ test("append test", () => {
     expect(a1).toMatchObject([3, "c", "d", 17]);
 });
 
+test("dArrAtt test", () => {
+    let a = ["cat", 2, "pig", "horse", 7];
+    expect(dArrAt(a, -1)).toEqual(7);
+    expect(dArrAt(a, -121)).toEqual(undefined);
+    expect(dArrAt(a, 0)).toEqual("cat");
+    expect(dArrAt(a, 19)).toEqual(undefined);
+});
+
+test("objectMap test", () => {
+    let animals: Dict<number> = { ape: 13, pig: 191, donkey: 12 };
+    expect(objectMap(animals, v => v - 1)).toStrictEqual({ ape: 12, pig: 190, donkey: 11 });
+    expect(objectMap(animals, v => v.toString().length.toString())).toStrictEqual({ ape: "2", pig: "3", donkey: "2" });
+});

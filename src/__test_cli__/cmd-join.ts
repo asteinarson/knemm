@@ -6,8 +6,8 @@ import { load as yamlLoad } from 'js-yaml';
 
 import { matchDiff } from '../logic';
 
-import { claimsToFile, captureStart, captureStop, fileOf } from './test-utils';
-import { claim_p1 } from './claims';
+import { claimsToFile, captureStart, captureStop, fileOf } from '../__tests__/test-utils';
+import { claim_p1 } from '../__tests__/claims';
 
 // Make sure claims are in file formats 
 claimsToFile([claim_p1]);
