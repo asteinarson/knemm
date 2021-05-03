@@ -122,13 +122,16 @@ let db_with_args_rev = ldInvert(db_with_args);
 export function formatHrCompact(tables: Dict<any>): Dict<any> {
     //let r: Dict<any> = {};
     for (let t in tables) {
-        // !! We should maybe have a flag of what to skip here 
-        if( t=="___owner" ) continue;
-        //if( t.slice(0,3)=="___" ) continue;
-        
         // This is a table  
         let table: Dict<any> = tables[t];
         for (let col_name in table) {
+            // !! We should maybe have a flag of what to skip here 
+            if( col_name=="___owner" ){
+                delete table[col_name];
+                continue;
+            }
+            //if( col_name.slice(0,3)=="___" ) continue;
+            
             let col: string | Dict<any> = table[col_name];
             if (typeof col == "object") {
                 // We try to flatten it down to a string 
