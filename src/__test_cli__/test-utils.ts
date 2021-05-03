@@ -18,7 +18,7 @@ export function getClaimDir() {
 }
 
 export function fileOf(cl: Dict<any>) {
-    return pJoin(temp_claim_dir, `${cl.id.branch}.${cl.id.version}.yaml`);
+    return pJoin(temp_claim_dir, `${cl.id.branch}_${cl.id.version}.yaml`);
 }
 
 export function claimsToFile(claims: Dict<any>[]) {
