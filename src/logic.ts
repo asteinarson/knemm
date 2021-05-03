@@ -423,10 +423,10 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
             r = {
-                source = "*db",
-                connection = knex_c,
-                format = "internal",
-                ___tables = rs
+                source: "*db",
+                connection: knex_c,
+                format: "internal",
+                ___tables: rs
             }
         }
         else return errorRv("toNestedDict - Failed slurpSchema");
