@@ -7,7 +7,7 @@ import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeCo
 import { fileNameOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, modifySchema, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
-import path from 'path';
+import * as path from 'path';
 import { dump as yamlDump } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc";
