@@ -1,6 +1,6 @@
 import {
-    toNestedDict, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToNestedDict, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToNestedDict, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
+    toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
+    stateToStateClaim, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToStateClaim, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
@@ -70,11 +70,11 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         case "join":
             {
                 let state_base: Dict<any>;
-                if (state_dir) state_base = stateToNestedDict(state_dir, true);
+                if (state_dir) state_base = stateToStateClaim(state_dir, true);
                 if( !state_base ) state_base = getInitialState();
                 let file_dicts: Dict<Dict<any>> = {};
                 for (let f of files) {
-                    let r = await toNestedDict(f, options);
+                    let r = await toStateClaim(f, options);
                     if (r) {
                         if (r.source == "*file") file_dicts[r.file] = r;
                         else {
@@ -111,7 +111,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
             {
                 // Prepare state and DB conn 
                 if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
-                let state_base = stateToNestedDict(state_dir, true);
+                let state_base = stateToStateClaim(state_dir, true);
                 if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
                 // Check for an explicit DB conn here first 
                 let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
@@ -128,7 +128,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     let file_dicts: Dict<Dict<any>> = {};
                     let es: string[] = [];
                     for (let f of files) {
-                        let r = await fileToNestedDict(f, options);
+                        let r = await fileToStateClaim(f, options);
                         if (r) file_dicts[f] = r;
                         else es.push("apply - failed parsing claim: " + f);
                     }
@@ -160,8 +160,8 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
     //console.log("handleTwoArgs: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
     let rc = 100;
-    let cand = await toNestedDict(candidate, options, "internal");
-    let tgt = await toNestedDict(target, options, "internal");
+    let cand = await toStateClaim(candidate, options, "internal");
+    let tgt = await toStateClaim(target, options, "internal");
     let r: Dict<any> | string[];
     switch (cmd) {
         case "diff":

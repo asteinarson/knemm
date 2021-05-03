@@ -95,10 +95,10 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
         if (excludeFromState(f)) continue;
         if (f.match(re_yj)) {
             try {
-                // Doing the await here (fileToNestedDict declared async without being so) 
+                // Doing the await here (fileToStateClaim declared async without being so) 
                 // causes nested function to return to the parent function (!)
-                //let r = await fileToNestedDict(path.join(state_dir, f), true);
-                let r = fileToNestedDict(path.join(state_dir, f), true, "internal");
+                //let r = await fileToStateClaim(path.join(state_dir, f), true);
+                let r = fileToStateClaim(path.join(state_dir, f), true, "internal");
                 if (r?.id) file_dicts[f] = r;
                 else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
             } catch (e) {
@@ -341,15 +341,15 @@ export async function connectState(state_dir: string, db_file: string | Dict<any
     return true;
 }
 
-export function stateToNestedDict(dir: string, quiet?: boolean): Dict<any> {
+export function stateToStateClaim(dir: string, quiet?: boolean): Dict<any> {
     if (!existsSync(dir))
-        return quiet ? undefined : errorRv(`stateToNestedDict - State dir does not exist: ${dir}`);
+        return quiet ? undefined : errorRv(`stateToStateClaim - State dir does not exist: ${dir}`);
     let m_yaml = path.join(dir, "___merge.yaml");
     if (!existsSync(m_yaml))
-        return quiet ? undefined : errorRv(`stateToNestedDict - Merge file does not exist: ${m_yaml}`);
+        return quiet ? undefined : errorRv(`stateToStateClaim - Merge file does not exist: ${m_yaml}`);
     let r = slurpFile(m_yaml);
     if (!isDict(r))
-        return errorRv(`stateToNestedDict - Failed reading: ${m_yaml}`);
+        return errorRv(`stateToStateClaim - Failed reading: ${m_yaml}`);
 
     r.source = "*state";
     r.directory = dir;
@@ -370,12 +370,12 @@ export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
         claim.___tables = {}
 }
 
-export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
+export function fileToStateClaim(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
     if (!rf) {
         if (!quiet)
-            console.log("fileToNestedDict - file not found: " + file);
+            console.log("fileToStateClaim - file not found: " + file);
     }
     else if (isDict(rf)) {
         // Is it a claim with top level props, or just the tables? 
@@ -398,7 +398,7 @@ export function fileToNestedDict(file: string, quiet?: boolean, format?: FormatT
 }
 
 // Read a file, a directory or a DB into a schema state object
-export async function toNestedDict(file_or_db: string, options: Dict<any>, format?: FormatType): Promise<Dict<any>> {
+export async function toStateClaim(file_or_db: string, options: Dict<any>, format?: FormatType): Promise<Dict<any>> {
     if (!file_or_db) return null;
     if (!format) format = "internal";
 
@@ -408,17 +408,17 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         let state_dir: string;
         if (file_or_db == "@") {
             if (options.state == false) {
-                return errorRv("toNestedDict - Cannot resolve default state (@)");
+                return errorRv("toStateClaim - Cannot resolve default state (@)");
             }
             state_dir = options.state || "./"; //.dbstate";
         }
         else state_dir = file_or_db.slice(6);
-        r = stateToNestedDict(state_dir);
+        r = stateToStateClaim(state_dir);
         return r;
     }
     else if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {
         let knex_c = await dbFileToKnex(file_or_db);
-        if (!knex_c) return errorRv("toNestedDict - Could not connect to DB");
+        if (!knex_c) return errorRv("toStateClaim - Could not connect to DB");
         let rs = await slurpSchema(knex_c);
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
@@ -429,7 +429,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
                 ___tables: rs
             }
         }
-        else return errorRv("toNestedDict - Failed slurpSchema");
+        else return errorRv("toStateClaim - Failed slurpSchema");
     }
     else {
         // Try the various paths supplied 
@@ -437,11 +437,11 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         for (let p of paths) {
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
-                r = fileToNestedDict(fn, false, format);
+                r = fileToStateClaim(fn, false, format);
                 break;
             }
         }
-        if (!r) return errorRv(`fileToNestedDict - File not found: ${file_or_db}`);
+        if (!r) return errorRv(`fileToStateClaim - File not found: ${file_or_db}`);
     }
 
     reformatTopLevel(r, format);
@@ -703,7 +703,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
                     // Have it already? 
                     if (cl_by_br[id.branch]?.[id.version]) continue;
                     try {
-                        claim = fileToNestedDict(path.join(p, f), true);
+                        claim = fileToStateClaim(path.join(p, f), true);
                     } catch (e) {
                         // Do nothing 
                         let _e = e;
@@ -713,7 +713,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
             else {
                 // Have to try load, to get the claim ID - this can mean loading completely unrelated JSON / YAML
                 try {
-                    claim = fileToNestedDict(path.join(p, f), true);
+                    claim = fileToStateClaim(path.join(p, f), true);
                     if (claim) {
                         id = getClaimId(f, claim.id, true);
                         if (id && cl_by_br[id.branch]?.[id.version]) continue;
