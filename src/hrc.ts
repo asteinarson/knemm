@@ -126,7 +126,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
         let table: Dict<any> = tables[t];
         for (let col_name in table) {
             // !! We should maybe have a flag of what to skip here 
-            if( col_name=="___owner" ){
+            if( col_name=="___owner" || col_name=="___refs" ){
                 delete table[col_name];
                 continue;
             }
@@ -189,6 +189,9 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 }
                 table[col_name] = words.join(" ");
 
+                // Suppress ___refs 
+                done.___refs = 1;
+                
                 // See if we have any unhandled columns - and warn 
                 //let unhandled = Object.keys(col).filter(prop => !done[prop]);
                 let unhandled = notInLut(col, done);
