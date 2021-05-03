@@ -373,7 +373,12 @@ export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
         claim.___tables = {}
 }
 
-export function normalizeClaim(claim: Dict<any>, file: string, format?: FormatType) {
+export function normalizeClaim(
+    claim: Dict<any>,
+    file: string,
+    format?: FormatType,
+    allow_loose?: boolean) {
+
     // Is it a claim with top level props, or just the tables? 
     let r: Dict<any>;
     if (claim.___tables)
@@ -384,25 +389,53 @@ export function normalizeClaim(claim: Dict<any>, file: string, format?: FormatTy
     r.source = "*file";
     r.file = file;
     r.format ||= "?";
-    // ! This should use the looseNames flag
+
+    // Make the ID in ClaimId format 
+    let id = claimIdFromName(file);
     if (!r.id)
-        r.id = claimIdFromName(file);
-    else if (typeof r.id == "string")
-        r.id = claimIdFromName(r.id);
+        r.id = id;
+    else {
+        let r_id = safeClaimId(r.id);
+        if (r_id.branch != id.branch || r_id.version != id.version) {
+            let msg = `normalizeClaim: ID declared in claim <${r.id.branch}:${r.id.version}> does not match that in filename: `;
+            if (!allow_loose)
+                return errorRv(msg);
+            else
+                console.warn(msg);
+        }
+        r.id = r_id;
+    }
+
+    // Normalize the depends node - if any 
+    let deps = r.depends;
+    if (deps) {
+        if (isDict(deps)) {
+            for (let k in deps)
+                deps[k] = Number(deps[k]);
+        }
+        else if (isString(deps)) {
+            let id = claimIdFromName(deps);
+            if (!id) return errorRv(`normalizeClaim: Could not parse dependency: ${deps}`);
+            r.deps = { [id.branch]: id.version }
+        }
+        else return errorRv(`normalizeClaim: Unknown format for dependency: ${deps}`);
+    }
+    else r.depends = {};
+
     reformatTopLevel(r, format);
     return r;
 }
 
-export function fileToClaim(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
+export function fileToClaim(file: string, quiet?: boolean, format?: FormatType, options?: Dict<any>): Dict<any> {
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
-    if (isDict(rf)) 
-        return normalizeClaim(rf, file, format);
+    if (isDict(rf))
+        return normalizeClaim(rf, file, format, options?.looseNames);
 
-    if(!quiet){
-        if (!rf) 
+    if (!quiet) {
+        if (!rf)
             console.warn("fileToClaim - file not found: " + file);
-        else 
+        else
             console.warn("fileToClaim - file is not a claim: " + file);
     }
 }
@@ -447,7 +480,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
         for (let p of paths) {
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
-                r = fileToClaim(fn, false, format);
+                r = fileToClaim(fn, false, format, options);
                 break;
             }
         }
@@ -749,12 +782,6 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
     return cl_opt;
 }
 
-function getClaimDeps(claim: Dict<any>): Dict<number> {
-    let d = claim.depends;
-    if (!d) return {};
-    if (isDict(d)) return d as any;
-}
-
 // Sort input trees according to dependency specification 
 export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
     // This holds all versions numbers of a given branch we will merge
@@ -845,10 +872,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         }
 
         // And pull in branch dependencies 
-        let nest_deps = getClaimDeps(claim);
         let o_id = safeClaimId(claim.id);
-        for (let d_branch in nest_deps) {
-            let d_ver = nest_deps[d_branch];
+        for (let d_branch in claim.depends) {
+            let d_ver = claim.depends[d_branch];
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
             if (dep_claim)
                 checkIncludeDep(dep_claim);
@@ -912,12 +938,11 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let claim = bc.claims[v];
             if (claim) {
                 // Do any dependencies first ? 
-                let deps = getClaimDeps(claim);
-                for (let d_branch in deps) {
+                for (let d_branch in claim.depends) {
                     // And run the dependence up to specific version 
                     let bc_dep = branch_claims[d_branch];
                     if (bc_dep)
-                        sortBranchUpTo(bc_dep, deps[d_branch]);
+                        sortBranchUpTo(bc_dep, claim.depends[d_branch]);
                     else { console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++; }
                 }
                 // Now put us in the linear ordering 
