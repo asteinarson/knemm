@@ -102,11 +102,11 @@ export function isEmpty(v: any) {
     if (isDict(v)) return !firstKey(v);
 }
 
-export function isString(s: any): s is String {
+export function isString(s: any): s is string {
     return typeof s == "string";
 }
 
-export function isNumber(n: any): n is Number {
+export function isNumber(n: any): n is number {
     return typeof n == "number";
 }
 
