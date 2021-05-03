@@ -149,6 +149,7 @@ export function dArrAt<T>(a: T[], pos: number) {
     return a[pos];
 }
 
+// Generate a new object with a map function applied to all values
 // Inspired by: 
 // https://stackoverflow.com/questions/14810506/map-function-for-objects-instead-of-arrays
 export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
