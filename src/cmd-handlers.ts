@@ -91,18 +91,6 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 let state = sortMergeStoreState(file_dicts, state_dir, state_base, options);
                 if (isDict(state)) state = state_base.___tables;
                 rc = logResult(state, options, 101);
-                /*
-                let dicts = dependencySort(file_dicts, state_base, options);
-                if (dicts) {
-                    let state = mergeClaims(dicts, state_base, options);
-                    if (isDict(state)) {
-                        if (state_dir && dicts.length)
-                            storeState(Object.keys(file_dicts), state_dir, state, options);
-                        // This is for outputting just the tables, below
-                        state = state.___tables;
-                    }
-                    rc = logResult(state, options, 101);
-                }*/
                 break;
             }
 
