@@ -141,7 +141,7 @@ export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof a
 }
 
 // This assumes a densely spaced input array. Only indeces in the range 
-// -a.length < pos < a.length 
+// -a.length < pos < a.length  
 // are valid 
 export function dArrAt<T>(a: T[], pos: number) {
     if (pos < 0)
@@ -157,6 +157,7 @@ export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
         return r
     }, {} as Dict<U>)
 }
+
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
