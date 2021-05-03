@@ -63,8 +63,7 @@ export let claim_use_p1 = {
         version: 1
     },
     depends: {
-        branch: "p",
-        version: 1
+        p: 1
     },
     ___tables: {
         person: {
@@ -83,8 +82,7 @@ export let claim_use_p2 = {
         version: 1
     },
     depends: {
-        branch: "p",
-        version: 2
+        p:2
     },
     ___tables: {
         person: {

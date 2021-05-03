@@ -56,6 +56,7 @@ test("cmd join test - 2", async () => {
 test("cmd join test (branch 1) - 3", async () => {
     // The using (branch) claim should succeed here 
     claimsToFile([claim_p1, claim_p2, claim_use_p2]);
+    debugger;
     let r = await handleOneArgCmd("join",
         [fileOf(claim_p2), fileOf(claim_use_p2), fileOf(claim_p1)],
         { internal: true });
@@ -83,5 +84,5 @@ test("cmd join test (branch 2) - 4", async () => {
     let o = yamlLoad(y_s);
 
     expect(r).not.toBe(0);
-    expect(isArray(o)).toBe(true);
+    expect(isDict(o)).toBe(false);
 });
