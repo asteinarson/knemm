@@ -1,5 +1,5 @@
 
-import { claimsToFile, captureStart, captureStop, fileOf } from '../__test_cli__/test-utils';
+import { claimsToFile, captureStart, captureStop, fileOf } from './test-utils';
 
 
 let s_log = "";
