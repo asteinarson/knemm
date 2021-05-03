@@ -7,6 +7,11 @@ import { join as pJoin } from 'path';
 import { tmpdir } from 'os';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 
+// Need a test to be in this file 
+test("test-utils dummy test", () => {
+    expect(1).toBe(1);
+});
+
 // Get somewhere to store temporary claims 
 let temp_claim_dir = pJoin(tmpdir(), "claims");
 if (!existsSync(temp_claim_dir))

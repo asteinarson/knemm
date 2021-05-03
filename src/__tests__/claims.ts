@@ -1,4 +1,9 @@
 
+// Need a test to be in this file 
+test("claims dummy test", () => {
+    expect(1).toBe(1);
+});
+
 export let claim_p1 = {
     format: "internal",
     id: {
@@ -82,7 +87,7 @@ export let claim_use_p2 = {
         version: 1
     },
     depends: {
-        p:2
+        p: 2
     },
     ___tables: {
         person: {
