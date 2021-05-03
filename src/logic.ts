@@ -402,7 +402,7 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
     if (!file_or_db) return null;
     if (!format) format = "internal";
 
-    let r: Dict<any> = {};
+    let r: Dict<any>;
     if (file_or_db == "@" || file_or_db.slice(0, 6) == "state:") {
         // This means current/given state 
         let state_dir: string;
@@ -422,10 +422,12 @@ export async function toNestedDict(file_or_db: string, options: Dict<any>, forma
         let rs = await slurpSchema(knex_c);
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
-            r.source = "*db";
-            r.connection = knex_c;
-            r.format = "internal";
-            r.___tables = rs;
+            r = {
+                source = "*db",
+                connection = knex_c,
+                format = "internal",
+                ___tables = rs
+            }
         }
         else return errorRv("toNestedDict - Failed slurpSchema");
     }
