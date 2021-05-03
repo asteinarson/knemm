@@ -341,15 +341,18 @@ export async function connectState(state_dir: string, db_file: string | Dict<any
     return true;
 }
 
-export function stateToStateClaim(dir: string, quiet?: boolean): Dict<any> {
+export function toState(dir: string, quiet?: boolean): Dict<any> {
     if (!existsSync(dir))
-        return quiet ? undefined : errorRv(`stateToStateClaim - State dir does not exist: ${dir}`);
+        return quiet ? undefined : errorRv(`toState - State dir does not exist: ${dir}`);
     let m_yaml = path.join(dir, "___merge.yaml");
     if (!existsSync(m_yaml))
-        return quiet ? undefined : errorRv(`stateToStateClaim - Merge file does not exist: ${m_yaml}`);
+        return quiet ? undefined : errorRv(`toState - Merge file does not exist: ${m_yaml}`);
     let r = slurpFile(m_yaml);
     if (!isDict(r))
-        return errorRv(`stateToStateClaim - Failed reading: ${m_yaml}`);
+        return errorRv(`toState - Failed reading: ${m_yaml}`);
+    // Is it actually a state ? 
+    if( !r.___tables || !r.modules || r.id )
+        return errorRv(`toState - Internal sturcture is not a state: ${m_yaml}`);
 
     r.source = "*state";
     r.directory = dir;
@@ -413,7 +416,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
             state_dir = options.state || "./"; //.dbstate";
         }
         else state_dir = file_or_db.slice(6);
-        r = stateToStateClaim(state_dir);
+        r = toState(state_dir);
         return r;
     }
     else if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {

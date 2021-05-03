@@ -1,6 +1,6 @@
 import {
     toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    stateToStateClaim, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToStateClaim, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
+    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToStateClaim, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
@@ -70,7 +70,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         case "join":
             {
                 let state_base: Dict<any>;
-                if (state_dir) state_base = stateToStateClaim(state_dir, true);
+                if (state_dir) state_base = toState(state_dir, true);
                 if( !state_base ) state_base = getInitialState();
                 let file_dicts: Dict<Dict<any>> = {};
                 for (let f of files) {
@@ -111,7 +111,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
             {
                 // Prepare state and DB conn 
                 if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
-                let state_base = stateToStateClaim(state_dir, true);
+                let state_base = toState(state_dir, true);
                 if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
                 // Check for an explicit DB conn here first 
                 let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
