@@ -189,7 +189,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 }
                 table[col_name] = words.join(" ");
 
-                // Suppress ___refs 
+                // ! Suppress ___refs (for now)
                 done.___refs = 1;
                 
                 // See if we have any unhandled columns - and warn 
