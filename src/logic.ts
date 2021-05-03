@@ -15,10 +15,6 @@ import { Knex } from 'knex';
 import { stringify } from 'node:querystring';
 import { builtinModules } from 'node:module';
 
-export function reformatTables(tables: Dict<any>, format: "internal" | "hr-compact"): Dict<any> {
-    return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
-}
-
 export type TableInfoOrErrors = Dict<any> | string[];
 
 export function getStateDir(options: any) {
@@ -95,10 +91,10 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
         if (excludeFromState(f)) continue;
         if (f.match(re_yj)) {
             try {
-                // Doing the await here (fileToStateClaim declared async without being so) 
+                // Doing the await here (fileToClaim declared async without being so) 
                 // causes nested function to return to the parent function (!)
-                //let r = await fileToStateClaim(path.join(state_dir, f), true);
-                let r = fileToStateClaim(path.join(state_dir, f), true, "internal");
+                //let r = await fileToClaim(path.join(state_dir, f), true);
+                let r = fileToClaim(path.join(state_dir, f), true, "internal");
                 if (r?.id) file_dicts[f] = r;
                 else console.warn(`rebuildState: Claim file not parsed correctly: ${f}`);
             } catch (e) {
@@ -351,7 +347,7 @@ export function toState(dir: string, quiet?: boolean): Dict<any> {
     if (!isDict(r))
         return errorRv(`toState - Failed reading: ${m_yaml}`);
     // Is it actually a state ? 
-    if( !r.___tables || !r.modules || r.id )
+    if (!r.___tables || !r.modules || r.id)
         return errorRv(`toState - Internal sturcture is not a state: ${m_yaml}`);
 
     r.source = "*state";
@@ -361,6 +357,10 @@ export function toState(dir: string, quiet?: boolean): Dict<any> {
 }
 
 export type FormatType = "internal" | "hr-compact";
+
+export function reformatTables(tables: Dict<any>, format: FormatType): Dict<any> {
+    return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
+}
 
 export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
     if (claim.___tables) {
@@ -373,30 +373,37 @@ export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
         claim.___tables = {}
 }
 
-export function fileToStateClaim(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
+export function normalizeClaim(claim: Dict<any>, file: string, format?: FormatType) {
+    // Is it a claim with top level props, or just the tables? 
+    let r: Dict<any>;
+    if (claim.___tables)
+        r = claim;
+    else
+        r = { ___tables: claim }
+
+    r.source = "*file";
+    r.file = file;
+    r.format ||= "?";
+    // ! This should use the looseNames flag
+    if (!r.id)
+        r.id = claimIdFromName(file);
+    else if (typeof r.id == "string")
+        r.id = claimIdFromName(r.id);
+    reformatTopLevel(r, format);
+    return r;
+}
+
+export function fileToClaim(file: string, quiet?: boolean, format?: FormatType): Dict<any> {
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
-    if (!rf) {
-        if (!quiet)
-            console.log("fileToStateClaim - file not found: " + file);
-    }
-    else if (isDict(rf)) {
-        // Is it a claim with top level props, or just the tables? 
-        let r: Dict<any> = {};
-        if (rf.___tables)
-            r = rf;
-        else
-            r.___tables = rf;
-        r.source = "*file";
-        r.file = file;
-        r.format ||= "?";
-        // ! This should use the looseNames flag
-        if (!r.id)
-            r.id = claimIdFromName(file);
-        else if (typeof r.id == "string")
-            r.id = claimIdFromName(r.id);
-        reformatTopLevel(r, format);
-        return r;
+    if (isDict(rf)) 
+        return normalizeClaim(rf, file, format);
+
+    if(!quiet){
+        if (!rf) 
+            console.warn("fileToClaim - file not found: " + file);
+        else 
+            console.warn("fileToClaim - file is not a claim: " + file);
     }
 }
 
@@ -440,11 +447,11 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
         for (let p of paths) {
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
-                r = fileToStateClaim(fn, false, format);
+                r = fileToClaim(fn, false, format);
                 break;
             }
         }
-        if (!r) return errorRv(`fileToStateClaim - File not found: ${file_or_db}`);
+        if (!r) return errorRv(`fileToClaim - File not found: ${file_or_db}`);
     }
 
     reformatTopLevel(r, format);
@@ -690,11 +697,11 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
     // (The filename ID is not decisive)
     let paths: string[] = options.path || ["./"];
     for (let p of paths) {
-        let files:string[];
-        try { 
+        let files: string[];
+        try {
             files = readdirSync(p);
-        } catch(e){
-            console.warn(`findOptionalClaims - no such directory: ${p}`);  
+        } catch (e) {
+            console.warn(`findOptionalClaims - no such directory: ${p}`);
             continue;
         }
         for (let f of files) {
@@ -706,7 +713,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
                     // Have it already? 
                     if (cl_by_br[id.branch]?.[id.version]) continue;
                     try {
-                        claim = fileToStateClaim(path.join(p, f), true);
+                        claim = fileToClaim(path.join(p, f), true);
                     } catch (e) {
                         // Do nothing 
                         let _e = e;
@@ -716,7 +723,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
             else {
                 // Have to try load, to get the claim ID - this can mean loading completely unrelated JSON / YAML
                 try {
-                    claim = fileToStateClaim(path.join(p, f), true);
+                    claim = fileToClaim(path.join(p, f), true);
                     if (claim) {
                         id = getClaimId(f, claim.id, true);
                         if (id && cl_by_br[id.branch]?.[id.version]) continue;
@@ -813,8 +820,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let claim_keys = Object.keys(file_dicts);
 
     // Helper include function, to update local state
-    let checkIncludeDep = (d: Dict<any>, type?:"in_range") => {
-        if( !checkIncludeClaim(d, type) ) return;
+    let checkIncludeDep = (d: Dict<any>, type?: "in_range") => {
+        if (!checkIncludeClaim(d, type)) return;
         // Then also scan the new one for dependencies 
         file_dicts[d.file] = d;
         claim_keys.push(d.file);
@@ -834,7 +841,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             let od = opt_dicts[branch][Number(opt_ver)];
             // If we don't have it, and if the version is in the range... 
             // then include it 
-            checkIncludeDep(od,"in_range");
+            checkIncludeDep(od, "in_range");
         }
 
         // And pull in branch dependencies 
@@ -843,13 +850,13 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         for (let d_branch in nest_deps) {
             let d_ver = nest_deps[d_branch];
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
-            if (dep_claim) 
+            if (dep_claim)
                 checkIncludeDep(dep_claim);
             else {
                 // Could have been included already
                 dep_claim = cl_by_br[d_branch]?.[d_ver];
             }
-            if( dep_claim ){
+            if (dep_claim) {
                 // Insert the dependee link (opposite direction of dependency link)
                 dep_claim.___dependee ||= {};
                 dep_claim.___dependee[o_id.branch] = o_id.version;

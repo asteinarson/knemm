@@ -1,6 +1,6 @@
 import {
     toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToStateClaim, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
+    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbFile, getInitialState
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
@@ -15,8 +15,6 @@ export type CmdDesc = { name: string, a1: string, a2: string, desc: string, opti
 export function addBaseOptions(cmd: cmder.Command) {
     cmd.option("-s --state <dir>", "Manage merged state in this dir ");
 }
-
-
 
 
 function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
@@ -128,7 +126,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     let file_dicts: Dict<Dict<any>> = {};
                     let es: string[] = [];
                     for (let f of files) {
-                        let r = await fileToStateClaim(f, options);
+                        let r = await fileToClaim(f, options);
                         if (r) file_dicts[f] = r;
                         else es.push("apply - failed parsing claim: " + f);
                     }
