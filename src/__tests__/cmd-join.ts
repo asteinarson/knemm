@@ -6,9 +6,9 @@ import { load as yamlLoad } from 'js-yaml';
 
 import { matchDiff } from '../logic';
 
-import { claimsToFile, fileOf } from './test-utils';
+import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf } from './test-utils';
 
-let s_log = "";
+/*let s_log = "";
 function logGet() {
     let s = s_log;
     s_log = "";
@@ -16,14 +16,16 @@ function logGet() {
 }
 const jest_log = jest.spyOn(console, "log").mockImplementation(
     v => { s_log += v.toString() + "\n" }
-);
+);*/
+
+jestLogCaptureStart();
 
 import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from './claims';
 
 test("cmd join test - 1", async () => {
     claimsToFile([claim_p1]);
     let r = await handleOneArgCmd("join", [fileOf(claim_p1)], { internal: true });
-    let y_s = logGet();
+    let y_s = jestLogGet(); //logGet();
     let o = yamlLoad(y_s);
 
     expect(r).toBe(0);
@@ -41,7 +43,7 @@ test("cmd join test - 1", async () => {
 test("cmd join test - 2", async () => {
     claimsToFile([claim_p1, claim_p2]);
     let r = await handleOneArgCmd("join", [fileOf(claim_p2), fileOf(claim_p1)], { internal: true });
-    let y_s = logGet();
+    let y_s = jestLogGet(); //logGet();
     let o = yamlLoad(y_s);
 
     expect(r).toBe(0);
@@ -62,7 +64,7 @@ test("cmd join test (branch 1) - 3", async () => {
     let r = await handleOneArgCmd("join",
         [fileOf(claim_p2), fileOf(claim_use_p2), fileOf(claim_p1)],
         { internal: true });
-    let y_s = logGet();
+    let y_s = jestLogGet(); //logGet();
     let o = yamlLoad(y_s);
 
     expect(r).toBe(0);
@@ -82,7 +84,7 @@ test("cmd join test (branch 2) - 4", async () => {
     let r = await handleOneArgCmd("join",
         [fileOf(claim_p2), fileOf(claim_use_p2), fileOf(claim_p1)],
         { internal: true });
-    let y_s = logGet();
+    let y_s = jestLogGet(); //logGet();
     let o = yamlLoad(y_s);
 
     expect(r).not.toBe(0);

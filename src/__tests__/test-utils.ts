@@ -37,6 +37,9 @@ export function claimsToFile(claims: Dict<any>[]) {
     return r;
 }
 
+
+// Capturing console.log - 
+// This works without Jest 
 let capture = "";
 let old_log: typeof console.log;
 
@@ -55,5 +58,21 @@ export function captureStop() {
     console.log = old_log;
     old_log = null;
     return capture;
+}
+
+
+// Capturing console.log - 
+// Under Jest 
+let s_log = "";
+export function jestLogCaptureStart(){
+    return jest.spyOn(console, "log").mockImplementation(
+        v => { s_log += v.toString() + "\n" }
+    );
+}
+
+export function jestLogGet() {
+    let s = s_log;
+    s_log = "";
+    return s;
 }
 
