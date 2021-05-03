@@ -687,7 +687,13 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
     // (The filename ID is not decisive)
     let paths: string[] = options.path || ["./"];
     for (let p of paths) {
-        let files = readdirSync(p);
+        let files:string[];
+        try { 
+            files = readdirSync(p);
+        } catch(e){
+            console.warn(`findOptionalClaims - no such directory: ${p}`);  
+            continue;
+        }
         for (let f of files) {
             let id: ClaimId;
             let claim: Dict<any>;
