@@ -901,6 +901,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     console.error(`dependencySort - Not found, dependent claim: <${d_branch}:${d_ver}>`);
                     err_cnt++;
                 }
+                else if (branches[d_branch] > d_ver){
+                    console.warn(`dependencySort - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${o_id.branch}:${o_id.ver}>)`);
+                }
             }
         };
     }
@@ -962,6 +965,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         if (!branches[d_branch] || branches[d_branch] < d_ver) {
                             console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++;
                             err_cnt++;
+                        }
+                        else if (branches[d_branch] > d_ver){
+                            console.warn(`runBranchTo - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${claim.id.branch}:${claim.id.ver}>)`);
                         }
                     }
                 }
