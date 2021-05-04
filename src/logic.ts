@@ -283,15 +283,28 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
 export function parseDbFile(db_file: string): Dict<any> {
     // Look for a connection file - or use ENV vars 
     let conn_info: Dict<any>;
-    if (db_file != "%" && db_file.slice(3) != "%") {
+
+    let file:string; 
+    if( db_file=="%" || db_file=="db:%" ){
+        // With '%', first look for a default DB conn file
+        let f = path.join("./",db_file,".json");
+        if( existsSync(f) ) file = f;
+        else { 
+            f = path.join("./",db_file,".yaml");
+            if( existsSync(f) ) file = f;
+        }
+    }
+    else file = db_file;
+    if (file) {
         try {
-            let r = slurpFile(db_file);
-            if (typeof r == "object") conn_info = r as Dict<string>;
-            else return errorRv("parseDbFile - failed slurpFile: " + db_file);
+            let r = slurpFile(file);
+            if (isDict(r)) conn_info = r;
+            else return errorRv("parseDbFile - failed slurpFile: " + file);
         } catch (e) {
             return errorRv("parseDbFile - exception: " + e);
         }
-    } else {
+    }
+    if( !conn_info && file!=db_file ){
         // '%' means use ENV vars
         conn_info = {
             host: process.env.HOST,
@@ -902,7 +915,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     err_cnt++;
                 }
                 else if (branches[d_branch] > d_ver){
-                    console.warn(`dependencySort - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${o_id.branch}:${o_id.ver}>)`);
+                    console.warn(`dependencySort - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${o_id.branch}:${o_id.version}>)`);
                 }
             }
         };
