@@ -5,7 +5,7 @@ import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, no
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
 import { fileNameOf, isDir, slurpFile } from "./file-utils";
-import { connect, connectCheck, modifySchema, slurpSchema } from './db-utils'
+import { connect, connectCheck, disconnect, modifySchema, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { dump as yamlDump } from 'js-yaml';
@@ -233,7 +233,7 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
 
     // And drop the DB - need a new connection - w.o. specific DB for that 
     try {
-        await knex_c.destroy();
+        await disconnect(knex_c);
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
         let r = await knex_c.raw(`DROP DATABASE ${db_name}`);
