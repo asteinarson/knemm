@@ -9,16 +9,6 @@ import { matchDiff, toState } from '../logic';
 
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
-/*let s_log = "";
-function logGet() {
-    let s = s_log;
-    s_log = "";
-    return s;
-}
-const jest_log = jest.spyOn(console, "log").mockImplementation(
-    v => { s_log += v.toString() + "\n" }
-);*/
-
 jestLogCaptureStart();
 
 import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from './claims';
