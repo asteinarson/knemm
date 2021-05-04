@@ -76,3 +76,18 @@ export function jestLogGet() {
     return s;
 }
 
+// Capturing console.warn - 
+// Under Jest 
+let s_warn = "";
+export function jestWarnCaptureStart(){
+    return jest.spyOn(console, "warn").mockImplementation(
+        v => { s_warn += v.toString() + "\n" }
+    );
+}
+
+export function jestWarnGet() {
+    let s = s_warn;
+    s_warn = "";
+    return s;
+}
+
