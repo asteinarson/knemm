@@ -922,10 +922,13 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         };
     }
 
-
     // Collect full linear ordering here
     let deps_ordered: Dict<any>[] = [];
 
+    // It could be we should detect when dependcies are "unhealthy" like: 
+    // customer_2 depends on cart_2
+    // cart_1 depends on customer_3 
+    // there are other "bad possibilties" as well. 
     let sortBranchUpTo = (bc: BranchClaims, version?: number) => {
         while (bc.ix < bc.sorted_versions.length) {
             let v = bc.sorted_versions[bc.ix];
