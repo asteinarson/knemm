@@ -445,9 +445,8 @@ export function fileToClaim(file: string, quiet?: boolean, format?: FormatType, 
 let re_m_yaml = /___merge.yaml$/;
 
 // Read a file, a directory or a DB into a schema state object
-export async function toStateClaim(file_or_db: string, options: Dict<any>, format?: FormatType): Promise<Dict<any>> {
+export async function toStateClaim(file_or_db: string, options: Dict<any>): Promise<Dict<any>> {
     if (!file_or_db) return null;
-    if (!format) format = "internal";
 
     let r: Dict<any>;
     if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {
@@ -468,7 +467,6 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
     else if (isDir(file_or_db) || file_or_db.match(re_m_yaml) ||
         (!options.looseNames && !claimIdFromName(file_or_db))) {
         r = toState(file_or_db);
-        return r;
     }
     else {
         // Try the various paths supplied 
@@ -476,7 +474,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
         for (let p of paths) {
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
-                r = fileToClaim(fn, false, format, options);
+                r = fileToClaim(fn, false, "internal", options);
                 // See if it was actually a state, if failed
                 if (!r && options.looseNames)
                     r = toState(file_or_db);
@@ -488,7 +486,6 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
         }
     }
 
-    reformatTopLevel(r, format);
     return r;
 }
 

@@ -158,8 +158,8 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
     //console.log("handleTwoArgs: " + cmd, target, candidate, options);
     //console.log("cwd: "+process.cwd());
     let rc = 100;
-    let cand = await toStateClaim(candidate, options, "internal");
-    let tgt = await toStateClaim(target, options, "internal");
+    let cand = await toStateClaim(candidate, options);
+    let tgt = await toStateClaim(target, options);
     let r: Dict<any> | string[];
     switch (cmd) {
         case "diff":
