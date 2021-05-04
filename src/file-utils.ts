@@ -1,6 +1,7 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
+import { lstatSync } from 'node:fs';
 import { Dict } from './utils';
 
 export function slurpFile(file: string, quiet?: boolean): string | number | any[] | Record<string, any> {
@@ -43,7 +44,16 @@ export function getDirsFromFileList(files: string[]): string[] {
 }
 
 const re_fn = /^(.*\/)?([^/]*)$/;
-export function fileNameOf(path:string){
+export function fileNameOf(path: string) {
     let md = path.match(re_fn);
     return md?.[2];
+}
+
+export function isDir(path: string) {
+    try {
+        return lstatSync(path).isDirectory();
+    }
+    catch (e) {
+        let x = 1;
+    }
 }
