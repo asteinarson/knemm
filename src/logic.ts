@@ -958,9 +958,15 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 for (let d_branch in claim.depends) {
                     // And run the dependence up to specific version 
                     let bc_dep = branch_claims[d_branch];
+                    let d_ver = claim.depends[d_branch];
                     if (bc_dep)
-                        sortBranchUpTo(bc_dep, claim.depends[d_branch]);
-                    else { console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++; }
+                        sortBranchUpTo(bc_dep, d_ver);
+                    else { 
+                        if( !branches[d_branch] || branches[d_branch]<d_ver ){
+                            console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++; 
+                            err_cnt++;
+                        }
+                    }
                 }
                 // Now put us in the linear ordering 
                 deps_ordered.push(claim);
