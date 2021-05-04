@@ -472,7 +472,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
     }
     else {
         // Try the various paths supplied 
-        let paths = getPaths(options,file_or_db);
+        let paths = getPaths(options, file_or_db);
         for (let p of paths) {
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
@@ -900,7 +900,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
             }
             else {
                 // Is it a dependency already in the state ? 
-                if( !branches[d_branch] || branches[d_branch]<d_ver ){
+                if (!branches[d_branch] || branches[d_branch] < d_ver) {
                     console.error(`dependencySort - Not found, dependent claim: <${d_branch}:${d_ver}>`);
                     err_cnt++;
                 }
@@ -961,9 +961,9 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     let d_ver = claim.depends[d_branch];
                     if (bc_dep)
                         sortBranchUpTo(bc_dep, d_ver);
-                    else { 
-                        if( !branches[d_branch] || branches[d_branch]<d_ver ){
-                            console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++; 
+                    else {
+                        if (!branches[d_branch] || branches[d_branch] < d_ver) {
+                            console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++;
                             err_cnt++;
                         }
                     }
@@ -977,7 +977,10 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         let bc_dee = branch_claims[dee_branch];
                         if (bc_dee)
                             sortBranchUpTo(bc_dee, claim.___dependee[dee_branch]);
-                        else { console.error(`runBranchTo - dependee not found: ${dee_branch}`); err_cnt++; }
+                        else {
+                            console.error(`runBranchTo - dependee not found: ${dee_branch}`);
+                            err_cnt++;
+                        }
                     }
                 }
             }
