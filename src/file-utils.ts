@@ -57,3 +57,12 @@ export function isDir(path: string) {
         let x = 1;
     }
 }
+
+export function isFile(path: string) {
+    try {
+        return lstatSync(path).isFile();
+    }
+    catch (e) {
+        let x = 1;
+    }
+}

@@ -4,7 +4,7 @@ import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, no
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { fileNameOf, slurpFile } from "./file-utils";
+import { fileNameOf, isDir, slurpFile } from "./file-utils";
 import { connect, connectCheck, modifySchema, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
@@ -440,26 +440,15 @@ export function fileToClaim(file: string, quiet?: boolean, format?: FormatType, 
     }
 }
 
+let re_m_yaml = /___merge.yaml$/;
+
 // Read a file, a directory or a DB into a schema state object
 export async function toStateClaim(file_or_db: string, options: Dict<any>, format?: FormatType): Promise<Dict<any>> {
     if (!file_or_db) return null;
     if (!format) format = "internal";
 
     let r: Dict<any>;
-    if (file_or_db == "@" || file_or_db.slice(0, 6) == "state:") {
-        // This means current/given state 
-        let state_dir: string;
-        if (file_or_db == "@") {
-            if (options.state == false) {
-                return errorRv("toStateClaim - Cannot resolve default state (@)");
-            }
-            state_dir = options.state || "./"; //.dbstate";
-        }
-        else state_dir = file_or_db.slice(6);
-        r = toState(state_dir);
-        return r;
-    }
-    else if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {
+    if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {
         let knex_c = await dbFileToKnex(file_or_db);
         if (!knex_c) return errorRv("toStateClaim - Could not connect to DB");
         let rs = await slurpSchema(knex_c);
@@ -473,6 +462,12 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
             }
         }
         else return errorRv("toStateClaim - Failed slurpSchema");
+    }
+    else if (isDir(file_or_db) || file_or_db.match(re_m_yaml) ||
+        (!options.looseNames && !claimIdFromName(file_or_db))) {
+            
+        r = toState(state_dir);
+        return r;
     }
     else {
         // Try the various paths supplied 
