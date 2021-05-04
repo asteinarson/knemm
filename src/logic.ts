@@ -977,7 +977,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                         let bc_dee = branch_claims[dee_branch];
                         if (bc_dee)
                             sortBranchUpTo(bc_dee, claim.___dependee[dee_branch]);
-                        else { console.error(`runBranchTo - dependendee not found: ${dee_branch}`); err_cnt++; }
+                        else { console.error(`runBranchTo - dependee not found: ${dee_branch}`); err_cnt++; }
                     }
                 }
             }
