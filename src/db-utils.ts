@@ -28,10 +28,21 @@ export async function connect(connection: Record<string, string>, client = "pg")
     }
 }
 
-export async function closeAll(){
+export async function disconnect(knex_conn:Knex){
+    for( let k in knex_conns ){
+        if( knex_conns[k]==knex_conn ){
+            delete knex_conns[k];
+            await knex_conn.destroy();
+            return true;
+        }
+    }
+}
+
+export async function disconnectAll(){
     for( let k in knex_conns ){
         await knex_conns[k].destroy();
     }
+    knex_conns = {};
 }
 
 export async function connectCheck(connection: Record<string, string>, client = "pg") {
