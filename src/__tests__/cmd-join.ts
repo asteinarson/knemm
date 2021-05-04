@@ -63,7 +63,6 @@ test("cmd join test - 2", async () => {
 test("cmd join test (branch 1) - 3", async () => {
     // The using (branch) claim should succeed here 
     claimsToFile([claim_p1, claim_p2, claim_use_p2]);
-    debugger;
     let r = await handleOneArgCmd("join",
         [fileOf(claim_p2), fileOf(claim_use_p2), fileOf(claim_p1)],
         { internal: true });
@@ -88,7 +87,7 @@ test("cmd join test (branch 2) - 4", async () => {
     let r = await handleOneArgCmd("join",
         [fileOf(claim_p2), fileOf(claim_use_p2), fileOf(claim_p1)],
         { internal: true });
-    let y_s = jestLogGet(); 
+    let y_s = jestLogGet();
     spy_warn.mockClear(); jestWarnGet();
     let o = yamlLoad(y_s);
 
@@ -96,26 +95,42 @@ test("cmd join test (branch 2) - 4", async () => {
     expect(isDict(o)).toBe(false);
 });
 
-test("cmd join test - state 1 - 5", async () => {
-    // Test generation of a state (just from claims) 
-    let state_dir = pJoin(tmpdir(), "state1");
-    let m_yaml = pJoin(state_dir,"___merge.yaml");
-    if( existsSync(m_yaml) ) rmSync(m_yaml);
+describe("describe - generate state", () => {
+    test("cmd join test - generate state 1", async () => {
+        // Test generation of a state (just from claims) 
+        let state_dir = pJoin(tmpdir(), "state1");
+        let m_yaml = pJoin(state_dir, "___merge.yaml");
+        if (existsSync(m_yaml)) rmSync(m_yaml);
 
-    let r = await handleOneArgCmd(
-        "join",
-        [fileOf(claim_p2), fileOf(claim_p1)],
-        { internal: true, state: state_dir });
-    expect(r).toBe(0);
-    let s = toState(state_dir);
-    expect(isDict(s)).toBe(true);
-    if( isDict(s) ){
-        let person = (s as any)?.___tables?.person; 
-        expect(person?.name?.data_type).toBe("text");
-        expect(person?.age?.data_type).toBe("int");
-    }
+        let r = await handleOneArgCmd(
+            "join",
+            [fileOf(claim_p2), fileOf(claim_p1)],
+            { internal: true, state: state_dir });
+        expect(r).toBe(0);
+        let s = toState(state_dir);
+        expect(isDict(s)).toBe(true);
+        if (isDict(s)) {
+            let person = (s as any)?.___tables?.person;
+            expect(person?.name?.data_type).toBe("text");
+            expect(person?.age?.data_type).toBe("int");
+        }
+    })
 });
 
-test("cmd join test - state 1 - 6", async () => {
-    // Test extending a state (existing state + new claims)
+describe("describe - extend state", () => {
+    test("cmd join test - extend state 1", async () => {
+        // Test extending a state (existing state + new claims)
+        let state_dir = pJoin(tmpdir(), "state1");
+        let m_yaml = pJoin(state_dir, "___merge.yaml");
+        expect(existsSync(m_yaml)).toBeTruthy();
+
+        // This should succeed - use_p2 is a valid dep
+        let r = await handleOneArgCmd(
+            "join",
+            [fileOf(claim_use_p2)],
+            { internal: true, state: state_dir });
+        expect(r).toBe(0);
+        let s = toState(state_dir);
+        expect(isDict(s)).toBe(true);
+    });
 });
