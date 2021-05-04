@@ -21,11 +21,9 @@ export function getStateDir(options: any) {
     let state_dir: string;
     if (options.state) {
         if (options.state == true)
-            state_dir = "./"; //.dbstate";
+            state_dir = "./"; 
         else {
             state_dir = options.state;
-            //if (state_dir.slice(-9) != "/.dbstate")
-            //    state_dir += "/.dbstate";
         }
         if (!existsSync(state_dir)) {
             mkdirSync(state_dir);   // Does not give a return value (?)
@@ -71,8 +69,6 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
 const state_excludes: Dict<1> = {
     "___merge.yaml": 1,
     "___db.yaml": 1,
-    //".dbstate": 1,
-    //"./.dbstate": 1,
 }
 
 function excludeFromState(file: string) {
@@ -396,8 +392,10 @@ export function normalizeClaim(
 
     // Make the ID in ClaimId format 
     let id = claimIdFromName(file);
-    if (!r.id)
+    if (!r.id){
+        if( !id ) return;
         r.id = id;
+    }
     else {
         let r_id = safeClaimId(r.id);
         if (r_id.branch != id.branch || r_id.version != id.version) {
@@ -479,6 +477,9 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
                 r = fileToClaim(fn, false, format, options);
+                // See if it was actually a state, if failed
+                if( !r && options.looseNames )
+                    r = toState(file_or_db);
                 break;
             }
         }
