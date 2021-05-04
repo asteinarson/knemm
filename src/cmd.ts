@@ -79,12 +79,12 @@ let cmds_mm: CmdDesc[] = [
         a2: null,
         options: [addClaimOptions, addDbOption],
     },
-    {
+    /*{
         name: "reverse",
         desc: "On this state (and connected DB), reverse this claim(s)",
         a1: "*claim",
         a2: null,
-    },
+    },*/
 ];
 
 // Read .env 
