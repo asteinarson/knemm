@@ -3,11 +3,11 @@ import { createDb, dropDb, existsDb } from '../logic';
 import { isDict, isString } from '../utils';
 
 import * as dotenv from 'dotenv'
-import { closeAll } from '../db-utils';
+import { disconnectAll } from '../db-utils';
 dotenv.config();
 
 afterAll( () => {
-    closeAll();
+    disconnectAll();
 });
 
 // Need a test to be in this file 
@@ -15,20 +15,16 @@ test("DB: create, drop test", async () => {
     //if( 1 ) return; 
     
     let r;
-    r = await existsDb("%","arst");
-    expect(r).toBe(true);
+    r = await existsDb("%","jest_test");
 
     // Drop if exists 
-    //r = await existsDb("%","arst")
-    //expect(r).toBe(true);
-    
-    /*if( r==true ){
+    if( r==true ){
         r = await dropDb("%","jest_test");
         expect(isDict(r)).toBeTruthy();
-    }*/
+    }
 
     // Create it 
-    /*r = await createDb("%","jest_test");
+    r = await createDb("%","jest_test");
     expect(isDict(r)).toBeTruthy();
 
     // Existing ? 
@@ -41,5 +37,5 @@ test("DB: create, drop test", async () => {
 
     // Not existing ? 
     r = await existsDb("%","jest_test")
-    expect(typeof r).toBe("string");*/
+    expect(typeof r).toBe("string");
 }); 
