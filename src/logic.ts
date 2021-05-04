@@ -138,7 +138,7 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
     }
 
     if (conn_info.client == "sqlite3")
-        return existsDbSqlite(conn_info);
+        return existsDbSqlite(conn_info,db_name);
 
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
