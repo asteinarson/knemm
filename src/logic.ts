@@ -287,10 +287,10 @@ export function parseDbFile(db_file: string): Dict<any> {
     let file:string; 
     if( db_file=="%" || db_file=="db:%" ){
         // With '%', first look for a default DB conn file
-        let f = path.join("./",db_file,".json");
+        let f = path.join("./",db_file)+".json";
         if( existsSync(f) ) file = f;
         else { 
-            f = path.join("./",db_file,".yaml");
+            f = path.join("./",db_file)+".yaml";
             if( existsSync(f) ) file = f;
         }
     }
