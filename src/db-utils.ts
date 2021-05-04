@@ -2,17 +2,35 @@
 // This works for ES module 
 import knex, { Knex } from 'knex';
 
-let knex_conn: Knex;
+let knex_conns: Dict<Knex> = {};
+
 export async function connect(connection: Record<string, string>, client = "pg") {
     let conn = connection.connection ? connection : {
         client,
         connection
-    }
+    };
+
+    // Make a key to avoid creating several connections for same DB
+    let key_parts:string[] = [conn.client];
+    for( let w of ["host","user","database"] )
+        key_parts.push((conn as any).connection[w]);
+    let key = key_parts.join(" | ");
+    if( knex_conns[key] ) return knex_conns[key];
+
     try {
-        knex_conn = knex(conn);
-        return knex_conn;
+        let knex_conn = knex(conn);
+        if( knex_conn ){
+            knex_conns[key] = knex_conn;
+            return knex_conn;
+        }
     }
     catch(e){
+    }
+}
+
+export async function closeAll(){
+    for( let k in knex_conns ){
+        await knex_conns[k].destroy();
     }
 }
 
