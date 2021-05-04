@@ -6,9 +6,7 @@ import { disconnectAll } from '../db-utils';
 import * as dotenv from 'dotenv'
 dotenv.config();
 
-afterAll( () => {
-    disconnectAll();
-});
+afterAll( disconnectAll );
 
 // Need a test to be in this file 
 test("DB: create, drop test", async () => {
