@@ -1,4 +1,4 @@
-import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt, objectMap } from './utils';
+import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt, objectMap, append } from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
@@ -21,7 +21,7 @@ export function getStateDir(options: any) {
     let state_dir: string;
     if (options.state) {
         if (options.state == true)
-            state_dir = "./"; 
+            state_dir = "./";
         else {
             state_dir = options.state;
         }
@@ -336,8 +336,8 @@ export async function connectState(state_dir: string, db_file: string | Dict<any
 export function toState(dir_file: string, quiet?: boolean): Dict<any> {
     if (!existsSync(dir_file))
         return quiet ? undefined : errorRv(`toState - State dir/file does not exist: ${dir_file}`);
-    let m_yaml:string; 
-    if( isDir(dir_file) )
+    let m_yaml: string;
+    if (isDir(dir_file))
         m_yaml = path.join(dir_file, "___merge.yaml");
     else m_yaml = dir_file;
     if (!existsSync(m_yaml))
@@ -392,8 +392,8 @@ export function normalizeClaim(
 
     // Make the ID in ClaimId format 
     let id = claimIdFromName(file);
-    if (!r.id){
-        if( !id ) return;
+    if (!r.id) {
+        if (!id) return;
         r.id = id;
     }
     else {
@@ -472,18 +472,20 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>, forma
     }
     else {
         // Try the various paths supplied 
-        let paths = path.isAbsolute(file_or_db) ? [""] : options.path as string[];
+        let paths = getPaths(options,file_or_db);
         for (let p of paths) {
             let fn = p ? path.join(p, file_or_db) : file_or_db;
             if (existsSync(fn)) {
                 r = fileToClaim(fn, false, format, options);
                 // See if it was actually a state, if failed
-                if( !r && options.looseNames )
+                if (!r && options.looseNames)
                     r = toState(file_or_db);
-                break;
+                if (r) break;
             }
         }
-        if (!r) return errorRv(`fileToClaim - File not found: ${file_or_db}`);
+        if (!r) {
+            return errorRv(`toStateClaim - File not found: ${file_or_db}`);
+        }
     }
 
     reformatTopLevel(r, format);
@@ -719,6 +721,16 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
     return file_cl_id;
 }
 
+// Get suitable paths, optionally for one specific file  
+function getPaths(options: Dict<any>, file?: string) {
+    if (file && path.isAbsolute(file)) return [""];
+    else {
+        let paths = ["./"];
+        if (options.path) append(paths, options.path);
+        return paths;
+    }
+}
+
 // Iterate available paths, look for additional potential deps 
 function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, above?: Dict<number>) {
     let cl_opt: Dict<Dict<any>[]> = {};
@@ -727,7 +739,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
     // Look for any dependencies in provided paths. 
     // To find the real claim ID:s we need to actually load them
     // (The filename ID is not decisive)
-    let paths: string[] = options.path || ["./"];
+    let paths = getPaths(options);
     for (let p of paths) {
         let files: string[];
         try {
