@@ -3,6 +3,7 @@ lib/
 .vscode/
 tsconfig.tsbuildinfo
 .env
+test-data/
 @
 db:*
 *.yaml 
