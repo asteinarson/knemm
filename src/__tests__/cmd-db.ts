@@ -12,12 +12,10 @@ afterAll( () => {
 
 // Need a test to be in this file 
 test("DB: create, drop test", async () => {
-    //if( 1 ) return; 
+    let r:any;
     
-    let r;
-    r = await existsDb("%","jest_test");
-
     // Drop if exists 
+    r = await existsDb("%","jest_test");
     if( r==true ){
         r = await dropDb("%","jest_test");
         expect(isDict(r)).toBeTruthy();
