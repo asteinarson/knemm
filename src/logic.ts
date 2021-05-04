@@ -899,8 +899,11 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                 dep_claim.___dependee[o_id.branch] = o_id.version;
             }
             else {
-                console.error(`dependencySort - Not found, dependent claim: <${d_branch}:${d_ver}>`);
-                err_cnt++;
+                // Is it a dependency already in the state ? 
+                if( !branches[d_branch] || branches[d_branch]<d_ver ){
+                    console.error(`dependencySort - Not found, dependent claim: <${d_branch}:${d_ver}>`);
+                    err_cnt++;
+                }
             }
         };
     }
