@@ -1,7 +1,6 @@
 
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, lstatSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
-import { lstatSync } from 'node:fs';
 import { Dict } from './utils';
 
 export function slurpFile(file: string, quiet?: boolean): string | number | any[] | Record<string, any> {
