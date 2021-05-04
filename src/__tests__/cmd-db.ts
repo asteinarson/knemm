@@ -1,9 +1,9 @@
 
 import { createDb, dropDb, existsDb } from '../logic';
 import { isDict, isString } from '../utils';
+import { disconnectAll } from '../db-utils';
 
 import * as dotenv from 'dotenv'
-import { disconnectAll } from '../db-utils';
 dotenv.config();
 
 afterAll( () => {
@@ -13,7 +13,7 @@ afterAll( () => {
 // Need a test to be in this file 
 test("DB: create, drop test", async () => {
     let r:any;
-    
+
     // Drop if exists 
     r = await existsDb("%","jest_test");
     if( r==true ){
