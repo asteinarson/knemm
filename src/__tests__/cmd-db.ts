@@ -37,5 +37,5 @@ test("DB: create, drop test", async () => {
 
     // Not existing ? 
     r = await existsDb("%","jest_test")
-    expect(typeof r).toBe("string");
+    expect(r).toBeFalsy();
 }); 
