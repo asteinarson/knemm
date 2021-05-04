@@ -18,12 +18,12 @@ test("DB: create, drop test", async () => {
     r = await existsDb("%","jest_test");
     if( r==true ){
         r = await dropDb("%","jest_test");
-        expect(isDict(r)).toBeTruthy();
+        expect(isDict(r)).toBe(true);
     }
 
     // Create it 
     r = await createDb("%","jest_test");
-    expect(isDict(r)).toBeTruthy();
+    expect(isDict(r)).toBe(true);
 
     // Existing ? 
     r = await existsDb("%","jest_test")
@@ -31,7 +31,7 @@ test("DB: create, drop test", async () => {
 
     // And drop it 
     r = await dropDb("%","jest_test");
-    expect(isDict(r)).toBeTruthy();
+    expect(isDict(r)).toBe(true);
 
     // Not existing ? 
     r = await existsDb("%","jest_test")
