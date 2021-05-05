@@ -113,7 +113,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
                 // Check for an explicit DB conn here first 
                 let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
-                let conn_info = slurpFile(db_file);
+                let conn_info = parseDbFile(db_file);
                 if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
 
                 // See that DB currently fulfills existing claims
