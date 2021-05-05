@@ -139,7 +139,6 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     let rs = await syncDbWith(state_base, conn_info, options);
                     if (rs != true) return logResult(rs, options, 103);
                     console.log("apply - DB synced with new claims merged into state");
-
                 }
                 rc = 0;
                 break;
