@@ -140,10 +140,9 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     if (rs != true) return logResult(rs, options, 103);
                     console.log("apply - DB synced with new claims merged into state");
 
-                    rc = 0;
-                    break;
                 }
-
+                rc = 0;
+                break;
             }
 
         case "reverse":
