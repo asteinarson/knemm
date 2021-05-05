@@ -60,10 +60,9 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
 
     // Copy input files here     
     for (let f of files || []) {
-        let md = f.match(re_name_oext);
-        if (md) {
-            let name = md[2] + "." + md[3];
-            let tgt_name = path.join(dir, name);
+        let fn = fileNameOf(f);
+        if( fn ){
+            let tgt_name = path.join(dir, fn);
             copyFileSync(f, tgt_name);
             if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
         }
@@ -1035,7 +1034,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
 }
 
 export function getInitialState(tables?:Dict<any>) {
-    return { modules: {}, ___tables: tables || {}, format:"internal" };
+    return { modules: {}, format:"internal", ___tables: tables || {} };
 }
 
 // Merge dependency ordered claims 
