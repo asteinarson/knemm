@@ -42,10 +42,16 @@ export function getDirsFromFileList(files: string[]): string[] {
     }, {}));*/
 }
 
-const re_fn = /^(.*\/)?([^/]*)$/;
+//const re_fm = /^(.*\/)?([^/]*)$/;
+const re_fn = /^(.*\/)*([^/]+)\/*$/;
 export function fileNameOf(path: string) {
     let md = path.match(re_fn);
     return md?.[2];
+}
+
+export function pathOf(file_path: string) {
+    let md = file_path.match(re_fn);
+    return md?.[1];
 }
 
 export function isDir(path: string) {
