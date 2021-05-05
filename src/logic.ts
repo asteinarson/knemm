@@ -4,7 +4,7 @@ import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, no
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { fileNameOf, isDir, slurpFile } from "./file-utils";
+import { fileNameOf, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, modifySchema, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
@@ -36,22 +36,34 @@ export function getStateDir(options: any) {
     return state_dir;
 }
 
-export function storeState(files: string[], state_dir: string, state: Dict<any>, options: Dict<any>) {
-    if (!existsSync(state_dir)) {
-        console.error("storeState - Dir does not exist: " + state_dir);
-        return;
+export function storeState(state: Dict<any>, files?: string[], state_loc?: string, options?: Dict<any>) {
+    // Have somewhere to store state ? 
+    if (!state.file && !state_loc)
+        return errorRv("storeState - No storage path/location provided ");
+
+    let dir = state_loc || state.file;
+    let state_file: string;
+    if (dir.slice(5) == ".yaml") {
+        state_file = dir;
+        dir = pathOf(state_file);
     }
+    else
+        state_file = path.join(dir, "___merge.yaml");
+    if (!existsSync(dir))
+        return errorRv("storeState - Dir does not exist: " + dir);
 
     // Normalize the state
-    if (!state.___tables)
-        state = { ___tables: state };
+    if (!state.___tables) 
+        state = getInitialState(state);
+    else 
+        reformatTopLevel(state);
 
     // Copy input files here     
-    for (let f of files) {
+    for (let f of files || []) {
         let md = f.match(re_name_oext);
         if (md) {
             let name = md[2] + "." + md[3];
-            let tgt_name = path.join(state_dir, name);
+            let tgt_name = path.join(dir, name);
             copyFileSync(f, tgt_name);
             if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
         }
@@ -59,11 +71,14 @@ export function storeState(files: string[], state_dir: string, state: Dict<any>,
     }
 
     // And write the new state
-    let m_yaml = path.join(state_dir, "___merge.yaml");
-    if (existsSync(m_yaml)) rmSync(m_yaml);
-    writeFileSync(m_yaml, yamlDump(state));
+    if (existsSync(state_file)) rmSync(state_file);
+    writeFileSync(state_file, yamlDump(state));
+    if (!existsSync(state_file)) return false;
 
-    return existsSync(m_yaml);
+    // Now it is a state
+    state.source = "*state";
+    state.file = state_file;
+    return true;
 }
 
 const state_excludes: Dict<1> = {
@@ -81,6 +96,7 @@ const re_yj = /\.(json|yaml|JSON|YAML)$/;
 export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     if (!existsSync(state_dir))
         return errorRv(`rebuildState - Directory ${state_dir} not found`);
+
     // Build a list of modules with last versions 
     let file_dicts: Dict<Dict<any>> = {};
     for (const f of readdirSync(state_dir)) {
@@ -103,7 +119,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     if (!dicts) return;
     let r = mergeClaims(dicts, state_base, options);
     if (isDict(r)) {
-        storeState([], state_dir, r, options);
+        storeState(r, [], state_dir, options);
         return true;
     }
     else {
@@ -124,7 +140,7 @@ export function sortMergeStoreState(
     let state = mergeClaims(dicts, state_base, options);
     if (isDict(state)) {
         if (state_dir && dicts.length)
-            storeState(Object.keys(file_dicts), state_dir, state, options);
+            storeState(state, Object.keys(file_dicts), state_dir, options);
     }
     return state;
 }
@@ -138,7 +154,7 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
     }
 
     if (conn_info.client == "sqlite3")
-        return existsDbSqlite(conn_info,db_name);
+        return existsDbSqlite(conn_info, db_name);
 
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
@@ -284,14 +300,14 @@ export function parseDbFile(db_file: string): Dict<any> {
     // Look for a connection file - or use ENV vars 
     let conn_info: Dict<any>;
 
-    let file:string; 
-    if( db_file=="%" || db_file=="db:%" ){
+    let file: string;
+    if (db_file == "%" || db_file == "db:%") {
         // With '%', first look for a default DB conn file
-        let f = path.join("./",db_file)+".json";
-        if( existsSync(f) ) file = f;
-        else { 
-            f = path.join("./",db_file)+".yaml";
-            if( existsSync(f) ) file = f;
+        let f = path.join("./", db_file) + ".json";
+        if (existsSync(f)) file = f;
+        else {
+            f = path.join("./", db_file) + ".yaml";
+            if (existsSync(f)) file = f;
         }
     }
     else file = db_file;
@@ -304,7 +320,7 @@ export function parseDbFile(db_file: string): Dict<any> {
             return errorRv("parseDbFile - exception: " + e);
         }
     }
-    if( !conn_info && file!=db_file ){
+    if (!conn_info && file != db_file) {
         // '%' means use ENV vars
         conn_info = {
             host: process.env.HOST,
@@ -364,20 +380,21 @@ export function toState(dir_file: string, quiet?: boolean): Dict<any> {
         return errorRv(`toState - Internal structure is not a state: ${m_yaml}`);
 
     r.source = "*state";
-    r.directory = m_yaml;
+    r.file = m_yaml;
     r.format = "internal";
     return r;
 }
 
 export type FormatType = "internal" | "hr-compact";
 
-export function reformatTables(tables: Dict<any>, format: FormatType): Dict<any> {
-    return format == "internal" ? formatInternal(tables) : formatHrCompact(tables);
+export function reformatTables(tables: Dict<any>, format?: FormatType): Dict<any> {
+    return format == "hr-compact" ? formatHrCompact(tables) : formatInternal(tables);
 }
 
 export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
     if (claim.___tables) {
-        if (format && claim.format != format) {
+        if (!format) format = "internal";
+        if (claim.format != format) {
             claim.___tables = reformatTables(claim.___tables, format);
             claim.format = format;
         }
@@ -914,7 +931,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                     console.error(`dependencySort - Not found, dependent claim: <${d_branch}:${d_ver}>`);
                     err_cnt++;
                 }
-                else if (branches[d_branch] > d_ver){
+                else if (branches[d_branch] > d_ver) {
                     console.warn(`dependencySort - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${o_id.branch}:${o_id.version}>)`);
                 }
             }
@@ -979,7 +996,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                             console.error(`runBranchTo - dependency not found: ${d_branch}`); err_cnt++;
                             err_cnt++;
                         }
-                        else if (branches[d_branch] > d_ver){
+                        else if (branches[d_branch] > d_ver) {
                             console.warn(`runBranchTo - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${claim.id.branch}:${claim.id.ver}>)`);
                         }
                     }
@@ -1017,8 +1034,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     return deps_ordered;
 }
 
-export function getInitialState() {
-    return { modules: {}, ___tables: {} };
+export function getInitialState(tables?:Dict<any>) {
+    return { modules: {}, ___tables: tables || {}, format:"internal" };
 }
 
 // Merge dependency ordered claims 
