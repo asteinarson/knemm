@@ -69,7 +69,6 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
             {
                 let state_base: Dict<any>;
                 if (state_dir) state_base = toState(state_dir, true);
-                if (!state_base) state_base = getInitialState();
                 let file_dicts: Dict<Dict<any>> = {};
                 for (let f of files) {
                     let r = await toStateClaim(f, options);
@@ -86,6 +85,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     }
                     else console.error("join: could not resolve source: " + f);
                 }
+                if (!state_base) state_base = getInitialState();
                 let state = sortMergeStoreState(file_dicts, state_dir, state_base, options);
                 if (isDict(state)) state = state_base.___tables;
                 rc = logResult(state, options, 101);
@@ -166,6 +166,7 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
     switch (cmd) {
         case "diff":
             r = matchDiff(cand.___tables, tgt.___tables);
+            options.internal = true;
             rc = logResult(r, options);
             break;
         case "possible":
