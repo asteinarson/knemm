@@ -242,12 +242,15 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
     let conn_info: Dict<any> = normalizeConnInfo(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
     if (!db_name) return "dropDb - explicit DB name required to drop ";
-    conn_info.connection.database = db_name;
-
+    
     if (conn_info.client == "sqlite3")
-        return dropDbSqlite(conn_info, db_name);
+    return dropDbSqlite(conn_info, db_name);
 
+    // Check connect - wo overwriting old database property
+    let database_ov = conn_info.connection.database;
+    conn_info.connection.database = db_name;
     let knex_c = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
     if (!knex_c) return "dropDb: Failed connecting to the database"
 
     // And drop the DB - need a new connection - w.o. specific DB for that 
@@ -255,9 +258,11 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
         await disconnect(knex_c);
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
+        conn_info.connection.database = database_ov;
         let r = await knex_c.raw(`DROP DATABASE ${db_name}`);
         return conn_info;
     } catch (e) {
+        conn_info.connection.database = database_ov;
         return `dropDb - Failed executing DROP DATABASE`;
     }
 }
