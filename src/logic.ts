@@ -190,19 +190,29 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
         return createDbSqlite(conn_info, db_name);
 
     // Try to connect to the DB - with named DB - should fail 
+    let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
-    if (await connectCheck(conn_info))
+    let knex_c = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
+    if ( knex_c ){
+        await disconnect(knex_c);
         return `createDb - Database ${db_name} already exists`;
+    }
 
     // Remove the DB name - and retry 
     delete conn_info.connection.database;
-    let knex_c = await connectCheck(conn_info);
+    knex_c = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
     if (!knex_c) return `createDb - Failed connect without DB name (${db_name})`;
+
+    // And then create it
     try {
         let r = await knex_c.raw(`CREATE DATABASE ${db_name}`);
         // Then try to connect to it
+        await disconnect(knex_c);
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
+        conn_info.connection.database = database_ov;
         if (knex_c) return conn_info;
         return `createDb - Failed create DB: ${db_name}`;
     } catch (e) { }
