@@ -35,7 +35,7 @@ function logResult(r: Dict<any> | string[], options: any, rc_err?: number) {
 
 export async function handleNoArgCmd(cmd: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
-    let rc = 100;  
+    let rc = 100;
     try {
         if (cmd == "rebuild") {
             if (!state_dir) return errorRv("The rebuild option requires a state directory (-s option)", 10);
@@ -60,7 +60,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         if (!options.path) options.path = dirs;
         else options.path = append(options.path, dirs);
         // Trim paths 
-        for( let ix in options.path )
+        for (let ix in options.path)
             options.path[ix] = options.path[ix].trim();
     }
 
@@ -69,7 +69,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
             {
                 let state_base: Dict<any>;
                 if (state_dir) state_base = toState(state_dir, true);
-                if( !state_base ) state_base = getInitialState();
+                if (!state_base) state_base = getInitialState();
                 let file_dicts: Dict<Dict<any>> = {};
                 for (let f of files) {
                     let r = await toStateClaim(f, options);
@@ -97,7 +97,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
                 // Get the DB connection 
                 let r = await connectState(state_dir, a1 as string, options);
-                if (r == true){
+                if (r == true) {
                     console.log(`State in <${state_dir}> was connected to DB info in <${a1}>`);
                     return 0;
                 }
@@ -113,11 +113,12 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 // Prepare state and DB conn 
                 if (!state_dir) return errorRv("The <apply> command requires a state directory (via -s option)", 10);
                 let state_base = toState(state_dir, true);
-                if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
+                //if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
+                if (!state_base) state_base = getInitialState();
                 // Check for an explicit DB conn here first 
                 let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
                 let conn_info = parseDbFile(db_file);
-                if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected database (see <connect>)", 10);
+                if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected (or specified) database (see <connect>)", 10);
 
                 // See that DB currently fulfills existing claims
                 let rs = await syncDbWith(state_base, conn_info, options);
@@ -196,9 +197,9 @@ export async function handleDbCmd(cmd: string, db_file: string, dbname: string, 
         case "exists":
             {
                 let r = await existsDb(db_file, dbname);
-                if( r==true ) console.log("yes");
-                else if (!r ) console.log("no");
-                else console.log("error: "+r);
+                if (r == true) console.log("yes");
+                else if (!r) console.log("no");
+                else console.log("error: " + r);
                 break;
             }
         case "create":
@@ -257,16 +258,16 @@ export async function handleDbCmd(cmd: string, db_file: string, dbname: string, 
                 console.log(`Database <${dbname}> on client type <${r.client}> was dropped.`);
 
                 // Remove ___db.yaml in state, if it matches the DB just dropped.
-                if( state_dir ){
-                    let state_db = path.join(state_dir,"___db.yaml");
+                if (state_dir) {
+                    let state_db = path.join(state_dir, "___db.yaml");
                     let conn_info = parseDbFile(state_db);
-                    if( conn_info ){
-                        if( conn_info.client==r.client && 
-                            conn_info.connection.database==dbname ){
-                                rmSync(state_db);
-                                console.log(`The DB connection was removed from <${state_dir}>`);
-                            }
-                            else console.warn(`drop: Client or DB in ${state_db} does not match`);
+                    if (conn_info) {
+                        if (conn_info.client == r.client &&
+                            conn_info.connection.database == dbname) {
+                            rmSync(state_db);
+                            console.log(`The DB connection was removed from <${state_dir}>`);
+                        }
+                        else console.warn(`drop: Client or DB in ${state_db} does not match`);
                     }
                     else console.warn(`drop: failed parsing ${state_db}`);
                 }
