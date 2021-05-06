@@ -98,7 +98,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 // Get the DB connection 
                 let r = await connectState(state_dir, a1 as string, options);
                 if (r == true){
-                    console.log(`State in <${state_dir}> was connected to DB file <${a1}>`);
+                    console.log(`State in <${state_dir}> was connected to DB info in <${a1}>`);
                     return 0;
                 }
                 else {
