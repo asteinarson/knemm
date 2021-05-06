@@ -97,7 +97,10 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 if (!state_dir) return errorRv("The <connect> command requires a state directory (via -s option)", 10);
                 // Get the DB connection 
                 let r = await connectState(state_dir, a1 as string, options);
-                if (r == true) return 0;
+                if (r == true){
+                    console.log(`State in <${state_dir}> was connected to DB file <${a1}>`);
+                    return 0;
+                }
                 else {
                     console.error(r);
                     return 101;
