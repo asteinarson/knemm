@@ -12,8 +12,10 @@ export async function connect(connection: Record<string, string>, client = "pg")
 
     // Make a key to avoid creating several connections for same DB
     let key_parts: string[] = [conn.client];
-    for (let w of ["host", "user", "database"])
-        key_parts.push((conn as any).connection[w]);
+    for (let w of ["host", "user", "database"]){
+        let v = (conn as any).connection[w];
+        if( v ) key_parts.push(v);
+    }
     let key = key_parts.join(" | ");
     if (knex_conns[key]) return knex_conns[key];
 
@@ -49,10 +51,11 @@ export async function connectCheck(connection: Record<string, string>, client = 
     let knex_c = await connect(connection, client);
     if (!knex_c) return;
     try {
-        await knex_c.raw("SELECT 1+1");
+        let r = await knex_c.raw("SELECT 1+1");
         return knex_c;
     }
     catch (e) {
+        let brk = 0;
     }
 }
 
