@@ -5,7 +5,7 @@ import { join as pJoin } from 'path';
 import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
 
-import { connectState, createDb, matchDiff, normalizeConnInfo, toState } from '../logic';
+import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, normalizeConnInfo, toState } from '../logic';
 import { disconnectAll } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
@@ -14,6 +14,7 @@ import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
 import * as dotenv from 'dotenv'
+import * as rimraf from 'rimraf';
 dotenv.config();
 
 afterAll( disconnectAll );
@@ -22,23 +23,40 @@ claimsToFile([claim_ast]);
 
 // Need a test to be in this file 
 test("cmd apply test - 1 ", async () => {
+    // Make sure we have an empty test dir - for our state
     let state_dir = pJoin(tmpdir(), "state_ast");
     let options = {
         internal: true,
         state: state_dir,
     };
-    // Create a temp DB to work on 
+    let rm = await rimraf.sync(state_dir);
+    let sd = getStateDir(options);
+    expect(sd).toBe(state_dir);
+
+    // The DB conn  
     let db_conn = normalizeConnInfo("%");
-    let db = await createDb("%","claim_ast");
+    db_conn.connection.database = "claim_ast";
+    // Drop test DB if exists
+    let r:any = await existsDb(db_conn);
+    if( r==true ){
+        r = await dropDb(db_conn,"claim_ast");
+        expect(isDict(r)).toBe(true);
+    }
+
+    let db = await createDb(db_conn);
     if( isDict(db) ){
-        let r:any = await connectState(state_dir,db,options);
+        // Connect it 
+        let r:any = await connectState(state_dir,db_conn,options);
         if( r== true ){
+            // And apply 
             r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
             expect(r).toBe(0);
         }
     }
     else{ 
+        // Sort of console.log 
         expect(db_conn).toBe(0);
+        expect(db).toBe(0);
         expect(process.cwd()).toBe(0);
     }
 });
