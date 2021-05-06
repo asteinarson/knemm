@@ -6,7 +6,7 @@ import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
 import { getDirsFromFileList, slurpFile } from "./file-utils";
 import { existsSync, rmSync, writeFileSync } from "fs";
-import path from "path";
+import * as path from "path";
 
 import cmder, { Command } from "commander";
 export type CmdOptionAdder = (cmd: cmder.Command) => void;
