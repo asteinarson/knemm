@@ -98,3 +98,23 @@ export let claim_use_p2 = {
     }
 };
 
+export let claim_apply_simple_types = {
+    format: "?",    // Enforce translate to internal
+    id: {
+        branch: "apply-st",
+        version: 1
+    },
+    ___tables: {
+        person: {
+            name: "text",
+            active: "boolean",
+            age: "int",
+            length: "float",
+            age_in_seconds: "bigint",
+            income: "decimal", 
+            date1: "date",
+            datetime1: "datetime",
+            timestamp: "timestamp",
+        },
+    }
+};

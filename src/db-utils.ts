@@ -225,9 +225,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             case "decimal":
                                 column = table.decimal(col, col_delta.numeric_precision, col_delta.numeric_scale);
                                 break;
-                            case "text":
-                                column = table.text(col);
-                                break;
                             case "date":
                                 column = table.date(col);
                                 break;
