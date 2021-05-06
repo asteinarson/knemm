@@ -156,8 +156,12 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
         return existsDbSqlite(conn_info, db_name);
 
     // Try to connect to the DB - with named DB - should fail 
+    let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
-    if (await connectCheck(conn_info)) return true;
+    let r = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov; 
+
+    if (r) return true;
 }
 
 function existsDbSqlite(conn_info: Dict<any>, db_name?: string) {
