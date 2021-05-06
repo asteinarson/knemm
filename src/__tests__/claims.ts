@@ -114,7 +114,7 @@ export let claim_apply_simple_types = {
             income: "decimal", 
             date1: "date",
             datetime1: "datetime",
-            timestamp: "timestamp",
+            timestamp1: "timestamp",
         },
     }
 };

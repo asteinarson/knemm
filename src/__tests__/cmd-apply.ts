@@ -5,16 +5,18 @@ import { join as pJoin } from 'path';
 import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
 
-import { matchDiff, toState } from '../logic';
-
+import { connectState, createDb, matchDiff, normalizeConnInfo, toState } from '../logic';
+import { disconnectAll } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
-
-//jestLogCaptureStart();
 
 import { claim_p1, claim_apply_simple_types as claim_ast } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
+import * as dotenv from 'dotenv'
+dotenv.config();
+
+afterAll( disconnectAll );
 
 claimsToFile([claim_ast]);
 
@@ -25,6 +27,18 @@ test("cmd apply test - 1 ", async () => {
         internal: true,
         state: state_dir,
     };
-    let r = await handleOneArgCmd("join", [fileOf(claim_ast)], options);
-    expect(1).toBe(1);
+    // Create a temp DB to work on 
+    let db_conn = normalizeConnInfo("%");
+    let db = await createDb("%","claim_ast");
+    if( isDict(db) ){
+        let r:any = await connectState(state_dir,db,options);
+        if( r== true ){
+            r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
+            expect(r).toBe(0);
+        }
+    }
+    else{ 
+        expect(db_conn).toBe(0);
+        expect(process.cwd()).toBe(0);
+    }
 });
