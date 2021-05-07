@@ -1,32 +1,43 @@
 
 import cmder, { Command } from "commander";
 
+function addOutputOption(cmd: cmder.Command) {
+    cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the created database");
+}
+
 function addCreatedbOptions(cmd: cmder.Command) {
     cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
-    cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the created database");
+    addOutputOption(cmd);
 }
 
 import { CmdDesc, addBaseOptions } from './cmd-handlers';
 
 let cmds_db: CmdDesc[] = [
     {
+        name: "echo",
+        desc: "Echoes back connection info that would be used",
+        a1: "db_spec",
+        a2: "name_of_db",
+        options: [addOutputOption]
+    },
+    {
         name: "exists",
         desc: "Checking if a DB exists",
-        a1: "db_file",
+        a1: "db_spec",
         a2: "name_of_db",
         options: []
     },
     {
         name: "create",
         desc: "Create a DB (after checking for existence), and optionally connect with a state",
-        a1: "db_file",
+        a1: "db_spec",
         a2: "*name_of_new_db",
         options: [addBaseOptions, addCreatedbOptions]
     },
     {
         name: "drop",
         desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
-        a1: "db_file",
+        a1: "db_spec",
         a2: "*name_of_db",
         options: [addBaseOptions]
     }

@@ -196,6 +196,15 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
     let state_dir = getStateDir(options);
     let rc = 0;
     switch (cmd) {
+        case "echo":
+            {
+                let conn_info = parseDbSpec(db_spec);
+                if (!conn_info) return errorRv("echo - Could not parse: " + db_spec);
+                if (dbname) conn_info.connection.database = dbname;
+                let output = options.json ? JSON.stringify(conn_info, null, 2) : yamlDump(conn_info);
+                console.log(output);
+                break;
+            }
         case "exists":
             {
                 let r = await existsDb(db_spec, dbname);
