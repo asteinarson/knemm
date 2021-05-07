@@ -247,7 +247,7 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     let r = md_file_db[1] ? parseDbFile(db_file) : getDefaultDbVals();
     if (!r) return;
     
-    objectPrune(spec_vals, e => e);
+    objectPrune(spec_vals, e => !e);
     r = { ...r, ...spec_vals };
     
     console.log(r,"...");
@@ -277,7 +277,7 @@ export function parseDbFile(db_file: string): Dict<any> {
     // 2 - db_file
     // 3 - default_keys 
     let r = getDefaultDbVals();
-    objectPrune(file_vals, e => e);
+    objectPrune(file_vals, e => !e);
     r = { ...r, ...file_vals };
 
     return normalizeConnInfo(r);
