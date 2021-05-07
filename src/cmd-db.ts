@@ -16,7 +16,8 @@ import { CmdDesc, addBaseOptions } from './cmd-handlers';
 let cmds_db: CmdDesc[] = [
     {
         name: "echo",
-        desc: "Echoes back connection info that would be used",
+        desc: "Echoes back connection info that would be used.\n"+
+              "The connection info will not be tested.",
         a1: "db_spec",
         a2: "name_of_db",
         options: [addOutputOptions]
@@ -30,7 +31,7 @@ let cmds_db: CmdDesc[] = [
     },
     {
         name: "create",
-        desc: "Create a DB (after checking for existence), and optionally connect with a state." + 
+        desc: "Create a DB (after checking for existence), and optionally connect with a state.\n" + 
               "If there is a DB specified by <db_spec> the name of the new DB can be given as ':'." ,
         a1: "db_spec",
         a2: "*name_of_new_db",
@@ -38,7 +39,8 @@ let cmds_db: CmdDesc[] = [
     },
     {
         name: "drop",
-        desc: "Drop a DB (after checking for existence), and optionally disconnect from a state",
+        desc: "Drop a DB (after checking for existence), and optionally disconnect from a state. \n"+
+              "If there is a DB specified by <db_spec> the name of the new DB can be given as ':'." ,
         a1: "db_spec",
         a2: "*name_of_db",
         options: [addBaseOptions]
