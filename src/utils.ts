@@ -168,7 +168,7 @@ const simples:Dict<1> = {
     symbol: 1
 }
 
-export function deepCopy( oa:Dict<any>|any[] ): typeof oa {
+export function deepCopy( oa:Dict<any>|Array<any> ): typeof oa {
     if( isDict(oa) ){
         let r:Dict<any> = {};
         for( let k in oa ){
