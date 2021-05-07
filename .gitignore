@@ -4,8 +4,9 @@ lib/
 tsconfig.tsbuildinfo
 .env
 test-data/
+db-*.json
+%
 @
-db:*
 *.yaml 
 *.sql
 *.sql3
