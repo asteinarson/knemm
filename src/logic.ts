@@ -347,11 +347,18 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
     return conn_info;
 }
 
-const re_file_db = /(%([\w.-]+))?(:([\w.-]+))?$/;
+const re_file_db = /(%([\w.-]*))?(:([\w.-]+))?$/;
 const re_user_pass = /^([\w.-]+)?(\?([\w.-]+))?([@%:=].*)?$/;
 const re_client = /(@([\w]+))([%:=].*)?$/;
 const re_host = /(=([\w.-]+))([@%:].*)?$/;
 
+// According to reg exprs above, it can parse strings like: 
+//   %              // Read conn info from %.json or %.yaml 
+//   %db_file.json          // Read conn info from this file 
+//   %db_file.json:my_db    // As above, but modify DB to <my_db>
+//   bob?some_pass%   // Give user creds
+//   bob?some_pass@pg:this_db   // Give user creds, db client type and DB
+//   bob?some_pass@pg:this_db=192.10.2.10 // As above, but specify a host
 export function parseDbSpec(db_spec: string): Dict<any> {
     // Extract out DB connection info from <db_spec> string 
 
