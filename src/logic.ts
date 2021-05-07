@@ -246,6 +246,7 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     let db_file = md_file_db[2];
     let r = md_file_db[1] ? parseDbFile(db_file,true) : getDefaultDbVals();
     if (!r) return;
+    console.log(r,"after parseDbFile");
     
     objectPrune(spec_vals, e => !e);
     r = { ...r, ...spec_vals };
@@ -281,7 +282,15 @@ export function parseDbFile(db_file: string, flat?:boolean): Dict<any> {
     objectPrune(file_vals, e => !e);
     r = { ...r, ...file_vals };
 
-    return flat ? r : normalizeConnInfo(r);
+    if( !flat ) return normalizeConnInfo(r);
+    else {
+        // Flatten out, for now 
+        if( r.connection ){
+            let rc = r.connection as any as Dict<any>;
+            r = { ...r, ...rc };
+            delete r.connection; 
+        }
+    }
 }
 
 async function dbSpecToKnex(db_spec: string): Promise<Knex> {
