@@ -225,10 +225,10 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     // Extract out DB connection info from <db_spec> string 
 
     // These are the specified ones 
-    let md_file_db = db_spec.match(re_file_db);
-    let md_user_pass = db_spec.match(re_user_pass);
-    let md_client = db_spec.match(re_client);
-    let md_host = db_spec.match(re_host);
+    let md_file_db = db_spec.match(re_file_db) || [];
+    let md_user_pass = db_spec.match(re_user_pass) || [];
+    let md_client = db_spec.match(re_client) || [];
+    let md_host = db_spec.match(re_host) || [];
     let spec_vals = {
         user: md_user_pass[1],
         pass: md_user_pass[3],

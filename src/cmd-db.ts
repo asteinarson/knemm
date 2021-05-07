@@ -2,7 +2,7 @@
 import cmder, { Command } from "commander";
 
 function addOutputOption(cmd: cmder.Command) {
-    cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the created database");
+    cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the DB connection");
 }
 
 function addCreatedbOptions(cmd: cmder.Command) {
