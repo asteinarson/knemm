@@ -146,151 +146,6 @@ export function sortMergeStoreState(
     return state;
 }
 
-export async function existsDb(db_file: string | Dict<any>, db_name?: string): Promise<boolean | string> {
-    let conn_info: Dict<any> = normalizeConnInfo(db_file);
-    if (!conn_info) return "existsDb - could not get DB connection info";
-    if (!db_name) {
-        db_name = conn_info.connection.database;
-        if (!db_name) return "existsDb - no name given, for DB to check for";
-    }
-
-    if (conn_info.client == "sqlite3")
-        return existsDbSqlite(conn_info, db_name);
-
-    // Try to connect to the DB - with named DB - should fail 
-    let database_ov = conn_info.connection.database;
-    conn_info.connection.database = db_name;
-    let r = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
-
-    if (r) return true;
-}
-
-function existsDbSqlite(conn_info: Dict<any>, db_name?: string) {
-    if (!db_name) db_name = conn_info?.connection?.database;
-    if (!db_name) return;
-
-    for (let fn of [db_name, db_name + ".sqlite"]) {
-        if (existsSync(fn)) {
-            // We do not do a connectCheck here - 
-            // as it would create the DB.
-            return true;
-        }
-    }
-}
-
-export async function createDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
-    let conn_info: Dict<any> = normalizeConnInfo(db);
-    if (!conn_info) return "createDb - could not connect to DB";
-    if (!db_name) {
-        db_name = conn_info.connection.database;
-        if (!db_name) return "createDb - no name given, for DB to be created";
-    }
-
-    // Try connecting to the given DB - should fail
-    if (conn_info.client == "sqlite3")
-        return createDbSqlite(conn_info, db_name);
-
-    // Try to connect to the DB - with named DB - should fail 
-    let database_ov = conn_info.connection.database;
-    conn_info.connection.database = db_name;
-    let knex_c = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
-    if (knex_c) {
-        await disconnect(knex_c);
-        return `createDb - Database ${db_name} already exists`;
-    }
-
-    // Remove the DB name - and retry 
-    delete conn_info.connection.database;
-    knex_c = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
-    if (!knex_c) return `createDb - Failed connect without DB name (${db_name})`;
-
-    // And then create it
-    try {
-        let r = await knex_c.raw(`CREATE DATABASE ${db_name}`);
-        // Then try to connect to it
-        await disconnect(knex_c);
-        conn_info.connection.database = db_name;
-        knex_c = await connectCheck(conn_info);
-        conn_info.connection.database = database_ov;
-        if (knex_c) return conn_info;
-        return `createDb - Failed create DB: ${db_name}`;
-    } catch (e) { }
-
-    return `createDb - Failed connect to or create DB`;
-}
-
-async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<Dict<any> | string> {
-    // Try connecting to the given DB - should fail
-    if (!db_name.match(/[^.]+\.[^.]+/))
-        db_name += ".sqlite";
-
-    // Try to connect to the DB - with named DB - should fail 
-    // We cannot use this method with SQLite3, as it does not differentiate
-    // whether the DB exists beforehand or not. 
-    // Look for the DB file instead 
-    if (existsSync(db_name)) {
-        return `createDbSqlite - Database ${db_name} already exists`;
-    }
-
-    // Try to connect to unnamed sqlite - it should create the named DB
-    try {
-        conn_info.connection.filename = db_name;
-        let knex_c = await connect(conn_info);
-        if (knex_c) {
-            let r = await knex_c.raw(`SELECT 1+1`);
-            if (existsSync(db_name)) return conn_info;
-        }
-    } catch (e) {
-        console.log("connect error", e);
-    }
-
-    return `createDbSqlite - Failed connect to or create DB`;
-}
-
-export async function dropDb(db: string | Dict<any>, db_name: string): Promise<Dict<any> | string> {
-    let conn_info: Dict<any> = normalizeConnInfo(db);
-    if (!conn_info) return "dropDb - could not parse DB connect info";
-    if (!db_name) return "dropDb - explicit DB name required to drop ";
-
-    if (conn_info.client == "sqlite3")
-        return dropDbSqlite(conn_info, db_name);
-
-    // Check connect - wo overwriting old database property
-    let database_ov = conn_info.connection.database;
-    conn_info.connection.database = db_name;
-    let knex_c = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
-    if (!knex_c) return "dropDb: Failed connecting to the database"
-
-    // And drop the DB - need a new connection - w.o. specific DB for that 
-    try {
-        await disconnect(knex_c);
-        delete conn_info.connection.database;
-        knex_c = await connectCheck(conn_info);
-        conn_info.connection.database = database_ov;
-        let r = await knex_c.raw(`DROP DATABASE ${db_name}`);
-        return conn_info;
-    } catch (e) {
-        conn_info.connection.database = database_ov;
-        return `dropDb - Failed executing DROP DATABASE`;
-    }
-}
-
-function dropDbSqlite(db: string | Dict<any>, db_name: string): Dict<any> | string {
-    let conn_info = isDict(db) ? db : parseDbSpec(db);
-    if (!conn_info) return "dropDb - could not parse DB connect info";
-    for (let fn of [db_name, db_name + ".sqlite"]) {
-        if (existsSync(fn)) {
-            rmSync(fn);
-            if (!existsSync(fn)) return conn_info;
-        }
-    }
-    return "dropDbSqLite: DB not found: " + db_name;
-}
-
 export function slurpDbFile(db_file: string): Dict<any> {
     // Look for a connection file - or use ENV vars 
     let file = "%";
@@ -417,6 +272,149 @@ async function dbFileToKnex(db_file: string): Promise<Knex> {
     }
 }
 
+export async function existsDb(db_file: string | Dict<any>, db_name?: string): Promise<boolean | string> {
+    let conn_info: Dict<any> = normalizeConnInfo(db_file);
+    if (!conn_info) return "existsDb - could not get DB connection info";
+    if (!db_name) {
+        db_name = conn_info.connection.database;
+        if (!db_name) return "existsDb - no name given, for DB to check for";
+    }
+
+    if (conn_info.client == "sqlite3")
+        return existsDbSqlite(conn_info, db_name);
+
+    // Try to connect to the DB - with named DB - should fail 
+    let database_ov = conn_info.connection.database;
+    conn_info.connection.database = db_name;
+    let r = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
+
+    if (r) return true;
+}
+
+function existsDbSqlite(conn_info: Dict<any>, db_name?: string) {
+    if (!db_name) db_name = conn_info?.connection?.database;
+    if (!db_name) return;
+
+    for (let fn of [db_name, db_name + ".sqlite"]) {
+        if (existsSync(fn)) {
+            // We do not do a connectCheck here - 
+            // as it would create the DB.
+            return true;
+        }
+    }
+}
+
+export async function createDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
+    let conn_info: Dict<any> = normalizeConnInfo(db);
+    if (!conn_info) return "createDb - could not connect to DB";
+    if (!db_name) {
+        db_name = conn_info.connection.database;
+        if (!db_name) return "createDb - no name given, for DB to be created";
+    }
+
+    // Try connecting to the given DB - should fail
+    if (conn_info.client == "sqlite3")
+        return createDbSqlite(conn_info, db_name);
+
+    // Try to connect to the DB - with named DB - should fail 
+    let database_ov = conn_info.connection.database;
+    conn_info.connection.database = db_name;
+    let knex_c = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
+    if (knex_c) {
+        await disconnect(knex_c);
+        return `createDb - Database ${db_name} already exists`;
+    }
+
+    // Remove the DB name - and retry 
+    delete conn_info.connection.database;
+    knex_c = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
+    if (!knex_c) return `createDb - Failed connect without DB name (${db_name})`;
+
+    // And then create it
+    try {
+        let r = await knex_c.raw(`CREATE DATABASE ${db_name}`);
+        // Then try to connect to it
+        await disconnect(knex_c);
+        conn_info.connection.database = db_name;
+        knex_c = await connectCheck(conn_info);
+        conn_info.connection.database = database_ov;
+        if (knex_c) return conn_info;
+        return `createDb - Failed create DB: ${db_name}`;
+    } catch (e) { }
+
+    return `createDb - Failed connect to or create DB`;
+}
+
+async function createDbSqlite(conn_info: Dict<any>, db_name: string): Promise<Dict<any> | string> {
+    // Try connecting to the given DB - should fail
+    if (!db_name.match(/[^.]+\.[^.]+/))
+        db_name += ".sqlite";
+
+    // Try to connect to the DB - with named DB - should fail 
+    // We cannot use this method with SQLite3, as it does not differentiate
+    // whether the DB exists beforehand or not. 
+    // Look for the DB file instead 
+    if (existsSync(db_name)) {
+        return `createDbSqlite - Database ${db_name} already exists`;
+    }
+
+    // Try to connect to unnamed sqlite - it should create the named DB
+    try {
+        conn_info.connection.filename = db_name;
+        let knex_c = await connect(conn_info);
+        if (knex_c) {
+            let r = await knex_c.raw(`SELECT 1+1`);
+            if (existsSync(db_name)) return conn_info;
+        }
+    } catch (e) {
+        console.log("connect error", e);
+    }
+
+    return `createDbSqlite - Failed connect to or create DB`;
+}
+
+export async function dropDb(db_spec: string | Dict<any>, db_name: string): Promise<Dict<any> | string> {
+    let conn_info: Dict<any> = normalizeConnInfo(db_spec);
+    if (!conn_info) return "dropDb - could not parse DB connect info";
+    if (!db_name) return "dropDb - explicit DB name required to drop ";
+
+    if (conn_info.client == "sqlite3")
+        return dropDbSqlite(conn_info, db_name);
+
+    // Check connect - wo overwriting old database property
+    let database_ov = conn_info.connection.database;
+    conn_info.connection.database = db_name;
+    let knex_c = await connectCheck(conn_info);
+    conn_info.connection.database = database_ov;
+    if (!knex_c) return "dropDb: Failed connecting to the database"
+
+    // And drop the DB - need a new connection - w.o. specific DB for that 
+    try {
+        await disconnect(knex_c);
+        delete conn_info.connection.database;
+        knex_c = await connectCheck(conn_info);
+        conn_info.connection.database = database_ov;
+        let r = await knex_c.raw(`DROP DATABASE ${db_name}`);
+        return conn_info;
+    } catch (e) {
+        conn_info.connection.database = database_ov;
+        return `dropDb - Failed executing DROP DATABASE`;
+    }
+}
+
+function dropDbSqlite(conn_info: Dict<any>, db_name: string): Dict<any> | string {
+    if (!conn_info) return "dropDb - could not parse DB connect info";
+    for (let fn of [db_name, db_name + ".sqlite"]) {
+        if (existsSync(fn)) {
+            rmSync(fn);
+            if (!existsSync(fn)) return conn_info;
+        }
+    }
+    return "dropDbSqLite: DB not found: " + db_name;
+}
 
 export async function connectState(state_dir: string, db_file: string | Dict<any>, options: Dict<any>): Promise<true | string> {
     let conn_info = (typeof db_file == "string" ? parseDbSpec(db_file) : db_file);
