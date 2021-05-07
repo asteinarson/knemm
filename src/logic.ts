@@ -205,7 +205,7 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
 }
 
 const re_is_db_spec = /[@%:=\?]/;
-const re_file_db = /(%([\w.-]*))?(:([\w.-/]+))?$/;
+const re_file_db = /(%([\w.-]*))?(:([\w.-/]+))?([@=].*)?$/;
 const re_user_pass = /^([\w.-]+)?(\?([\w.-]+))?([@%:=].*)?$/;
 const re_client = /(@([\w]+))([%:=].*)?$/;
 const re_host = /(=([\w.-]+))([@%:].*)?$/;
@@ -231,7 +231,7 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     let md_host = db_spec.match(re_host) || [];
     let spec_vals = {
         user: md_user_pass[1],
-        pass: md_user_pass[3],
+        password: md_user_pass[3],
         client: md_client[2],
         database: md_file_db[4],
         host: md_host[2],
@@ -244,13 +244,13 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     // 2 - db_file
     // 3 - default_keys 
     let db_file = md_file_db[2];
-    let r = md_file_db[1] ? parseDbFile(db_file) : getDefaultDbVals();
+    let r = md_file_db[1] ? parseDbFile(db_file,true) : getDefaultDbVals();
     if (!r) return;
     
     objectPrune(spec_vals, e => !e);
     r = { ...r, ...spec_vals };
     
-    console.log(r,"...");
+    //console.log(r,"...");
     return normalizeConnInfo(r);
 }
 
@@ -265,7 +265,8 @@ function getDefaultDbVals() {
     };
     return default_vals;
 }
-export function parseDbFile(db_file: string): Dict<any> {
+
+export function parseDbFile(db_file: string, flat?:boolean): Dict<any> {
     // Extract out DB connection info from <db_spec> string 
 
     // And these come from connection file, if any 
@@ -280,7 +281,7 @@ export function parseDbFile(db_file: string): Dict<any> {
     objectPrune(file_vals, e => !e);
     r = { ...r, ...file_vals };
 
-    return normalizeConnInfo(r);
+    return flat ? r : normalizeConnInfo(r);
 }
 
 async function dbSpecToKnex(db_spec: string): Promise<Knex> {
