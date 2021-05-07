@@ -159,7 +159,18 @@ export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
     }, {} as Dict<U>)
 }
 
-const simples:Dict<1> = {
+// Prune keys that meet the given prune_f (default equal <undefined>)
+export function objectPrune<T>(o_base: Dict<T>, prune_f?: (v: T) => any, make_new?: boolean): Dict<T> {
+    if (!prune_f) prune_f = (e) => e == undefined;
+    let r = make_new ? {...o_base} : o_base;
+    for( let k in r ){
+        if( prune_f(r[k]) )
+            delete r[k];
+    }
+    return r;
+}
+
+const simples: Dict<1> = {
     number: 1,
     string: 1,
     bigint: 1,
@@ -168,28 +179,28 @@ const simples:Dict<1> = {
     symbol: 1
 }
 
-export function deepCopy( oa:Dict<any>|Array<any> ): typeof oa {
-    if( isDict(oa) ){
-        let r:Dict<any> = {};
-        for( let k in oa ){
+export function deepCopy(oa: Dict<any> | Array<any>): typeof oa {
+    if (isDict(oa)) {
+        let r: Dict<any> = {};
+        for (let k in oa) {
             let v = oa[k];
-            if( simples[typeof v] || (!isDict(v) && !isArray(v) ) )
+            if (simples[typeof v] || (!isDict(v) && !isArray(v)))
                 r[k] = v;
-            else 
-                r[k] = deepCopy(v); 
+            else
+                r[k] = deepCopy(v);
         }
         return r;
     }
     else {
         // The loop is exactly the same, but TS stumbles on accessing 
         // elements with string index, in both cases
-        let r:any[] = [];
-        for( let k in oa ){
+        let r: any[] = [];
+        for (let k in oa) {
             let v = oa[k];
-            if( simples[typeof v] || (!isDict(v) && !isArray(v) ) )
+            if (simples[typeof v] || (!isDict(v) && !isArray(v)))
                 r[k] = v;
-            else 
-                r[k] = deepCopy(v); 
+            else
+                r[k] = deepCopy(v);
         }
         return r;
     }
