@@ -236,20 +236,21 @@ export function parseDbSpec(db_spec: string): Dict<any> {
         database: md_file_db[4],
         host: md_host[2],
     }
-
+    
     // And these come from connection file, if any 
-
+    
     // Order of use is:
     // 1 - db_spec string
     // 2 - db_file
     // 3 - default_keys 
     let db_file = md_file_db[2];
-    let r = db_file ? parseDbFile(db_file) : getDefaultDbVals();
+    let r = md_file_db[1] ? parseDbFile(db_file) : getDefaultDbVals();
     if (!r) return;
-
+    
     objectPrune(spec_vals, e => e);
     r = { ...r, ...spec_vals };
-
+    
+    console.log(r,"...");
     return normalizeConnInfo(r);
 }
 
