@@ -1,6 +1,8 @@
-import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, 
-         notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt, 
-         objectMap, append, objectPrune } from './utils';
+import {
+    invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv,
+    notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt,
+    objectMap, append, objectPrune
+} from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
@@ -180,7 +182,7 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
 
     if (!conn_info.connection) {
         let connection = ["host", "user", "password", "database"].reduce<Dict<any>>((r, v) => {
-            if (conn_info[v]){
+            if (conn_info[v]) {
                 r[v] = conn_info[v];
                 delete conn_info[v];
             }
@@ -188,7 +190,7 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
         }, {});
         conn_info.connection = connection;
     }
-    if( !conn_info.connection.host ) conn_info.connection.host = "localhost";
+    if (!conn_info.connection.host) conn_info.connection.host = "localhost";
 
     if (!conn_info.client) {
         // Some logic to get a specific DB client type
@@ -203,12 +205,12 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
 }
 
 const re_is_db_spec = /[@%:=\?]/;
-const re_file_db = /(%([\w.-]*))?(:([\w.-]+))?$/;
+const re_file_db = /(%([\w.-]*))?(:([\w.-/]+))?$/;
 const re_user_pass = /^([\w.-]+)?(\?([\w.-]+))?([@%:=].*)?$/;
 const re_client = /(@([\w]+))([%:=].*)?$/;
 const re_host = /(=([\w.-]+))([@%:].*)?$/;
 
-export function isDbScpec(s:string){
+export function isDbScpec(s: string) {
     return !!s.match(re_is_db_spec);
 }
 
@@ -221,15 +223,6 @@ export function isDbScpec(s:string){
 //   bob?some_pass@pg:this_db=192.10.2.10 // As above, but specify a host
 export function parseDbSpec(db_spec: string): Dict<any> {
     // Extract out DB connection info from <db_spec> string 
-
-    // Default vals, or from env 
-    let default_vals: Dict<string | undefined> = {
-        host: process.env.HOST || "localhost",
-        user: process.env.USER,
-        password: process.env.PASSWORD,
-        database: process.env.DATABASE || process.env.DEFAULT_DATABASE,
-        client: process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT,
-    };
 
     // These are the specified ones 
     let md_file_db = db_spec.match(re_file_db);
@@ -245,22 +238,46 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     }
 
     // And these come from connection file, if any 
-    let db_file = md_file_db[2];
-    let file_vals: Dict<string>;
-    if (db_file != undefined)
-        file_vals = slurpDbFile(db_file);
 
     // Order of use is:
     // 1 - db_spec string
     // 2 - db_file
     // 3 - default_keys 
-    let r = default_vals;
-    if (file_vals) {
-        objectPrune(file_vals, e => e);
-        r = { ...r, ...file_vals };
-    }
+    let db_file = md_file_db[2];
+    let r = db_file ? parseDbFile(db_file) : getDefaultDbVals();
+    if (!r) return;
+
     objectPrune(spec_vals, e => e);
     r = { ...r, ...spec_vals };
+
+    return normalizeConnInfo(r);
+}
+
+function getDefaultDbVals() {
+    // Default vals, or from env 
+    let default_vals: Dict<string | undefined> = {
+        host: process.env.HOST || "localhost",
+        user: process.env.USER,
+        password: process.env.PASSWORD,
+        database: process.env.DATABASE || process.env.DEFAULT_DATABASE,
+        client: process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT || "pg",
+    };
+    return default_vals;
+}
+export function parseDbFile(db_file: string): Dict<any> {
+    // Extract out DB connection info from <db_spec> string 
+
+    // And these come from connection file, if any 
+    let file_vals = slurpDbFile(db_file);
+    if (!file_vals) return errorRv(`parseDbFile - Failed parsing: ${db_file}`);
+
+    // Order of use is:
+    // (1 - db_spec string) - not here
+    // 2 - db_file
+    // 3 - default_keys 
+    let r = getDefaultDbVals();
+    objectPrune(file_vals, e => e);
+    r = { ...r, ...file_vals };
 
     return normalizeConnInfo(r);
 }
@@ -322,6 +339,7 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
     if (conn_info.client == "sqlite3")
         return createDbSqlite(conn_info, db_name);
 
+    // Since we modify conn_info below, we make a local copy if needed 
     // Try to connect to the DB - with named DB - should fail 
     let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
@@ -554,7 +572,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     if (!file_or_db) return null;
 
     let r: Dict<any>;
-    if ( isDbScpec(file_or_db) ) {
+    if (isDbScpec(file_or_db)) {
         let knex_c = await dbSpecToKnex(file_or_db);
         if (!knex_c) return errorRv("toStateClaim - Could not connect to DB");
         let rs = await slurpSchema(knex_c);

@@ -1,6 +1,6 @@
 import {
     toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState
+    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
@@ -116,8 +116,9 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 //if (!state_base) return errorRv("Failed reading state in: " + state_dir, 10);
                 if (!state_base) state_base = getInitialState();
                 // Check for an explicit DB conn here first 
-                let db_file = options.database ? options.database : path.join(state_dir, "___db.yaml");
-                let conn_info = parseDbSpec(db_file);
+                let conn_info = options.database ?
+                    parseDbSpec(options.database) :
+                    parseDbFile(path.join(state_dir, "___db.yaml"));
                 if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected (or specified) database (see <connect>)", 10);
 
                 // See that DB currently fulfills existing claims
@@ -191,13 +192,13 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
     return rc;
 }
 
-export async function handleDbCmd(cmd: string, db_file: string, dbname: string, options: any): Promise<number> {
+export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
     let rc = 0;
     switch (cmd) {
         case "exists":
             {
-                let r = await existsDb(db_file, dbname);
+                let r = await existsDb(db_spec, dbname);
                 if (r == true) console.log("yes");
                 else if (!r) console.log("no");
                 else console.log("error: " + r);
@@ -205,7 +206,7 @@ export async function handleDbCmd(cmd: string, db_file: string, dbname: string, 
             }
         case "create":
             {
-                let r = await createDb(db_file, dbname);
+                let r = await createDb(db_spec, dbname);
                 if (typeof r == "string") {
                     console.log("createdb - failed: " + r);
                     rc = 10;
@@ -250,7 +251,7 @@ export async function handleDbCmd(cmd: string, db_file: string, dbname: string, 
             }
         case "drop":
             {
-                let r = await dropDb(db_file, dbname);
+                let r = await dropDb(db_spec, dbname);
                 if (!isDict(r)) {
                     console.log("createdb - failed: " + r);
                     rc = 10;
@@ -261,7 +262,7 @@ export async function handleDbCmd(cmd: string, db_file: string, dbname: string, 
                 // Remove ___db.yaml in state, if it matches the DB just dropped.
                 if (state_dir) {
                     let state_db = path.join(state_dir, "___db.yaml");
-                    let conn_info = parseDbSpec(state_db);
+                    let conn_info = parseDbFile(state_db);
                     if (conn_info) {
                         if (conn_info.client == r.client &&
                             conn_info.connection.database == dbname) {
