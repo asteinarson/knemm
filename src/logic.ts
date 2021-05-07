@@ -1,4 +1,6 @@
-import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt, objectMap, append } from './utils';
+import { invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv, 
+         notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt, 
+         objectMap, append, objectPrune } from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
 
@@ -53,15 +55,15 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
         return errorRv("storeState - Dir does not exist: " + dir);
 
     // Normalize the state
-    if (!state.___tables) 
+    if (!state.___tables)
         state = getInitialState(state);
-    else 
+    else
         reformatTopLevel(state);
 
     // Copy input files here     
     for (let f of files || []) {
         let fn = fileNameOf(f);
-        if( fn ){
+        if (fn) {
             let tgt_name = path.join(dir, fn);
             copyFileSync(f, tgt_name);
             if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
@@ -159,7 +161,7 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
     let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
     let r = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov; 
+    conn_info.connection.database = database_ov;
 
     if (r) return true;
 }
@@ -194,7 +196,7 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
     conn_info.connection.database = db_name;
     let knex_c = await connectCheck(conn_info);
     conn_info.connection.database = database_ov;
-    if ( knex_c ){
+    if (knex_c) {
         await disconnect(knex_c);
         return `createDb - Database ${db_name} already exists`;
     }
@@ -252,9 +254,9 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
     let conn_info: Dict<any> = normalizeConnInfo(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
     if (!db_name) return "dropDb - explicit DB name required to drop ";
-    
+
     if (conn_info.client == "sqlite3")
-    return dropDbSqlite(conn_info, db_name);
+        return dropDbSqlite(conn_info, db_name);
 
     // Check connect - wo overwriting old database property
     let database_ov = conn_info.connection.database;
@@ -278,7 +280,7 @@ export async function dropDb(db: string | Dict<any>, db_name: string): Promise<D
 }
 
 function dropDbSqlite(db: string | Dict<any>, db_name: string): Dict<any> | string {
-    let conn_info = isDict(db) ? db : parseDbFile(db);
+    let conn_info = isDict(db) ? db : parseDbSpec(db);
     if (!conn_info) return "dropDb - could not parse DB connect info";
     for (let fn of [db_name, db_name + ".sqlite"]) {
         if (existsSync(fn)) {
@@ -289,42 +291,15 @@ function dropDbSqlite(db: string | Dict<any>, db_name: string): Dict<any> | stri
     return "dropDbSqLite: DB not found: " + db_name;
 }
 
-export function normalizeConnInfo(conn_info: Dict<any> | string) {
-    if (!conn_info) return;
-    if (isString(conn_info)) {
-        // Mutual recursion is OK - progress in each step
-        return parseDbFile(conn_info);
-    }
-
-    if (!conn_info.connection) {
-        conn_info = {
-            connection: conn_info
-        };
-    }
-    if (!conn_info.client) {
-        // Some logic to get a specific DB client type
-        let client = process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT;
-        if (!client) {
-            // We could do something fancy here, as a dynamic import, 
-            // looking for each client type, but no...
-            client = "pg";
-        }
-        conn_info.client = client;
-    }
-    return conn_info;
-}
-
-export function parseDbFile(db_file: string): Dict<any> {
+export function slurpDbFile(db_file: string): Dict<any> {
     // Look for a connection file - or use ENV vars 
-    let conn_info: Dict<any>;
-
-    let file: string;
-    if (db_file == "%" || db_file == "db:%") {
+    let file = "%";
+    if (db_file == "" || db_file == "%") {
         // With '%', first look for a default DB conn file
-        let f = path.join("./", db_file) + ".json";
+        let f = path.join("./", "%") + ".json";
         if (existsSync(f)) file = f;
         else {
-            f = path.join("./", db_file) + ".yaml";
+            f = path.join("./", "%") + ".yaml";
             if (existsSync(f)) file = f;
         }
     }
@@ -332,27 +307,99 @@ export function parseDbFile(db_file: string): Dict<any> {
     if (file) {
         try {
             let r = slurpFile(file);
-            if (isDict(r)) conn_info = r;
-            else return errorRv("parseDbFile - failed slurpFile: " + file);
+            if (isDict(r)) return r;
+            else return errorRv("slurpDbFile - failed slurpFile: " + file);
         } catch (e) {
-            return errorRv("parseDbFile - exception: " + e);
+            return errorRv("slurpDbFile - exception: " + e);
         }
     }
-    if (!conn_info && file != db_file) {
-        // '%' means use ENV vars
-        conn_info = {
-            host: process.env.HOST,
-            user: process.env.USER,
-            password: process.env.PASSWORD,
-        }
-        if (process.env.DATABASE)
-            conn_info.database = process.env.DATABASE;
+    return errorRv("slurpDbFile - could not locate: " + file);
+}
+
+export function normalizeConnInfo(conn_info: Dict<any> | string) {
+    if (!conn_info) return;
+    if (isString(conn_info)) {
+        // Mutual recursion is OK - progress in each step
+        return parseDbSpec(conn_info);
     }
-    return normalizeConnInfo(conn_info);
+
+    if (!conn_info.connection) {
+        let connection = ["host", "user", "password", "database"].reduce<Dict<any>>((r, v) => {
+            if (conn_info[v]){
+                r[v] = conn_info[v];
+                delete conn_info[v];
+            }
+            return r;
+        }, {});
+        conn_info.connection = connection;
+    }
+    if( !conn_info.connection.host ) conn_info.connection.host = "localhost";
+
+    if (!conn_info.client) {
+        // Some logic to get a specific DB client type
+        let client = process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT;
+        if (!client) {
+            // Possible to do something more fancy here ? 
+            client = "pg";
+        }
+        conn_info.client = client;
+    }
+    return conn_info;
+}
+
+const re_file_db = /(%([\w.-]+))?(:([\w.-]+))?$/;
+const re_user_pass = /^([\w.-]+)?(\?([\w.-]+))?([@%:=].*)?$/;
+const re_client = /(@([\w]+))([%:=].*)?$/;
+const re_host = /(=([\w.-]+))([@%:].*)?$/;
+
+export function parseDbSpec(db_spec: string): Dict<any> {
+    // Extract out DB connection info from <db_spec> string 
+
+    // Default vals, or from env 
+    let default_vals: Dict<string | undefined> = {
+        host: process.env.HOST || "localhost",
+        user: process.env.USER,
+        password: process.env.PASSWORD,
+        database: process.env.DATABASE || process.env.DEFAULT_DATABASE,
+        client: process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT,
+    };
+
+    // These are the specified ones 
+    let md_file_db = db_spec.match(re_file_db);
+    let md_user_pass = db_spec.match(re_user_pass);
+    let md_client = db_spec.match(re_client);
+    let md_host = db_spec.match(re_host);
+    let spec_vals = {
+        user: md_user_pass[1],
+        pass: md_user_pass[3],
+        client: md_client[2],
+        database: md_file_db[4],
+        host: md_host[2],
+    }
+
+    // And these come from connection file, if any 
+    let db_file = md_file_db[2];
+    let file_vals: Dict<string>;
+    if (db_file != undefined)
+        file_vals = slurpDbFile(db_file);
+
+    // Order of use is:
+    // 1 - db_spec string
+    // 2 - db_file
+    // 3 - default_keys 
+    let r = default_vals;
+    if (file_vals) {
+        objectPrune(file_vals, e => e);
+        r = { ...r, ...file_vals };
+    }
+    objectPrune(spec_vals, e => e);
+    r = { ...r, ...spec_vals };
+
+    return normalizeConnInfo(r);
 }
 
 async function dbFileToKnex(db_file: string): Promise<Knex> {
-    let conn_info = parseDbFile(db_file);
+    let conn_info = parseDbSpec(db_file);
     // Get our dict from DB conn ? 
     if (conn_info) {
         try {
@@ -365,7 +412,7 @@ async function dbFileToKnex(db_file: string): Promise<Knex> {
 
 
 export async function connectState(state_dir: string, db_file: string | Dict<any>, options: Dict<any>): Promise<true | string> {
-    let conn_info = (typeof db_file == "string" ? parseDbFile(db_file) : db_file);
+    let conn_info = (typeof db_file == "string" ? parseDbSpec(db_file) : db_file);
     if (!conn_info) return `connectState - Could not parse: ${db_file}`;
     let knex_c = await connect(conn_info);
     if (!knex_c) return "connectState - Could not connect to DB";
@@ -586,9 +633,9 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     }
                     else {
                         // If the column is a primary key, it is automatically not nullable
-                        if( !tgt_col.is_primary_key )
+                        if (!tgt_col.is_primary_key)
                             errors.push(`${col_name} - Cannot safely go from notNullable => nullable `);
-                    } 
+                    }
                     break;
                 case "is_unique":
                     if (!tv) {
@@ -687,7 +734,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string[]> {
     // Prepare
     if (typeof db_conn == "string") {
-        db_conn = parseDbFile(db_conn);
+        db_conn = parseDbSpec(db_conn);
         if (!db_conn) return ["syncDbWith - Failed parseDbFile for: " + db_conn];
     }
     let knex_c = await connect(db_conn);
@@ -1056,8 +1103,8 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     return deps_ordered;
 }
 
-export function getInitialState(tables?:Dict<any>) {
-    return { modules: {}, format:"internal", ___tables: tables || {} };
+export function getInitialState(tables?: Dict<any>) {
+    return { modules: {}, format: "internal", ___tables: tables || {} };
 }
 
 // Merge dependency ordered claims 
