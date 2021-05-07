@@ -27,6 +27,7 @@ export async function connect(connection: Record<string, string>, client = "pg")
         }
     }
     catch (e) {
+        let x = 1;
     }
 }
 

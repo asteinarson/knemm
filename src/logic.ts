@@ -381,7 +381,9 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
         knex_c = await connectCheck(conn_info);
         if (knex_c) return conn_info;
         return `createDb - Failed create DB: ${db_name}`;
-    } catch (e) { }
+    } catch (e) { 
+        let x = 1;
+    }
 
     return `createDb - Failed connect to or create DB`;
 }
