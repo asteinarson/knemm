@@ -246,7 +246,6 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     let db_file = md_file_db[2];
     let r = md_file_db[1] ? parseDbFile(db_file,true) : getDefaultDbVals();
     if (!r) return;
-    console.log(r,"after parseDbFile");
     
     objectPrune(spec_vals, e => !e);
     r = { ...r, ...spec_vals };
@@ -290,6 +289,7 @@ export function parseDbFile(db_file: string, flat?:boolean): Dict<any> {
             r = { ...r, ...rc };
             delete r.connection; 
         }
+        return r;
     }
 }
 
