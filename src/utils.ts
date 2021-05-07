@@ -159,6 +159,42 @@ export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
     }, {} as Dict<U>)
 }
 
+const simples:Dict<1> = {
+    number: 1,
+    string: 1,
+    bigint: 1,
+    boolean: 1,
+    undefined: 1,
+    symbol: 1
+}
+
+export function deepCopy( oa:Dict<any>|any[] ): typeof oa {
+    if( isDict(oa) ){
+        let r:Dict<any> = {};
+        for( let k in oa ){
+            let v = oa[k];
+            if( simples[typeof v] || (!isDict(v) && !isArray(v) ) )
+                r[k] = v;
+            else 
+                r[k] = deepCopy(v); 
+        }
+        return r;
+    }
+    else {
+        // The loop is exactly the same, but TS stumbles on accessing 
+        // elements with string index, in both cases
+        let r:any[] = [];
+        for( let k in oa ){
+            let v = oa[k];
+            if( simples[typeof v] || (!isDict(v) && !isArray(v) ) )
+                r[k] = v;
+            else 
+                r[k] = deepCopy(v); 
+        }
+        return r;
+    }
+}
+
 export function errorRv<RV>(msg: string, rv?: RV): RV {
     console.error(msg);
     return rv;
