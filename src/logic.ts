@@ -1,7 +1,7 @@
 import {
     invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv,
     notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt,
-    objectMap, append, objectPrune
+    objectMap, append, objectPrune, deepCopy
 } from './utils';
 //import pkg from 'lodash';
 //const { invert: ldInvert } = pkg;
@@ -318,14 +318,15 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
         if (!db_name) return "existsDb - no name given, for DB to check for";
     }
 
+    // We modify conn_info below. Do not affect incoming object.
+    if( conn_info==db_file ) conn_info = deepCopy(conn_info);
+
     if (conn_info.client == "sqlite3")
         return existsDbSqlite(conn_info, db_name);
-
+    
     // Try to connect to the DB - with named DB - should fail 
-    let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
     let r = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
 
     if (r) return true;
 }
@@ -351,16 +352,16 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
         if (!db_name) return "createDb - no name given, for DB to be created";
     }
 
+    // We modify conn_info below. Do not affect incoming object.
+    if( conn_info==db ) conn_info = deepCopy(conn_info);
+
     // Try connecting to the given DB - should fail
     if (conn_info.client == "sqlite3")
         return createDbSqlite(conn_info, db_name);
-
-    // Since we modify conn_info below, we make a local copy if needed 
+    
     // Try to connect to the DB - with named DB - should fail 
-    let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
     let knex_c = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
     if (knex_c) {
         await disconnect(knex_c);
         return `createDb - Database ${db_name} already exists`;
@@ -369,7 +370,6 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
     // Remove the DB name - and retry 
     delete conn_info.connection.database;
     knex_c = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
     if (!knex_c) return `createDb - Failed connect without DB name (${db_name})`;
 
     // And then create it
@@ -379,7 +379,6 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
         await disconnect(knex_c);
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
-        conn_info.connection.database = database_ov;
         if (knex_c) return conn_info;
         return `createDb - Failed create DB: ${db_name}`;
     } catch (e) { }
@@ -420,14 +419,15 @@ export async function dropDb(db_spec: string | Dict<any>, db_name: string): Prom
     if (!conn_info) return "dropDb - could not parse DB connect info";
     if (!db_name) return "dropDb - explicit DB name required to drop ";
 
+    // We modify conn_info below. Do not affect incoming object.
+    if( conn_info==db_spec ) conn_info = deepCopy(conn_info);
+
     if (conn_info.client == "sqlite3")
         return dropDbSqlite(conn_info, db_name);
 
     // Check connect - wo overwriting old database property
-    let database_ov = conn_info.connection.database;
     conn_info.connection.database = db_name;
     let knex_c = await connectCheck(conn_info);
-    conn_info.connection.database = database_ov;
     if (!knex_c) return "dropDb: Failed connecting to the database"
 
     // And drop the DB - need a new connection - w.o. specific DB for that 
@@ -435,11 +435,9 @@ export async function dropDb(db_spec: string | Dict<any>, db_name: string): Prom
         await disconnect(knex_c);
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
-        conn_info.connection.database = database_ov;
         let r = await knex_c.raw(`DROP DATABASE ${db_name}`);
         return conn_info;
     } catch (e) {
-        conn_info.connection.database = database_ov;
         return `dropDb - Failed executing DROP DATABASE`;
     }
 }
