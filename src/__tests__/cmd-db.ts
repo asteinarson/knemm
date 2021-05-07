@@ -14,26 +14,26 @@ test("DB: create, drop test", async () => {
     let r: any;
 
     // Drop if exists 
-    r = await existsDb("%", "jest_test");
+    r = await existsDb(":", "jest_test");
     if (r == true) {
-        r = await dropDb("%", "jest_test");
+        r = await dropDb(":", "jest_test");
         expect(isDict(r)).toBe(true);
     }
 
     // Create it 
-    r = await createDb("%", "jest_test");
+    r = await createDb(":", "jest_test");
     expect(isDict(r)).toBe(true);
 
     // Existing ? 
-    r = await existsDb("%", "jest_test")
+    r = await existsDb(":", "jest_test")
     expect(r).toBe(true);
 
     // And drop it 
-    r = await dropDb("%", "jest_test");
+    r = await dropDb(":", "jest_test");
     expect(isDict(r)).toBe(true);
 
     // Not existing ? 
-    r = await existsDb("%", "jest_test")
+    r = await existsDb(":", "jest_test")
     expect(r).toBeFalsy();
 });
 
@@ -42,7 +42,7 @@ test("DB: multi connect", async () => {
     expect(isDict(conn_info)).toBe(true);
 
     // Make sure the DB:s exist
-    let conns: Promise<Knex>[] = [];
+    let conns: Knex[] = [];
     for (let ix = 1; ix < 4; ix++) {
         let db = "___jt-" + ix;
         let r: any = await existsDb(conn_info, db);
@@ -54,22 +54,21 @@ test("DB: multi connect", async () => {
 
         // And connect 
         conn_info.connection.database = db;
-        conns.push(connect(conn_info));
+        conns[ix] = await connect(conn_info);
     }
-    let r = await Promise.all(conns);
-    expect(r.length).toBe(3);
 
     // And use each connection 
     let qs: Knex.Raw[] = [];
     for (let ix = 1; ix < 4; ix++) {
-        let q = r[ix].raw(`SELECT 1 + ${ix}`);
+        let q = conns[ix].raw(`SELECT 1 + ${ix} AS sum`);
         qs.push(q);
     }
     let rr = await Promise.all(qs);
 
     // And close 
-    for (let ix = 1; ix < 4; ix++) 
-        await disconnect(r[ix]);
-
-    expect(1).toBe(1);
+    for (let ix = 0; ix<rr.length; ix++ ){
+        let _sum = rr[ix]?.rows?.[0]?.sum;
+        expect(_sum).toBe(2+ix);
+        await disconnect(conns[ix+1]);
+    }
 });
