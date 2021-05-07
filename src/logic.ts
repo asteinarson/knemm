@@ -202,10 +202,15 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
     return conn_info;
 }
 
+const re_is_db_spec = /[@%:=\?]/;
 const re_file_db = /(%([\w.-]*))?(:([\w.-]+))?$/;
 const re_user_pass = /^([\w.-]+)?(\?([\w.-]+))?([@%:=].*)?$/;
 const re_client = /(@([\w]+))([%:=].*)?$/;
 const re_host = /(=([\w.-]+))([@%:].*)?$/;
+
+export function isDbScpec(s:string){
+    return !!s.match(re_is_db_spec);
+}
 
 // According to reg exprs above, it can parse strings like: 
 //   %              // Read conn info from %.json or %.yaml 
@@ -260,14 +265,14 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     return normalizeConnInfo(r);
 }
 
-async function dbFileToKnex(db_file: string): Promise<Knex> {
-    let conn_info = parseDbSpec(db_file);
+async function dbSpecToKnex(db_spec: string): Promise<Knex> {
+    let conn_info = parseDbSpec(db_spec);
     // Get our dict from DB conn ? 
     if (conn_info) {
         try {
             return await connect(conn_info);
         } catch (e) {
-            return errorRv(`dbFileToKnex - failed connect for <${db_file}>: ${e}`);
+            return errorRv(`dbFileToKnex - failed connect for <${db_spec}>: ${e}`);
         }
     }
 }
@@ -416,9 +421,9 @@ function dropDbSqlite(conn_info: Dict<any>, db_name: string): Dict<any> | string
     return "dropDbSqLite: DB not found: " + db_name;
 }
 
-export async function connectState(state_dir: string, db_file: string | Dict<any>, options: Dict<any>): Promise<true | string> {
-    let conn_info = (typeof db_file == "string" ? parseDbSpec(db_file) : db_file);
-    if (!conn_info) return `connectState - Could not parse: ${db_file}`;
+export async function connectState(state_dir: string, db_spec: string | Dict<any>, options: Dict<any>): Promise<true | string> {
+    let conn_info = normalizeConnInfo(db_spec);
+    if (!conn_info) return `connectState - Could not parse: ${db_spec}`;
     let knex_c = await connect(conn_info);
     if (!knex_c) return "connectState - Could not connect to DB";
 
@@ -549,8 +554,8 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     if (!file_or_db) return null;
 
     let r: Dict<any>;
-    if (file_or_db == "%" || file_or_db.slice(0, 3) == "db:") {
-        let knex_c = await dbFileToKnex(file_or_db);
+    if ( isDbScpec(file_or_db) ) {
+        let knex_c = await dbSpecToKnex(file_or_db);
         if (!knex_c) return errorRv("toStateClaim - Could not connect to DB");
         let rs = await slurpSchema(knex_c);
         if (rs) {
@@ -738,10 +743,9 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 
 export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string[]> {
     // Prepare
-    if (typeof db_conn == "string") {
-        db_conn = parseDbSpec(db_conn);
-        if (!db_conn) return ["syncDbWith - Failed parseDbFile for: " + db_conn];
-    }
+    db_conn = normalizeConnInfo(db_conn);
+    if (!db_conn) return ["syncDbWith - Failed normalizeConnInfo for: " + db_conn];
+
     let knex_c = await connect(db_conn);
     if (!knex_c) return ["syncDbWith - Failed connect"];
     let state_db = await slurpSchema(knex_c, options.includes, options.excludes);
