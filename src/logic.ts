@@ -206,7 +206,7 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
 
 const re_is_db_spec = /[@%:=\?]/;
 const re_file = /(%([\w.-]*))([:@=].*)?$/;
-const re_db = /(:([\w.-/]+))?([%@=].*)?$/;
+const re_db = /(:([\w.-/]+))([%@=].*)?$/;
 const re_user_pass = /^([\w.-]+)?(\?([\w.-]+))?([@%:=].*)?$/;
 const re_client = /(@([\w]+))([%:=].*)?$/;
 const re_host = /(=([\w.-]+))([@%:].*)?$/;
@@ -237,6 +237,7 @@ export function parseDbSpec(db_spec: string): Dict<any> {
         database: md_db[2],
         host: md_host[2],
     }
+    //console.log(spec_vals,"spec_vals");
     
     // And these come from connection file, if any 
     
@@ -248,10 +249,10 @@ export function parseDbSpec(db_spec: string): Dict<any> {
     let db_file = md_file[2];
     let r = md_file[1] ? parseDbFile(db_file,true) : getDefaultDbVals();
     if (!r) return;
-    console.log(r,"after_file vals");
+    //console.log(r,"after_file vals");
     
     objectPrune(spec_vals, e => !e);
-    console.log(spec_vals,"spec_vals");
+    //console.log(spec_vals,"spec_vals");
     r = { ...r, ...spec_vals };
     
     //console.log(r,"...");
