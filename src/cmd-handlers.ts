@@ -228,7 +228,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
                         r.connection.filename = path.resolve(r.connection.filename);
                     }
                     let s: string;
-                    if (options.outfile.match(/.(json|JSON)/))
+                    if (options.outfile.match(/.(json|JSON)/) || options.json)
                         s = JSON.stringify(r, null, 2);
                     else {
                         if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
