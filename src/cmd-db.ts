@@ -1,13 +1,14 @@
 
 import cmder, { Command } from "commander";
 
-function addOutputOption(cmd: cmder.Command) {
+function addOutputOptions(cmd: cmder.Command) {
+    cmd.option("-j --json", "Generate output in JSON - not in YAML");
     cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the DB connection");
 }
 
 function addCreatedbOptions(cmd: cmder.Command) {
     cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
-    addOutputOption(cmd);
+    addOutputOptions(cmd);
 }
 
 import { CmdDesc, addBaseOptions } from './cmd-handlers';
@@ -18,7 +19,7 @@ let cmds_db: CmdDesc[] = [
         desc: "Echoes back connection info that would be used",
         a1: "db_spec",
         a2: "name_of_db",
-        options: [addOutputOption]
+        options: [addOutputOptions]
     },
     {
         name: "exists",
