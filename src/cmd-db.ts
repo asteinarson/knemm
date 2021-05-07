@@ -30,7 +30,8 @@ let cmds_db: CmdDesc[] = [
     },
     {
         name: "create",
-        desc: "Create a DB (after checking for existence), and optionally connect with a state",
+        desc: "Create a DB (after checking for existence), and optionally connect with a state." + 
+              "If there is a DB specified by <db_spec> the name of the new DB can be given as ':'." ,
         a1: "db_spec",
         a2: "*name_of_new_db",
         options: [addBaseOptions, addCreatedbOptions]

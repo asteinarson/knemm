@@ -195,11 +195,13 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
 export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, options: any): Promise<number> {
     let state_dir = getStateDir(options);
     let rc = 0;
+    let conn_info = parseDbSpec(db_spec);
+    if( !conn_info ) return errorRv(`${cmd} - Could not parse: ${db_spec}`, 100);
+    if( dbname==":" && conn_info.connection?.database ) 
+        dbname = conn_info.connection?.database;
     switch (cmd) {
         case "echo":
             {
-                let conn_info = parseDbSpec(db_spec);
-                if (!conn_info) return errorRv("echo - Could not parse: " + db_spec);
                 if (dbname) conn_info.connection.database = dbname;
                 let output = options.json ? JSON.stringify(conn_info, null, 2) : yamlDump(conn_info);
                 console.log(output);
@@ -207,7 +209,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
             }
         case "exists":
             {
-                let r = await existsDb(db_spec, dbname);
+                let r = await existsDb(conn_info, dbname);
                 if (r == true) console.log("yes");
                 else if (!r) console.log("no");
                 else console.log("error: " + r);
@@ -215,7 +217,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
             }
         case "create":
             {
-                let r = await createDb(db_spec, dbname);
+                let r = await createDb(conn_info, dbname);
                 if (typeof r == "string") {
                     console.log("createdb - failed: " + r);
                     rc = 10;
@@ -260,7 +262,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
             }
         case "drop":
             {
-                let r = await dropDb(db_spec, dbname);
+                let r = await dropDb(conn_info, dbname);
                 if (!isDict(r)) {
                     console.log("createdb - failed: " + r);
                     rc = 10;
