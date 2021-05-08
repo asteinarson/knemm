@@ -1,4 +1,4 @@
-import { Dict, firstKey, isDict } from '../utils';
+import { Dict, firstKey, isArray, isDict } from '../utils';
 
 import { dump as yamlDump } from 'js-yaml';
 
@@ -6,6 +6,8 @@ import { join as pJoin } from 'path';
 //import os from 'os';
 import { tmpdir } from 'os';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { isString } from 'lodash';
+import { appendFileSync } from 'fs';
 
 // Need a test to be in this file 
 test("test-utils dummy test", () => {
@@ -64,7 +66,7 @@ export function captureStop() {
 // Capturing console.log - 
 // Under Jest 
 let s_log = "";
-export function jestLogCaptureStart(){
+export function jestLogCaptureStart() {
     return jest.spyOn(console, "log").mockImplementation(
         v => { s_log += v.toString() + "\n" }
     );
@@ -79,7 +81,7 @@ export function jestLogGet() {
 // Capturing console.warn - 
 // Under Jest 
 let s_warn = "";
-export function jestWarnCaptureStart(){
+export function jestWarnCaptureStart() {
     return jest.spyOn(console, "warn").mockImplementation(
         v => { s_warn += v.toString() + "\n" }
     );
@@ -91,3 +93,30 @@ export function jestWarnGet() {
     return s;
 }
 
+let log_file: string;
+let log_parts: string[] = [];
+
+type LogWarnErrType = "log" | "warn" | "error";
+
+// Write console.log/warn/error to file
+// Under Jest 
+export function jestLogToFile(path: string, method: LogWarnErrType | LogWarnErrType[]) {
+    // See if path works 
+    appendFileSync(path,"\n");
+    if( !existsSync(path) ) return;
+
+    if (isString(method)) method = [method];
+    let spies: jest.SpyInstance[] = [];
+    method.forEach(m => {
+        spies.push( jest.spyOn(console,m).mockImplementation( (...args) => {
+            let s = "";
+            args.forEach( a => {
+                if( a!=undefined ){
+                    let s = isDict(a) || isArray(a) ? JSON.stringify(a) : a.toString();
+                    appendFileSync(path,s+"\n");
+                }
+            });
+        }));
+    });
+    return spies;
+}
