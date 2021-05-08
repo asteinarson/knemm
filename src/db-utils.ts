@@ -12,21 +12,24 @@ export async function connect(connection: Record<string, string>, client = "pg")
 
     // Make a key to avoid creating several connections for same DB
     let key_parts: string[] = [conn.client];
-    for (let w of ["host", "user", "database"]){
+    for (let w of ["host", "user", "database"]) {
         let v = (conn as any).connection[w];
-        if( v ) key_parts.push(v);
+        if (v) key_parts.push(v);
     }
     let key = key_parts.join(" | ");
     if (knex_conns[key]) return knex_conns[key];
 
     try {
+        console.warn("connect - before - key: " + key);
         let knex_conn = knex(conn);
         if (knex_conn) {
+            console.warn("connect - after - key: " + key);
             knex_conns[key] = knex_conn;
             return knex_conn;
         }
     }
     catch (e) {
+        console.warn("connect - exception");
         let x = 1;
     }
 }
@@ -34,14 +37,21 @@ export async function connect(connection: Record<string, string>, client = "pg")
 export async function disconnect(knex_conn: Knex) {
     for (let k in knex_conns) {
         if (knex_conns[k] == knex_conn) {
-            delete knex_conns[k];
-            await knex_conn.destroy();
-            return true;
+            try {
+                console.warn("disconnect - before - key: " + k);
+                delete knex_conns[k];
+                await knex_conn.destroy();
+                console.warn("disconnect - after - key: " + k);
+                return true;
+            } catch (e) {
+                console.warn("connect - exception");
+            }
         }
     }
 }
 
 export async function disconnectAll() {
+    console.warn("disconnectAll - before");
     for (let k in knex_conns) {
         await knex_conns[k].destroy();
     }
@@ -56,6 +66,7 @@ export async function connectCheck(connection: Record<string, string>, client = 
         return knex_c;
     }
     catch (e) {
+        console.warn("connectCheck - exception");
         let brk = 0;
     }
 }
