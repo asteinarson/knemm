@@ -102,18 +102,18 @@ type LogWarnErrType = "log" | "warn" | "error";
 // Under Jest 
 export function jestLogToFile(path: string, method: LogWarnErrType | LogWarnErrType[]) {
     // See if path works 
-    appendFileSync(path,"\n");
-    if( !existsSync(path) ) return;
+    appendFileSync(path, "\n");
+    if (!existsSync(path)) return;
 
     if (isString(method)) method = [method];
     let spies: jest.SpyInstance[] = [];
     method.forEach(m => {
-        spies.push( jest.spyOn(console,m).mockImplementation( (...args) => {
+        spies.push(jest.spyOn(console, m).mockImplementation((...args) => {
             let s = "";
-            args.forEach( a => {
-                if( a!=undefined ){
+            args.forEach(a => {
+                if (a != undefined) {
                     let s = isDict(a) || isArray(a) ? JSON.stringify(a) : a.toString();
-                    appendFileSync(path,s+"\n");
+                    appendFileSync(path, s + "\n");
                 }
             });
         }));
