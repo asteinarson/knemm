@@ -11,4 +11,5 @@ db-*.json
 *.sql
 *.sql3
 *.sqlite
+*.log
 
