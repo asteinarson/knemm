@@ -140,6 +140,32 @@ export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof a
     return acc;
 }
 
+export function findValueOf(key: string, o: Dict<any> | any[]): any {
+    // For what I see, TypeScript should allow this without the if/else
+    // Each outer loop is identical and typesafe, so writing them as one
+    // loop should also be. 
+    if (!isArray(o)) {
+        for (let k in o) {
+            let v = o[k];
+            if (k == key) return v;
+            if (firstKey(v)) {
+                let r = findValueOf(key, v);
+                if (r!=undefined) return r;
+            }
+        }
+    }
+    else {
+        // So array 
+        for (let k in o) {
+            let v = o[k];
+            if (firstKey(v)) {
+                let r = findValueOf(key, v);
+                if (r != undefined) return r;
+            }
+        }
+    }
+}
+
 // This assumes a densely spaced input array. Only indeces in the range 
 // -a.length < pos < a.length  
 // are valid 
@@ -162,9 +188,9 @@ export function objectMap<T, U>(o: Dict<T>, f: (t: T) => U) {
 // Prune keys that meet the given prune_f (default equal <undefined>)
 export function objectPrune<T>(o_base: Dict<T>, prune_f?: (v: T) => any, make_new?: boolean): Dict<T> {
     if (!prune_f) prune_f = (e) => e == undefined;
-    let r = make_new ? {...o_base} : o_base;
-    for( let k in r ){
-        if( prune_f(r[k]) )
+    let r = make_new ? { ...o_base } : o_base;
+    for (let k in r) {
+        if (prune_f(r[k]))
             delete r[k];
     }
     return r;

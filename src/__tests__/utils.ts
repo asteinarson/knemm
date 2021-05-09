@@ -6,7 +6,8 @@ import {
     isArrayWithElems,
     append,
     dArrAt,
-    objectMap
+    objectMap,
+    findValueOf
 } from '../utils';
 
 test("invert test", () => {
@@ -55,6 +56,7 @@ test("firstKey test", () => {
     let keys = Object.keys(src);
     expect(keys).toContain(firstKey(src));
     expect(keys).not.toContain(firstKey({ prop: 1 }));
+    expect(firstKey(["abc"])).toBe('0');
     expect(firstKey({})).toBe(undefined);
     expect(firstKey(null)).toBe(undefined);
 });
@@ -188,4 +190,12 @@ test("objectMap test", () => {
     let animals: Dict<number> = { ape: 13, pig: 191, donkey: 12 };
     expect(objectMap(animals, v => v - 1)).toStrictEqual({ ape: 12, pig: 190, donkey: 11 });
     expect(objectMap(animals, v => v.toString().length.toString())).toStrictEqual({ ape: "2", pig: "3", donkey: "2" });
+});
+
+test("findValueOf test", () => {
+    let o = { a: 14, n1: { c: 13, a: 11 }, arr:[9,{pi_100:314}] };
+    expect(findValueOf("a", o)).toBe(14);
+    expect(findValueOf("x", o)).toBe(undefined);
+    expect(findValueOf("c", o)).toBe(13);
+    expect(findValueOf("pi_100", o)).toBe(314);
 });
