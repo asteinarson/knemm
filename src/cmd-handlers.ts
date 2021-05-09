@@ -9,6 +9,7 @@ import { existsSync, rmSync, writeFileSync } from "fs";
 import * as path from "path";
 
 import cmder, { Command } from "commander";
+import { connectCheck } from './db-utils';
 export type CmdOptionAdder = (cmd: cmder.Command) => void;
 export type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
 
@@ -196,15 +197,21 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
     let state_dir = getStateDir(options);
     let rc = 0;
     let conn_info = parseDbSpec(db_spec);
-    if( !conn_info ) return errorRv(`${cmd} - Could not parse: ${db_spec}`, 100);
-    if( dbname==":" && conn_info.connection?.database ) 
+    if (!conn_info) return errorRv(`${cmd} - Could not parse: ${db_spec}`, 100);
+    if (dbname == ":" && conn_info.connection?.database)
         dbname = conn_info.connection?.database;
+    let out_opt = false;
     switch (cmd) {
         case "echo":
             {
                 if (dbname) conn_info.connection.database = dbname;
+                if (options.test) {
+                    let r = await connectCheck(conn_info);
+                    console.log("test: " + (r ? "success" : "failure"));
+                }
                 let output = options.json ? JSON.stringify(conn_info, null, 2) : yamlDump(conn_info);
                 console.log(output);
+                out_opt = true;
                 break;
             }
         case "exists":
@@ -225,24 +232,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
                 }
                 console.log(`Database <${dbname}> on client type <${r.client}> was created.`);
 
-                if (options.outfile) {
-                    if (r.client == "sqlite3") {
-                        r.connection.filename = path.resolve(r.connection.filename);
-                    }
-                    let s: string;
-                    if (options.outfile.match(/.(json|JSON)/) || options.json)
-                        s = JSON.stringify(r, null, 2);
-                    else {
-                        if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
-                        s = yamlDump(r);
-                    }
-                    writeFileSync(options.outfile, s);
-                    if (!existsSync(options.outfile))
-                        console.log("Failed storing new connection info to: " + options.outfile);
-                    else
-                        console.log("Stored new connection info to: " + options.outfile);
-                }
-
+                out_opt = true;
                 if (state_dir) {
                     if (existsSync(path.join(state_dir, "___db.yaml")) &&
                         !options.replace) {
@@ -287,6 +277,25 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
                 break;
             }
     }
+
+    if (out_opt && options.outfile) {
+        if (conn_info.client == "sqlite3") {
+            conn_info.connection.filename = path.resolve(conn_info.connection.filename);
+        }
+        let s: string;
+        if (options.outfile.match(/.(json|JSON)/) || options.json)
+            s = JSON.stringify(conn_info, null, 2);
+        else {
+            if (!options.outfile.match(/.(yaml|YAML)/)) options.outfile += ".yaml";
+            s = yamlDump(conn_info);
+        }
+        writeFileSync(options.outfile, s);
+        if (!existsSync(options.outfile))
+            console.log("Failed storing new connection info to: " + options.outfile);
+        else
+            console.log("Stored new connection info to: " + options.outfile);
+    }
+
     return rc;
 }
 

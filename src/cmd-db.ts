@@ -1,6 +1,11 @@
 
 import cmder, { Command } from "commander";
 
+function addEchoOptions(cmd: cmder.Command) {
+    cmd.option("-t --test", "Test the connection - with a simple 'SELECT 1+1'");
+    addOutputOptions(cmd);
+}
+
 function addOutputOptions(cmd: cmder.Command) {
     cmd.option("-j --json", "Generate output in JSON - not in YAML");
     cmd.option("-o --outfile <new_db_file>", "Outputs a new DB file for the DB connection");
@@ -20,7 +25,7 @@ let cmds_db: CmdDesc[] = [
               "The connection info will not be tested.",
         a1: "db_spec",
         a2: "name_of_db",
-        options: [addOutputOptions]
+        options: [addEchoOptions]
     },
     {
         name: "exists",
