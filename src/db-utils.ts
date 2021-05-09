@@ -61,8 +61,8 @@ export async function disconnectAll() {
     knex_conns = {};
 }
 
-export async function connectCheck(connection: Record<string, string>, client = "pg") {
-    let knex_c = await connect(connection, client);
+export async function connectCheck(connection: Record<string, string>) {
+    let knex_c = await connect(connection);
     if (!knex_c) return;
     try {
         let conn = connection?.connection as any;
