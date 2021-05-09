@@ -70,8 +70,21 @@ export async function connectCheck(connection: Record<string, string>) {
     }
 }
 
+let re_client = /([\w]+)|/;
+export function getClientType(ci: Record<string, string> | Knex ){
+    for( let k in knex_conns ){
+        let conn = knex_conns[k]; 
+        if( conn==ci ){
+            let md = k.match(re_client);
+            return md?.[1];
+        }
+    }
+    if( isDict(ci) && ci.connection ){
+        return ci.connection;
+    }
+}
 
-import { Dict } from "./utils";
+import { Dict, isDict } from "./utils";
 
 // column props that are by default true 
 const default_true_props: Dict<boolean> = {
