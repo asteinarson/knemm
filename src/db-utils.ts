@@ -4,12 +4,7 @@ import knex, { Knex } from 'knex';
 
 let knex_conns: Dict<Knex> = {};
 
-export async function connect(connection: Record<string, string>, client = "pg") {
-    let conn = connection.connection ? connection : {
-        client,
-        connection
-    };
-
+export async function connect(conn: Record<string, string>) {
     // Make a key to avoid creating several connections for same DB
     let key_parts: string[] = [conn.client];
     for (let w of ["host", "user", "database"]) {
