@@ -29,7 +29,7 @@ export async function connect(connection: Record<string, string>, client = "pg")
         }
     }
     catch (e) {
-        console.warn("connect - exception");
+        console.warn("connect - exception - db key: " + key);
         let x = 1;
     }
 }
@@ -38,20 +38,17 @@ export async function disconnect(knex_conn: Knex) {
     for (let k in knex_conns) {
         if (knex_conns[k] == knex_conn) {
             try {
-                console.warn("disconnect - before - key: " + k);
                 delete knex_conns[k];
                 await knex_conn.destroy();
-                console.warn("disconnect - after - key: " + k);
                 return true;
             } catch (e) {
-                console.warn("connect - exception");
+                console.warn("connect - exception - key: " + k);
             }
         }
     }
 }
 
 export async function disconnectAll() {
-    console.warn("disconnectAll - before");
     for (let k in knex_conns) {
         await knex_conns[k].destroy();
     }
@@ -62,11 +59,12 @@ export async function connectCheck(connection: Record<string, string>, client = 
     let knex_c = await connect(connection, client);
     if (!knex_c) return;
     try {
+        let conn = connection?.connection as any;
         let r = await knex_c.raw("SELECT 1+1");
         return knex_c;
     }
     catch (e) {
-        console.warn("connectCheck - exception");
+        console.warn("connectCheck - exception - connection: " + JSON.stringify(connection) );
         let brk = 0;
     }
 }
