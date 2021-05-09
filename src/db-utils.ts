@@ -75,12 +75,13 @@ export function getClientType(ci: Record<string, string> | Knex ){
     for( let k in knex_conns ){
         let conn = knex_conns[k]; 
         if( conn==ci ){
+            // Client type is the first part of the key
             let md = k.match(re_client);
             return md?.[1];
         }
     }
-    if( isDict(ci) && ci.connection ){
-        return ci.connection;
+    if( isDict(ci) && ci.client ){
+        return ci.client;
     }
 }
 

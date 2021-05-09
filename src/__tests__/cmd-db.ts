@@ -1,7 +1,7 @@
 
 import { createDb, dropDb, existsDb, parseDbSpec } from '../logic';
 import { findValueOf, isDict, isString } from '../utils';
-import { connect, disconnect, disconnectAll } from '../db-utils';
+import { connect, disconnect, disconnectAll, getClientType } from '../db-utils';
 
 import * as dotenv from 'dotenv'
 import { Knex } from 'knex';
@@ -47,6 +47,9 @@ test("DB: create, drop test", async () => {
 test("DB: multi connect", async () => {
     let conn_info = parseDbSpec(":");
     expect(isDict(conn_info)).toBe(true);
+
+    // Sqlite does not support this 
+    if( getClientType(conn_info)=="sqlite3" ) return; 
 
     // Make sure the DB:s exist
     let conns: Knex[] = [];
