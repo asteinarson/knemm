@@ -1,6 +1,6 @@
 
 import { createDb, dropDb, existsDb, parseDbSpec } from '../logic';
-import { isDict, isString } from '../utils';
+import { findValueOf, isDict, isString } from '../utils';
 import { connect, disconnect, disconnectAll } from '../db-utils';
 
 import * as dotenv from 'dotenv'
@@ -66,15 +66,21 @@ test("DB: multi connect", async () => {
 
     // And use each connection 
     let qs: Knex.Raw[] = [];
+    //let qs: Knex.QueryBuilder[] = [];
     for (let ix = 1; ix < 4; ix++) {
-        let q = conns[ix].raw(`SELECT 1 + ${ix} AS sum`);
+        let q = conns[ix].raw(`SELECT 1 + ${ix} AS the_sum`);
+        //let q = conns[ix].select(`1 + ${ix}`).as("the_sum");
         qs.push(q);
     }
     let rr = await Promise.all(qs);
 
     // And close 
+    jestSetLogToFile("./log.log","log");
+    console.log("rr.length: ",rr.length);
     for (let ix = 0; ix<rr.length; ix++ ){
-        let _sum = rr[ix]?.rows?.[0]?.sum;
+        console.log("rr[ix]: ", JSON.stringify(rr[ix],null,2) );
+        //let _sum = rr[ix]?.rows?.[0]?.sum;
+        let _sum = findValueOf("the_sum",rr[ix]);
         expect(_sum).toBe(2+ix);
         await disconnect(conns[ix+1]);
     }
