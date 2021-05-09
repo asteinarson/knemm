@@ -267,8 +267,9 @@ function getDefaultDbVals() {
         password: process.env.DBPASSWORD || process.env.PASSWORD,
         database: process.env.DATABASE || process.env.DEFAULT_DATABASE,
         client: process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT || "pg",
-        useNullAsDefault: !!process.env.USE_NULL_AS_DEFAULT,
     };
+    if( process.env.USE_NULL_AS_DEFAULT ) 
+        default_vals.useNullAsDefault = true;
     return default_vals;
 }
 
