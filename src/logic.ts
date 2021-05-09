@@ -9,7 +9,7 @@ import {
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
 import { fileNameOf, isDir, pathOf, slurpFile } from "./file-utils";
-import { connect, connectCheck, disconnect, modifySchema, slurpSchema } from './db-utils'
+import { connect, connectCheck, disconnect, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { dump as yamlDump } from 'js-yaml';
@@ -261,12 +261,13 @@ export function parseDbSpec(db_spec: string): Dict<any> {
 
 function getDefaultDbVals() {
     // Default vals, or from env 
-    let default_vals: Dict<string | undefined> = {
-        host: process.env.HOST || "localhost",
-        user: process.env.USER,
-        password: process.env.PASSWORD,
+    let default_vals: Dict<string | undefined | boolean> = {
+        host: process.env.DBHOST || process.env.HOST || "localhost",
+        user: process.env.DBUSER || process.env.USER,
+        password: process.env.DBPASSWORD || process.env.PASSWORD,
         database: process.env.DATABASE || process.env.DEFAULT_DATABASE,
         client: process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT || "pg",
+        useNullAsDefault: !!process.env.USE_NULL_AS_DEFAULT,
     };
     return default_vals;
 }
@@ -372,7 +373,8 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
 
     // And then create it
     try {
-        let r = await knex_c.raw(`CREATE DATABASE "${db_name}"`);
+        let sql = "CREATE DATABASE " + quoteIdentifier(knex_c,db_name) + ";";
+        let r = await knex_c.raw(sql);
         // Then try to connect to it
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
@@ -437,7 +439,8 @@ export async function dropDb(db_spec: string | Dict<any>, db_name: string): Prom
         await disconnect(knex_c);
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
-        let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
+        let sql = "DROP DATABASE " + quoteIdentifier(knex_c,db_name) + ";";
+        let r = await knex_c.raw(sql);
         return conn_info;
     } catch (e) {
         return `dropDb - Failed executing DROP DATABASE: ${db_name}`;
