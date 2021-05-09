@@ -20,10 +20,8 @@ export async function connect(connection: Record<string, string>, client = "pg")
     if (knex_conns[key]) return knex_conns[key];
 
     try {
-        console.warn("connect - before - key: " + key);
         let knex_conn = knex(conn);
         if (knex_conn) {
-            console.warn("connect - after - key: " + key);
             knex_conns[key] = knex_conn;
             return knex_conn;
         }
@@ -48,6 +46,14 @@ export async function disconnect(knex_conn: Knex) {
     }
 }
 
+let re_extract_quoted = /from([^;]+);?/i;
+export function quoteIdentifier(knex_conn: Knex, what:string ) {
+    // This is roundabout, but I don't find direct way to do it in Knex
+    let sql = knex_conn.select("*").from(what).toString();
+    let md = sql.match(re_extract_quoted);
+    return md ? md[1] : ""; 
+}
+
 export async function disconnectAll() {
     for (let k in knex_conns) {
         await knex_conns[k].destroy();
@@ -64,7 +70,7 @@ export async function connectCheck(connection: Record<string, string>, client = 
         return knex_c;
     }
     catch (e) {
-        console.warn("connectCheck - exception - connection: " + JSON.stringify(connection) );
+        //console.warn("connectCheck - exception - connection: " + JSON.stringify(connection) );
         let brk = 0;
     }
 }
