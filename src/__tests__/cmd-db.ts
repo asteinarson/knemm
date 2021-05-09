@@ -17,6 +17,8 @@ test("DB: create, drop test", async () => {
     jestSetLogToFile("./error.log","error");
 
     let r: any;
+    //let ci = parseDbSpec(":");
+    //console.log("DB: create, dbSpec:", JSON.stringify(ci) );
 
     // Drop if exists 
     r = await existsDb(":", "jest_test");
@@ -43,7 +45,7 @@ test("DB: create, drop test", async () => {
 });
 
 test("DB: multi connect", async () => {
-    let conn_info = parseDbSpec("%");
+    let conn_info = parseDbSpec(":");
     expect(isDict(conn_info)).toBe(true);
 
     // Make sure the DB:s exist
