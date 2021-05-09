@@ -100,7 +100,7 @@ type LogWarnErrType = "log" | "warn" | "error";
 
 // Write console.log/warn/error to file
 // Under Jest 
-export function jestLogToFile(path: string, method: LogWarnErrType | LogWarnErrType[]) {
+export function jestSetLogToFile(path: string, method: LogWarnErrType | LogWarnErrType[]) {
     // See if path works 
     appendFileSync(path, "\n");
     if (!existsSync(path)) return;
