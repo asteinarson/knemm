@@ -362,10 +362,8 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
     let knex_c = await connectCheck(conn_info);
-    if (knex_c) {
-        //await disconnect(knex_c);
+    if (knex_c) 
         return `createDb - Database ${db_name} already exists`;
-    }
 
     // Remove the DB name - and retry 
     delete conn_info.connection.database;
@@ -376,13 +374,12 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
     try {
         let r = await knex_c.raw(`CREATE DATABASE "${db_name}"`);
         // Then try to connect to it
-        //await disconnect(knex_c);
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
         if (knex_c) return conn_info;
         return `createDb - Failed create DB: ${db_name}`;
     } catch (e) { 
-        console.warn("createDb - exception");
+        console.warn("createDb - exception: "+db_name);
         let x = 1;
     }
 
@@ -435,13 +432,15 @@ export async function dropDb(db_spec: string | Dict<any>, db_name: string): Prom
 
     // And drop the DB - need a new connection - w.o. specific DB for that 
     try {
-        //await disconnect(knex_c);
+        // Since we want to drop this DB, on a connection with no DB specified
+        // we must close it ion order to do so
+        await disconnect(knex_c);
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
         let r = await knex_c.raw(`DROP DATABASE "${db_name}"`);
         return conn_info;
     } catch (e) {
-        return `dropDb - Failed executing DROP DATABASE`;
+        return `dropDb - Failed executing DROP DATABASE: ${db_name}`;
     }
 }
 
