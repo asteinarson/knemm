@@ -55,8 +55,7 @@ test("cmd apply test - 1 ", async () => {
     }
     else{ 
         // Sort of console.log 
-        expect(db_conn).toBe(0);
-        expect(db).toBe(0);
-        expect(process.cwd()).toBe(0);
+        expect("isDict(db)").toBe(0);
     }
 });
+
