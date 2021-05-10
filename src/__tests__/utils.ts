@@ -7,7 +7,8 @@ import {
     append,
     dArrAt,
     objectMap,
-    findValueOf
+    findValueOf,
+    deepCopy
 } from '../utils';
 
 test("invert test", () => {
@@ -198,4 +199,12 @@ test("findValueOf test", () => {
     expect(findValueOf("x", o)).toBe(undefined);
     expect(findValueOf("c", o)).toBe(13);
     expect(findValueOf("pi_100", o)).toBe(314);
+});
+
+test("objectPrune", () => {
+    let o1 = { a: 14, n1: { c: 13, a: 11 }, arr:[9,{pi_100:314}] };
+    let o2 = deepCopy(o1);
+    expect(o1).toStrictEqual(o2);
+    (o2 as any).a = 15; 
+    expect(o1).not.toStrictEqual(o2);
 });
