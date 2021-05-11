@@ -16,6 +16,7 @@ function addClaimOptions(cmd: cmder.Command) {
     cmd.option("-p --path <paths...>", "Search path for input files and dependencies");
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
     cmd.option("-L --loose-names", "Allow loose naming of claim files (with version inside)");
+    cmd.option("-T --xti", "Read extra type info from this file (yaml/json)");
 }
 
 function addDbOption(cmd: cmder.Command) {

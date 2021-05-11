@@ -130,7 +130,7 @@ const default_type_vals: Dict<Dict<string | number>> = {
 }
 
 import schemaInspector from 'knex-schema-inspector';
-export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
+export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
     // Workaround for ESM import 
     let sI: any;

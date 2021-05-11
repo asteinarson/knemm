@@ -9,7 +9,7 @@ import { existsSync, rmSync, writeFileSync } from "fs";
 import * as path from "path";
 
 import cmder, { Command } from "commander";
-import { connectCheck } from './db-utils';
+import { connectCheck, slurpSchema } from './db-utils';
 export type CmdOptionAdder = (cmd: cmder.Command) => void;
 export type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
 
@@ -63,6 +63,12 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         // Trim paths 
         for (let ix in options.path)
             options.path[ix] = options.path[ix].trim();
+    }
+
+    if( options.xti ){
+        let xti = slurpFile(options.xti);
+        if( !xti ) return errorRv(`${cmd} - failed reading extra type info in: ${options.xti}`);
+        options.xti = xti;
     }
 
     switch (cmd) {
@@ -165,6 +171,13 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
     let cand = await toStateClaim(candidate, options);
     let tgt = await toStateClaim(target, options);
     let r: Dict<any> | string[];
+
+    if( options.xti ){
+        let xti = slurpFile(options.xti);
+        if( !xti ) return errorRv(`${cmd} - failed reading extra type info in: ${options.xti}`);
+        options.xti = xti;
+    }
+
     switch (cmd) {
         case "diff":
             r = matchDiff(cand.___tables, tgt.___tables);
