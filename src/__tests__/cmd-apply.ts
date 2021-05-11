@@ -34,7 +34,7 @@ test("cmd apply test - 1 ", async () => {
     expect(sd).toBe(state_dir);
 
     // The DB conn  
-    let db_conn = normalizeConnInfo("%");
+    let db_conn = normalizeConnInfo(":");
     db_conn.connection.database = "claim_ast";
     // Drop test DB if exists
     let r:any = await existsDb(db_conn);
