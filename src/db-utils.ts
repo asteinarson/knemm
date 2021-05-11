@@ -257,8 +257,9 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 for (let col in delta[t]) {
                     let setXtraTypeInfo = (val: Dict<any>) => {
                         xtra_type_info[t] ||= {};
+                        xtra_type_info[t][col] ||= {};
                         for( let k in val ){
-                            xtra_type_info[t][k] = val[k];
+                            xtra_type_info[t][col][k] = val[k];
                             // Keep track of number of changes in it 
                             xtra_type_info.___cnt++;
                         }
