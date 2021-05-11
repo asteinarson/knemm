@@ -247,9 +247,10 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
             let r = await conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
-                    let setXtraTypeInfo = (val: any) => {
+                    let setXtraTypeInfo = (val: Dict<any>) => {
                         xtra_type_info[t] ||= {};
-                        xtra_type_info[t][col] = val;
+                        for( let k in val )
+                            xtra_type_info[t][k] = val[k];
                     }
                 
                     let col_delta = delta[t][col];
