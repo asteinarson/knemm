@@ -164,14 +164,16 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
             // Do each column 
             let columns = await sI.columnInfo(tn);
             for (let c of columns) {
-                if (c.name && c.data_type) {
+                let c_name = c.name;
+                delete c.name;
+                if (c_name && c.data_type) {
                     // Simplifications 
                     let type = c.data_type;
                     // Do xti replacement ? 
-                    if( xti?.[tn]?.[c]?.expect_type==type ){
-                        type = xti[tn][c].report_type;
+                    if( xti?.[tn]?.[c_name]?.expect_type==type ){
+                        type = xti[tn][c_name].report_type;
                         if( !type ){
-                            console.warn(`slurpDb - XTI - no substitution type for: ${c}:${c.data_type} (keeping DB type)`);
+                            console.warn(`slurpDb - XTI - no substitution type for: ${c_name}:${c.data_type} (keeping DB type)`);
                             type = c.data_type;
                         }
                     }
@@ -214,8 +216,7 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                     }
                     // It is a child node, prune these too
                     delete c.table;
-                    t[c.name] = c;
-                    delete c.name;
+                    t[c_name] = c;
                 } else
                     console.warn("slurpSchema - column lacks name or datatype: ", c);
             }
