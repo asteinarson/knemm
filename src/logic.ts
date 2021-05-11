@@ -839,7 +839,7 @@ const re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)(\.[a-zA-Z_-]+)?$/;
 //   claim:abc_16
 //   cust_17.1
 //   cust_16.yaml
-const re_name_num_oext = /([^/^_^.]*)_(([\d]+ )(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
+const re_name_num_oext = /([^/^_^.]*)_(([\d]+)(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
 const re_name_oext = /([^/^_^.]*)(\.[a-zA-Z_-]+)?$/;
 const re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 
