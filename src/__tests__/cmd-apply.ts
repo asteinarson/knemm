@@ -5,7 +5,7 @@ import { join as pJoin } from 'path';
 import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
 
-import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, normalizeConnInfo, toState } from '../logic';
+import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, normalizeConnInfo, slurpXti, toState } from '../logic';
 import { connect, disconnectAll, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
@@ -52,7 +52,7 @@ test("cmd apply test - 1 ", async () => {
             r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
             expect(r).toBe(0);
             if( !r ){
-                let schema = await slurpSchema(await connect(db_conn));
+                let schema = await slurpSchema(await connect(db_conn), slurpXti(state_dir,db_conn) );
                 expect(isDict(schema)).toBeTruthy();
                 if( schema ){
                     expect(schema.person).toBeTruthy();

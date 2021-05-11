@@ -787,7 +787,7 @@ function getXtiFile(dir:string, db_conn: Knex | Dict<any>) {
     return xti_file;
 }
 
-function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
+export function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
     if( !dir || !db_conn ) return;
     let xti_file = getXtiFile(dir, db_conn);
     let r = slurpFile(xti_file, true, isDict);
