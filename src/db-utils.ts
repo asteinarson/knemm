@@ -111,8 +111,11 @@ const default_type_vals: Dict<Dict<string | number>> = {
     text: {
         max_length: 65535
     },
+    boolean: {
+        numeric_precision: "*"
+    },
     int: {
-        numeric_precision: 32
+        numeric_precision: "*"
     },
     bigint: {
         numeric_precision: "*"
@@ -122,10 +125,12 @@ const default_type_vals: Dict<Dict<string | number>> = {
         numeric_scale: 2
     },
     float: {
-        numeric_precision: "*"
+        numeric_precision: "*",
+        numeric_scale: "*"
     },
     double: {
-        numeric_precision: "*"
+        numeric_precision: "*",
+        numeric_scale: "*"
     }
 }
 
