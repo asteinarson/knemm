@@ -114,7 +114,7 @@ export let claim_apply_simple_types = {
             age_in_seconds: "bigint",
             income: "decimal", 
             date1: "date",
-            datetime1: "datetime",
+            //datetime1: "datetime",
             timestamp1: "timestamp",
         },
     }

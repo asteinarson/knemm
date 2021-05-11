@@ -99,7 +99,8 @@ const data_type_remap: Dict<string> = {
     "character varying": "varchar",
     "integer": "int",
     "real": "float",
-    "double precision": "double"
+    "double precision": "double",
+    "numeric": "decimal",
 }
 
 // Default values for types, which can be dropped in output 
@@ -217,7 +218,12 @@ let double_lut:Dict<string> = {
     pg: "DOUBLE PRECISION",
     mysql: "DOUBLE",
     sqlite3: "REAL"
-}
+};
+
+let no_datetime_lut:Dict<1> = {
+    pg: 1
+};
+
 
 // Apply schema changes on DB. 
 // It is assumed here that any changes passed in the 'tables' arg 
@@ -284,7 +290,12 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 column = table.time(col);
                                 break;
                             case "datetime":
-                                column = table.dateTime(col);
+                                // postgres create a timestamp here, and we have no way of knowing difference later 
+                                // maybe the app is OK w that ? But testing is not. 
+                                //if( !no_datetime_lut[client] )
+                                    column = table.dateTime(col);
+                                //else 
+                                //    console.warn(`modifySchema - Client type <${client}> does not support dateTime`);
                                 break;
                             case "timestamp":
                                 column = table.timestamp(col, { useTz: false });
