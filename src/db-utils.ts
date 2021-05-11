@@ -169,6 +169,11 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                 if (c_name && c.data_type) {
                     // Simplifications 
                     let type = c.data_type;
+                    // Rename some data type ?
+                    if (data_type_remap[type]) {
+                        c.data_type = data_type_remap[type];
+                        type = c.data_type;
+                    }
                     // Do xti replacement ? 
                     if( xti?.[tn]?.[c_name]?.expect_type==type ){
                         type = xti[tn][c_name].report_type;
@@ -176,11 +181,6 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                             console.warn(`slurpDb - XTI - no substitution type for: ${c_name}:${c.data_type} (keeping DB type)`);
                             type = c.data_type;
                         }
-                    }
-                    // Rename some data type ?
-                    if (data_type_remap[type]) {
-                        c.data_type = data_type_remap[type];
-                        type = c.data_type;
                     }
                     // Can drop some default value for datatype ? 
                     if (default_type_vals[type]) {
