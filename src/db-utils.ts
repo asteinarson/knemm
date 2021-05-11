@@ -98,6 +98,7 @@ const data_type_remap: Dict<string> = {
     "timestamp without time zone": "timestamp",
     "character varying": "varchar",
     "integer": "int",
+    "real": "float",
     "double precision": "double"
 }
 

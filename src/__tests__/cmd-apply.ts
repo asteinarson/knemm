@@ -6,7 +6,7 @@ import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
 
 import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, normalizeConnInfo, toState } from '../logic';
-import { disconnectAll } from '../db-utils';
+import { connect, disconnectAll, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
 import { claim_p1, claim_apply_simple_types as claim_ast } from './claims';
@@ -51,6 +51,17 @@ test("cmd apply test - 1 ", async () => {
             // And apply 
             r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
             expect(r).toBe(0);
+            if( !r ){
+                let schema = await slurpSchema(await connect(db_conn));
+                expect(isDict(schema)).toBeTruthy();
+                if( schema ){
+                    expect(schema.person).toBeTruthy();
+                    for( let col in claim_ast.___tables.person ){
+                        let v = (claim_ast.___tables.person as any)[col];
+                        expect(schema.person[col]?.data_type).toBe(v);
+                    }
+                }
+            }
         }
     }
     else{ 
