@@ -41,13 +41,13 @@ export let db_column_words: Dict<string | number> = {
 const numerics_w_smallint: Dict<number> = {
     smallint: 1, int: 1, bigint: 1,
     smallint_u: 1, int_u: 1, bigint_u: 1,
-    float: 1, real: 1,
+    float: 1, double: 1,
     decimal: 1, numeric: 1,
 };
 const numerics: Dict<number> = {
     int: 1, bigint: 1,
     int_u: 1, bigint_u: 1,
-    float: 1, real: 1,
+    float: 1, double: 1,
     decimal: 1, numeric: 1,
 };
 
@@ -78,16 +78,15 @@ export function getTypeGroup(type: string): "numeric" | "datetime" | "text" | "j
 const type_synonyms = {
     integer: "int",
     decimal: "numeric",
-    double: "float"
+    //double: "float"
 };
-
 
 let num_type_tree_loose: Dict<any> = {
     numeric: {
-        float: 1
+        double: 1
     },
-    float: {
-        real: 1,
+    double: {
+        float: 1,
         int: 1,
     },
     bigint: {
@@ -104,7 +103,7 @@ let num_type_tree_loose: Dict<any> = {
     int_u: {
         smallint_u: 1,
     },
-    real: {
+    float: {
         smallint: 1
     },
     smallint: {

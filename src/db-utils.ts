@@ -97,7 +97,8 @@ const data_type_remap: Dict<string> = {
     "timestamp with time zone": "timestamp_tz",
     "timestamp without time zone": "timestamp",
     "character varying": "varchar",
-    "integer": "int"
+    "integer": "int",
+    "double precision": "double"
 }
 
 // Default values for types, which can be dropped in output 
@@ -115,8 +116,11 @@ const default_type_vals: Dict<Dict<string | number>> = {
         numeric_precision: 8,
         numeric_scale: 2
     },
-    real: {
+    float: {
         numeric_precision: 24
+    },
+    double: {
+        numeric_precision: 53
     }
 }
 
@@ -208,6 +212,12 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     return r;
 }
 
+let double_lut:Dict<string> = {
+    pg: "DOUBLE PRECISION",
+    mysql: "DOUBLE",
+    sqlite3: "REAL"
+}
+
 // Apply schema changes on DB. 
 // It is assumed here that any changes passed in the 'tables' arg 
 // can be applied, i.e. that we have verified before that these are
@@ -215,6 +225,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
 export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
+    let client = getClientType(conn);
     for (let t in delta) {
         let t_delta = delta[t];
         if (t_delta !== "*NOT") {
@@ -252,10 +263,15 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 else
                                     column = table.bigInteger(col);
                                 break;
-                            case "real":
                             case "float":
-                                // !! size/precision/bytes not handled here! 
+                                // For now, assume Knex creates a 32 bit float on all DB:s with these
                                 column = table.float(col);
+                                break;
+                            case "double":
+                                // There are some variations between DB clients 
+                                let double_type = double_lut[client];
+                                double_type ||= "DOUBLE PRECISION";
+                                column = table.specificType(col,double_type);
                                 break;
                             case "decimal":
                                 column = table.decimal(col, col_delta.numeric_precision, col_delta.numeric_scale);

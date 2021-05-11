@@ -110,6 +110,7 @@ export let claim_apply_simple_types = {
             active: "boolean",
             age: "int",
             length: "float",
+            length_prec: "double",
             age_in_seconds: "bigint",
             income: "decimal", 
             date1: "date",
