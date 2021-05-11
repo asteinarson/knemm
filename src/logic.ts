@@ -18,6 +18,7 @@ import { formatInternal, formatHrCompact } from "./hrc";
 import { Knex } from 'knex';
 import { stringify } from 'node:querystring';
 import { builtinModules } from 'node:module';
+import { fstat } from 'node:fs';
 
 export type TableInfoOrErrors = Dict<any> | string[];
 
@@ -780,10 +781,17 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 }
 
 
-function getXtiFile(state:Dict<any>,db_conn:Knex|Dict<any>){
+function getXtiFile(state: Dict<any>, db_conn: Knex | Dict<any>) {
     let xti_file = path.join(pathOf(state.file), "___xti." + getClientType(db_conn) + ".yaml");
     return xti_file;
 }
+
+function slurpXti(state: Dict<any>, db_conn: Knex | Dict<any>): Dict<any> {
+    let xti_file = getXtiFile(state, db_conn);
+    let r = slurpFile(xti_file, true, isDict);
+    return r as any as Dict<any>;
+}
+
 
 export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string[]> {
     // Prepare
@@ -792,7 +800,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 
     let knex_c = await connect(db_conn);
     if (!knex_c) return ["syncDbWith - Failed connect"];
-    let xti = slurpFile(getXtiFile(state,db_conn),true,isDict ) as any as Dict<any>;
+    let xti = slurpXti(state, db_conn);
     let state_db = await slurpSchema(knex_c, xti, options.include, options.exclude);
     if (!state_db) return ["syncDbWith - Failed slurpSchema"];
 
@@ -803,7 +811,12 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 
     // So we have a minimal diff to apply one the DB 
     try {
-        let r = await modifySchema(knex_c, diff, state_db);
+        let ___cnt = xti?.___cnt;
+        let xti_new = await modifySchema(knex_c, diff, state_db, xti);
+        // If XTI was modified, rewrite this file 
+        // Should this really be done in storeState ?!
+        if (xti_new?.___cnt != ___cnt)
+            writeFileSync(getXtiFile(state, db_conn), yamlDump(xti_new));
     } catch (e) {
         return ["syncDbWith: exception in modifySchema", e.toString()];
     }

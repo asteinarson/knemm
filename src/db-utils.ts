@@ -171,7 +171,7 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                     if( xti?.[tn]?.[c]?.expect_type==type ){
                         type = xti[tn][c].report_type;
                         if( !type ){
-                            console.warn(`slurpDb - no substitution type for: ${c}:${c.data_type} (keeping DB type)`);
+                            console.warn(`slurpDb - XTI - no substitution type for: ${c}:${c.data_type} (keeping DB type)`);
                             type = c.data_type;
                         }
                     }
@@ -246,7 +246,7 @@ let no_datetime_lut: Dict<1> = {
 // be a change.
 export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>): Promise<Dict<any>> {
 
-    xtra_type_info ||= {};
+    xtra_type_info ||= { ___cnt: 0 };
 
     let client = getClientType(conn);
     for (let t in delta) {
@@ -257,8 +257,11 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 for (let col in delta[t]) {
                     let setXtraTypeInfo = (val: Dict<any>) => {
                         xtra_type_info[t] ||= {};
-                        for( let k in val )
+                        for( let k in val ){
                             xtra_type_info[t][k] = val[k];
+                            // Keep track of number of changes in it 
+                            xtra_type_info.___cnt++;
+                        }
                     }
                 
                     let col_delta = delta[t][col];
@@ -314,8 +317,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 column = table.time(col);
                                 break;
                             case "datetime":
-                                // postgres create a timestamp here, and we have no way of knowing difference later 
-                                // maybe the app is OK w that ? But testing is not. 
                                 column = table.dateTime(col);
                                 if (no_datetime_lut[client])
                                     setXtraTypeInfo( { report_type: "datetime", expect_type: "timestamp_tz" });
