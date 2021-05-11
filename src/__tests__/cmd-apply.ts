@@ -59,3 +59,6 @@ test("cmd apply test - 1 ", async () => {
     }
 });
 
+test("cmd apply test - 2 ", async () => {
+});
+
