@@ -175,7 +175,7 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
                     // Can drop some default value for datatype ? 
                     if (default_type_vals[type]) {
                         for (let [k, v] of Object.entries(default_type_vals[type])) {
-                            if (c[k] == v)
+                            if (c[k] == v || v=="*")
                                 delete c[k];
                         }
                     }
@@ -236,9 +236,9 @@ let no_datetime_lut: Dict<1> = {
 // valid changes that can be applied, without collisions. 
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
-export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
+export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>): Promise<Dict<any>> {
 
-    let xtra_type_info: Dict<any> = {};
+    xtra_type_info ||= {};
 
     let client = getClientType(conn);
     for (let t in delta) {
