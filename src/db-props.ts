@@ -19,7 +19,6 @@ export let db_type_args: Dict<number> = {
 export let db_types_with_args: Dict<1> = {
     varchar: 1, 
     decimal: 1, 
-    numeric: 1, 
 };
 
 // These are other props with (string?) args 
@@ -42,13 +41,13 @@ const numerics_w_smallint: Dict<number> = {
     smallint: 1, int: 1, bigint: 1,
     smallint_u: 1, int_u: 1, bigint_u: 1,
     float: 1, double: 1,
-    decimal: 1, numeric: 1,
+    decimal: 1, 
 };
 const numerics: Dict<number> = {
     int: 1, bigint: 1,
     int_u: 1, bigint_u: 1,
     float: 1, double: 1,
-    decimal: 1, numeric: 1,
+    decimal: 1, 
 };
 
 const strings: Dict<number> = { text: 1, varchar: 1 };
@@ -77,12 +76,12 @@ export function getTypeGroup(type: string): "numeric" | "datetime" | "text" | "j
 // In type comparisons, replace these before starting 
 const type_synonyms = {
     integer: "int",
-    decimal: "numeric",
+    //decimal: "numeric",
     //double: "float"
 };
 
 let num_type_tree_loose: Dict<any> = {
-    numeric: {
+    decimal: {
         double: 1
     },
     double: {

@@ -113,7 +113,7 @@ const default_type_vals: Dict<Dict<string | number>> = {
     bigint: {
         numeric_precision: 64
     },
-    numeric: {
+    decimal: {
         numeric_precision: 8,
         numeric_scale: 2
     },
