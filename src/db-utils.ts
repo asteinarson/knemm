@@ -42,11 +42,11 @@ export async function disconnect(knex_conn: Knex) {
 }
 
 let re_extract_quoted = /from([^;]+);?/i;
-export function quoteIdentifier(knex_conn: Knex, what:string ) {
+export function quoteIdentifier(knex_conn: Knex, what: string) {
     // This is roundabout, but I don't find direct way to do it in Knex
     let sql = knex_conn.select("*").from(what).toString();
     let md = sql.match(re_extract_quoted);
-    return md ? md[1] : ""; 
+    return md ? md[1] : "";
 }
 
 export async function disconnectAll() {
@@ -71,16 +71,16 @@ export async function connectCheck(connection: Record<string, string>) {
 }
 
 let re_client = /([\w]+)|/;
-export function getClientType(ci: Record<string, string> | Knex ){
-    for( let k in knex_conns ){
-        let conn = knex_conns[k]; 
-        if( conn==ci ){
+export function getClientType(ci: Record<string, string> | Knex) {
+    for (let k in knex_conns) {
+        let conn = knex_conns[k];
+        if (conn == ci) {
             // Client type is the first part of the key
             let md = k.match(re_client);
             return md?.[1];
         }
     }
-    if( isDict(ci) && ci.client ){
+    if (isDict(ci) && ci.client) {
         return ci.client;
     }
 }
@@ -108,21 +108,24 @@ const default_type_vals: Dict<Dict<string | number>> = {
     varchar: {
         max_length: 255
     },
+    text: {
+        max_length: 65535
+    },
     int: {
         numeric_precision: 32
     },
     bigint: {
-        numeric_precision: 64
+        numeric_precision: "*"
     },
     decimal: {
         numeric_precision: 8,
         numeric_scale: 2
     },
     float: {
-        numeric_precision: 24
+        numeric_precision: "*"
     },
     double: {
-        numeric_precision: 53
+        numeric_precision: "*"
     }
 }
 
@@ -214,15 +217,17 @@ export async function slurpSchema(conn: Knex, includes?: (string | RegExp)[], ex
     return r;
 }
 
-let double_lut:Dict<string> = {
+let double_lut: Dict<string> = {
     pg: "DOUBLE PRECISION",
     mysql: "DOUBLE",
     sqlite3: "REAL"
 };
 
-let no_datetime_lut:Dict<1> = {
+let no_datetime_lut: Dict<1> = {
     pg: 1
 };
+
+
 
 
 // Apply schema changes on DB. 
@@ -232,6 +237,9 @@ let no_datetime_lut:Dict<1> = {
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
 export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>) {
+
+    let xtra_type_info: Dict<any> = {};
+
     let client = getClientType(conn);
     for (let t in delta) {
         let t_delta = delta[t];
@@ -239,6 +247,11 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
             let r = await conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
+                    let setXtraTypeInfo = (val: any) => {
+                        xtra_type_info[t] ||= {};
+                        xtra_type_info[t][col] = val;
+                    }
+                
                     let col_delta = delta[t][col];
                     if (col_delta != "*NOT") {
                         const is_new_column = !state[t]?.[col];
@@ -250,6 +263,8 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             case "boolean":
                             case "bool":
                                 column = table.boolean(col);
+                                if (client == "mysql")
+                                    setXtraTypeInfo( { report_type: "boolean", expect_type: "tinyint" });
                                 break;
                             case "text":
                                 column = table.text(col);
@@ -278,7 +293,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 // There are some variations between DB clients 
                                 let double_type = double_lut[client];
                                 double_type ||= "DOUBLE PRECISION";
-                                column = table.specificType(col,double_type);
+                                column = table.specificType(col, double_type);
                                 break;
                             case "decimal":
                                 column = table.decimal(col, col_delta.numeric_precision, col_delta.numeric_scale);
@@ -292,10 +307,9 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             case "datetime":
                                 // postgres create a timestamp here, and we have no way of knowing difference later 
                                 // maybe the app is OK w that ? But testing is not. 
-                                //if( !no_datetime_lut[client] )
-                                    column = table.dateTime(col);
-                                //else 
-                                //    console.warn(`modifySchema - Client type <${client}> does not support dateTime`);
+                                column = table.dateTime(col);
+                                if (no_datetime_lut[client])
+                                    setXtraTypeInfo( { report_type: "datetime", expect_type: "timestamp_tz" });
                                 break;
                             case "timestamp":
                                 column = table.timestamp(col, { useTz: false });
@@ -354,13 +368,16 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         }
                     } else {
                         table.dropColumn(col);
+                        delete xtra_type_info[t][col];
                     }
                 }
             });
         }
         else {
             let r = await conn.schema.dropTable(t);
+            delete xtra_type_info[t];
         }
     }
+    return xtra_type_info;
 }
 
