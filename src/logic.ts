@@ -542,7 +542,7 @@ export function normalizeClaim(
     }
     else {
         let r_id = safeClaimId(r.id);
-        if (r_id.branch != id.branch || r_id.version != id.version) {
+        if (id && (r_id.branch != id.branch || r_id.version != id.version)) {
             let msg = `normalizeClaim: ID declared in claim <${r.id.branch}:${r.id.version}> does not match that in filename: `;
             if (!allow_loose)
                 return errorRv(msg);
@@ -781,13 +781,15 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 }
 
 
-function getXtiFile(state: Dict<any>, db_conn: Knex | Dict<any>) {
-    let xti_file = path.join(pathOf(state.file), "___xti." + getClientType(db_conn) + ".yaml");
+function getXtiFile(dir:string, db_conn: Knex | Dict<any>) {
+    if( !dir || !db_conn ) return;
+    let xti_file = path.join(dir, "___xti." + getClientType(db_conn) + ".yaml");
     return xti_file;
 }
 
-function slurpXti(state: Dict<any>, db_conn: Knex | Dict<any>): Dict<any> {
-    let xti_file = getXtiFile(state, db_conn);
+function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
+    if( !dir || !db_conn ) return;
+    let xti_file = getXtiFile(dir, db_conn);
     let r = slurpFile(xti_file, true, isDict);
     return r as any as Dict<any>;
 }
@@ -800,7 +802,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 
     let knex_c = await connect(db_conn);
     if (!knex_c) return ["syncDbWith - Failed connect"];
-    let xti = slurpXti(state, db_conn);
+    let xti = slurpXti(options.state, db_conn);
     let state_db = await slurpSchema(knex_c, xti, options.include, options.exclude);
     if (!state_db) return ["syncDbWith - Failed slurpSchema"];
 
@@ -816,7 +818,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
         // If XTI was modified, rewrite this file 
         // Should this really be done in storeState ?!
         if (xti_new?.___cnt != ___cnt)
-            writeFileSync(getXtiFile(state, db_conn), yamlDump(xti_new));
+            writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
     } catch (e) {
         return ["syncDbWith: exception in modifySchema", e.toString()];
     }
