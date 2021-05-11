@@ -108,6 +108,13 @@ const default_type_vals: Dict<Dict<string | number>> = {
     int: {
         numeric_precision: 32
     },
+    bigint: {
+        numeric_precision: 64
+    },
+    numeric: {
+        numeric_precision: 8,
+        numeric_scale: 2
+    },
     real: {
         numeric_precision: 24
     }
