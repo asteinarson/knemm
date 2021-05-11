@@ -3,7 +3,8 @@ import { existsSync, readFileSync, lstatSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
 import { Dict } from './utils';
 
-export function slurpFile(file: string, quiet?: boolean): string | number | any[] | Record<string, any> {
+export function slurpFile(file: string, quiet?: boolean,
+    validator?: (r: any) => boolean): string | number | any[] | Record<string, any> {
     if (existsSync(file)) {
         let s = readFileSync(file);
         let ejs = file.slice(-5);
@@ -18,7 +19,10 @@ export function slurpFile(file: string, quiet?: boolean): string | number | any[
             let r = JSON.parse(s.toString());
             if (r) return r;
             r = yamlLoad(s.toString());
-            if (r) return r;
+            if (r) {
+                if (!validator || validator(r))
+                    return r;
+            }
         } catch (e) {
             if (!quiet)
                 console.log(`slurpFile ${file}, exception: ${e.toString()}`);

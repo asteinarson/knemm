@@ -9,7 +9,7 @@ import {
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
 import { fileNameOf, isDir, pathOf, slurpFile } from "./file-utils";
-import { connect, connectCheck, disconnect, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
+import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { dump as yamlDump } from 'js-yaml';
@@ -238,23 +238,23 @@ export function parseDbSpec(db_spec: string): Dict<any> {
         host: md_host[2],
     }
     //console.log(spec_vals,"spec_vals");
-    
+
     // And these come from connection file, if any 
-    
+
     // Order of use is:
     // 1 - db_spec string
     // 2 - db_file
     // 3 - default_keys 
     let md_file = db_spec.match(re_file) || [];
     let db_file = md_file[2];
-    let r = md_file[1] ? parseDbFile(db_file,true) : getDefaultDbVals();
+    let r = md_file[1] ? parseDbFile(db_file, true) : getDefaultDbVals();
     if (!r) return;
     //console.log(r,"after_file vals");
-    
+
     objectPrune(spec_vals, e => !e);
     //console.log(spec_vals,"spec_vals");
     r = { ...r, ...spec_vals };
-    
+
     //console.log(r,"...");
     return normalizeConnInfo(r);
 }
@@ -268,12 +268,12 @@ function getDefaultDbVals() {
         database: process.env.DATABASE || process.env.DEFAULT_DATABASE,
         client: process.env.DBCLIENT || process.env.DEFAULT_DBCLIENT || "pg",
     };
-    if( process.env.USE_NULL_AS_DEFAULT ) 
+    if (process.env.USE_NULL_AS_DEFAULT)
         default_vals.useNullAsDefault = true;
     return default_vals;
 }
 
-export function parseDbFile(db_file: string, flat?:boolean): Dict<any> {
+export function parseDbFile(db_file: string, flat?: boolean): Dict<any> {
     // Extract out DB connection info from <db_spec> string 
 
     // And these come from connection file, if any 
@@ -288,13 +288,13 @@ export function parseDbFile(db_file: string, flat?:boolean): Dict<any> {
     objectPrune(file_vals, e => !e);
     r = { ...r, ...file_vals };
 
-    if( !flat ) return normalizeConnInfo(r);
+    if (!flat) return normalizeConnInfo(r);
     else {
         // Flatten out, for now 
-        if( r.connection ){
+        if (r.connection) {
             let rc = r.connection as any as Dict<any>;
             r = { ...r, ...rc };
-            delete r.connection; 
+            delete r.connection;
         }
         return r;
     }
@@ -321,11 +321,11 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
     }
 
     // We modify conn_info below. Do not affect incoming object.
-    if( conn_info==db_file ) conn_info = deepCopy(conn_info);
+    if (conn_info == db_file) conn_info = deepCopy(conn_info);
 
     if (conn_info.client == "sqlite3")
         return existsDbSqlite(conn_info, db_name);
-    
+
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
     let r = await connectCheck(conn_info);
@@ -355,16 +355,16 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
     }
 
     // We modify conn_info below. Do not affect incoming object.
-    if( conn_info==db ) conn_info = deepCopy(conn_info);
+    if (conn_info == db) conn_info = deepCopy(conn_info);
 
     // Try connecting to the given DB - should fail
     if (conn_info.client == "sqlite3")
         return createDbSqlite(conn_info, db_name);
-    
+
     // Try to connect to the DB - with named DB - should fail 
     conn_info.connection.database = db_name;
     let knex_c = await connectCheck(conn_info);
-    if (knex_c) 
+    if (knex_c)
         return `createDb - Database ${db_name} already exists`;
 
     // Remove the DB name - and retry 
@@ -374,15 +374,15 @@ export async function createDb(db: string | Dict<any>, db_name?: string): Promis
 
     // And then create it
     try {
-        let sql = "CREATE DATABASE " + quoteIdentifier(knex_c,db_name) + ";";
+        let sql = "CREATE DATABASE " + quoteIdentifier(knex_c, db_name) + ";";
         let r = await knex_c.raw(sql);
         // Then try to connect to it
         conn_info.connection.database = db_name;
         knex_c = await connectCheck(conn_info);
         if (knex_c) return conn_info;
         return `createDb - Failed create DB: ${db_name}`;
-    } catch (e) { 
-        console.warn("createDb - exception: "+db_name);
+    } catch (e) {
+        console.warn("createDb - exception: " + db_name);
         let x = 1;
     }
 
@@ -423,7 +423,7 @@ export async function dropDb(db_spec: string | Dict<any>, db_name: string): Prom
     if (!db_name) return "dropDb - explicit DB name required to drop ";
 
     // We modify conn_info below. Do not affect incoming object.
-    if( conn_info==db_spec ) conn_info = deepCopy(conn_info);
+    if (conn_info == db_spec) conn_info = deepCopy(conn_info);
 
     if (conn_info.client == "sqlite3")
         return dropDbSqlite(conn_info, db_name);
@@ -440,7 +440,7 @@ export async function dropDb(db_spec: string | Dict<any>, db_name: string): Prom
         await disconnect(knex_c);
         delete conn_info.connection.database;
         knex_c = await connectCheck(conn_info);
-        let sql = "DROP DATABASE " + quoteIdentifier(knex_c,db_name) + ";";
+        let sql = "DROP DATABASE " + quoteIdentifier(knex_c, db_name) + ";";
         let r = await knex_c.raw(sql);
         return conn_info;
     } catch (e) {
@@ -595,7 +595,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     if (isDbScpec(file_or_db)) {
         let knex_c = await dbSpecToKnex(file_or_db);
         if (!knex_c) return errorRv("toStateClaim - Could not connect to DB");
-        let rs = await slurpSchema(knex_c);
+        let rs = await slurpSchema(knex_c, options.xti, options.include, options.exclude);
         if (rs) {
             // Keep the connection object here - it allows later knowing it is attached to a DB
             r = {
@@ -779,6 +779,12 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
     return errors.length ? errors : r;
 }
 
+
+function getXtiFile(state:Dict<any>,db_conn:Knex|Dict<any>){
+    let xti_file = path.join(pathOf(state.file), "___xti." + getClientType(db_conn) + ".yaml");
+    return xti_file;
+}
+
 export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string[]> {
     // Prepare
     db_conn = normalizeConnInfo(db_conn);
@@ -786,7 +792,8 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 
     let knex_c = await connect(db_conn);
     if (!knex_c) return ["syncDbWith - Failed connect"];
-    let state_db = await slurpSchema(knex_c, options.includes, options.excludes);
+    let xti = slurpFile(getXtiFile(state,db_conn),true,isDict ) as any as Dict<any>;
+    let state_db = await slurpSchema(knex_c, xti, options.include, options.exclude);
     if (!state_db) return ["syncDbWith - Failed slurpSchema"];
 
     // Do the diff 
@@ -817,7 +824,7 @@ const re_name_num_ext = /^([^/]+\/)*(.*)\.([\d]+)(\.[a-zA-Z_-]+)?$/;
 //   claim:abc_16
 //   cust_17.1
 //   cust_16.yaml
-const re_name_num_oext = /([^/^_^.]*)_(([\d]+)(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
+const re_name_num_oext = /([^/^_^.]*)_(([\d]+ )(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
 const re_name_oext = /([^/^_^.]*)(\.[a-zA-Z_-]+)?$/;
 const re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 

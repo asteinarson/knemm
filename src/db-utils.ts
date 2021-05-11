@@ -167,6 +167,14 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                 if (c.name && c.data_type) {
                     // Simplifications 
                     let type = c.data_type;
+                    // Do xti replacement ? 
+                    if( xti?.[tn]?.[c]?.expect_type==type ){
+                        type = xti[tn][c].report_type;
+                        if( !type ){
+                            console.warn(`slurpDb - no substitution type for: ${c}:${c.data_type} (keeping DB type)`);
+                            type = c.data_type;
+                        }
+                    }
                     // Rename some data type ?
                     if (data_type_remap[type]) {
                         c.data_type = data_type_remap[type];
@@ -209,7 +217,7 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                     t[c.name] = c;
                     delete c.name;
                 } else
-                    console.log("slurpSchema - column lacks name or datatype: ", c);
+                    console.warn("slurpSchema - column lacks name or datatype: ", c);
             }
         }
     }
