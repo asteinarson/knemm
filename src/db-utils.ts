@@ -171,8 +171,7 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                     let type = c.data_type;
                     // Rename some data type ?
                     if (data_type_remap[type]) {
-                        c.data_type = data_type_remap[type];
-                        type = c.data_type;
+                        type = data_type_remap[type];
                     }
                     // Do xti replacement ? 
                     if( xti?.[tn]?.[c_name]?.expect_type==type ){
@@ -182,6 +181,8 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                             type = c.data_type;
                         }
                     }
+                    c.data_type = type;    // If mapped above
+
                     // Can drop some default value for datatype ? 
                     if (default_type_vals[type]) {
                         for (let [k, v] of Object.entries(default_type_vals[type])) {
