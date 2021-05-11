@@ -182,7 +182,7 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
     }
 
     if (!conn_info.connection) {
-        let connection = ["host", "user", "password", "database"].reduce<Dict<any>>((r, v) => {
+        let connection = ["host", "user", "password", "database", "filename"].reduce<Dict<any>>((r, v) => {
             if (conn_info[v]) {
                 r[v] = conn_info[v];
                 delete conn_info[v];
@@ -202,6 +202,16 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
         }
         conn_info.client = client;
     }
+
+    // This is a way to point Sqlite at a DB file, if we don't have it yet
+    if( conn_info.client=="sqlite3" && !conn_info.connection.filename ){
+        let db_name = conn_info.connection.database;
+        if( db_name ){
+            let fn = sqliteDbToFilename(db_name);
+            if(fn) conn_info.connection.filename = fn;
+        }
+    }
+
     return conn_info;
 }
 
@@ -334,17 +344,20 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
     if (r) return true;
 }
 
+function sqliteDbToFilename(db_name:string){
+    for (let fn of [db_name, db_name + ".sqlite"]) {
+        if (existsSync(fn)) {
+            return fn;
+        }
+    }
+}
+
 function existsDbSqlite(conn_info: Dict<any>, db_name?: string) {
     if (!db_name) db_name = conn_info?.connection?.database;
     if (!db_name) return;
-
-    for (let fn of [db_name, db_name + ".sqlite"]) {
-        if (existsSync(fn)) {
-            // We do not do a connectCheck here - 
-            // as it would create the DB.
-            return true;
-        }
-    }
+    // We do not do a connectCheck here - 
+    // as it would create the DB.
+    return sqliteDbToFilename(db_name)!=undefined;
 }
 
 export async function createDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
