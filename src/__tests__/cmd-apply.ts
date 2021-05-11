@@ -46,13 +46,13 @@ test("cmd apply test - 1 ", async () => {
     let db = await createDb(db_conn);
     if( isDict(db) ){
         // Connect it 
-        let r:any = await connectState(state_dir,db_conn,options);
+        let r:any = await connectState(state_dir,db,options);
         if( r== true ){
             // And apply 
             r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
             expect(r).toBe(0);
             if( !r ){
-                let schema = await slurpSchema(await connect(db_conn), slurpXti(state_dir,db_conn) );
+                let schema = await slurpSchema(await connect(db), slurpXti(state_dir,db) );
                 expect(isDict(schema)).toBeTruthy();
                 if( schema ){
                     expect(schema.person).toBeTruthy();
