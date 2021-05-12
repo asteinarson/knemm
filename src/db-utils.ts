@@ -98,10 +98,21 @@ const data_type_remap: Dict<string> = {
     "timestamp without time zone": "timestamp",
     "character varying": "varchar",
     "integer": "int",
-    "real": "float",
     "double precision": "double",
     "numeric": "decimal",
 }
+
+// Some datatypes reported by KnexSchemaInspector mean different things,
+// for different clients 
+const data_type_remap_by_client: Dict<Dict<string>> = {
+    pg: {
+        real: "float",
+    },
+    sqlite3: {
+        real: "double",
+    }
+}
+
 
 // Default values for types, which can be dropped in output 
 const default_type_vals: Dict<Dict<string | number>> = {
@@ -135,7 +146,7 @@ const default_type_vals: Dict<Dict<string | number>> = {
 }
 
 import schemaInspector from 'knex-schema-inspector';
-export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
+export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
     // Workaround for ESM import 
     let sI: any;
@@ -153,6 +164,8 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
     // Do each table
     let r: Record<string, any> = {};
     let tables = await sI.tables();
+    let client = getClientType(conn);
+    let client_type_remap = data_type_remap_by_client[client] || {};
     for (let tn of tables) {
         let do_exclude = false;
         for (let e of excludes) {
@@ -174,24 +187,31 @@ export async function slurpSchema(conn: Knex, xti?:Dict<any>, includes?: (string
                 if (c_name && c.data_type) {
                     // Simplifications 
                     let type = c.data_type;
-                    // Rename some data type ?
-                    if (data_type_remap[type]) {
+                    // Map data type ?
+                    // Priority to client specific, then general
+                    if (client_type_remap[type])
+                        type = client_type_remap[type]
+                    else if (data_type_remap[type]) {
                         type = data_type_remap[type];
                     }
+                    c.data_type = type;    // If mapped above
+
                     // Do xti replacement ? 
-                    if( xti?.[tn]?.[c_name]?.expect_type==type ){
-                        type = xti[tn][c_name].report_type;
-                        if( !type ){
-                            console.warn(`slurpDb - XTI - no substitution type for: ${c_name}:${c.data_type} (keeping DB type)`);
-                            type = c.data_type;
+                    let xti_c = xti?.[tn]?.[c_name];
+                    if (xti_c?.expect_type == type) {
+                        // Add in column properties reported in XTI
+                        for( let k in xti_c ){
+                            if( k=="expect_type" ) continue;
+                            c[k] = xti_c[k];
+                            // Update local var
+                            if( k=="data_type" ) type = c[k];
                         }
                     }
-                    c.data_type = type;    // If mapped above
 
                     // Can drop some default value for datatype ? 
                     if (default_type_vals[type]) {
                         for (let [k, v] of Object.entries(default_type_vals[type])) {
-                            if (c[k] == v || v=="*")
+                            if (c[k] == v || v == "*")
                                 delete c[k];
                         }
                     }
@@ -242,6 +262,21 @@ let no_datetime_lut: Dict<1> = {
     pg: 1
 };
 
+let xti_lut: Dict<Dict<string | Dict<string>>> = {
+    mysql: {
+        boolean: {
+            expect_type: "tinyint"
+        }
+    },
+    pg: { datetime: "timestamp_tz" },
+    sqlite3: {
+        decimal: {
+            expect_type: "real",
+            numeric_precision: "",
+            numeric_scale: "",
+        }
+    },
+};
 
 
 
@@ -262,17 +297,30 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
             let r = await conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
-                    let setXtraTypeInfo = (val: Dict<any>) => {
+                    let col_delta = delta[t][col];
+                    let setXtraTypeInfo = (data_type: string, xti: string | Dict<any>) => {
                         xtra_type_info[t] ||= {};
-                        xtra_type_info[t][col] ||= {};
-                        for( let k in val ){
-                            xtra_type_info[t][col][k] = val[k];
-                            // Keep track of number of changes in it 
+                        let xti_r = (xtra_type_info[t][col] ||= { data_type });
+                        if (isDict(xti)) {
+                            // Long form, multiple properties are put in XTI
+                            for (let k in xti) {
+                                let v = xti[k];
+                                // * means store from whatever comes from the diff/claim
+                                if (v == "*") v = col_delta[k];
+                                if (v) {
+                                    xti_r[k] = v;
+                                    // Keep track of number of changes in it 
+                                    xtra_type_info.___cnt++;
+                                }
+                            }
+                        }
+                        else {
+                            // Just the expect_type is put in XTI
+                            xti_r.expect_type = xti;
                             xtra_type_info.___cnt++;
                         }
                     }
-                
-                    let col_delta = delta[t][col];
+
                     if (col_delta != "*NOT") {
                         const is_new_column = !state[t]?.[col];
                         let col_base: Dict<any> = is_new_column ? {} : state[t][col];
@@ -283,8 +331,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             case "boolean":
                             case "bool":
                                 column = table.boolean(col);
-                                if (client == "mysql")
-                                    setXtraTypeInfo( { report_type: "boolean", expect_type: "tinyint" });
                                 break;
                             case "text":
                                 column = table.text(col);
@@ -326,8 +372,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 break;
                             case "datetime":
                                 column = table.dateTime(col);
-                                if (no_datetime_lut[client])
-                                    setXtraTypeInfo( { report_type: "datetime", expect_type: "timestamp_tz" });
                                 break;
                             case "timestamp":
                                 column = table.timestamp(col, { useTz: false });
@@ -348,6 +392,11 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 console.warn(`modifySchema - unhandled datatype - ${col}:${col_delta.data_type}`);
                         }
                         if (column) {
+                            // If client does not fully support type, store in XTI 
+                            let xti = xti_lut[client]?.[data_type];
+                            if (xti)
+                                setXtraTypeInfo(data_type, xti);
+
                             if (!is_new_column) column.alter();
                             // Add other properties 
                             if (col_delta.is_primary_key != undefined) {
