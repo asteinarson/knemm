@@ -5,7 +5,7 @@ import { join as pJoin } from 'path';
 import { dump as yamlDump } from 'js-yaml';
 import { load as yamlLoad } from 'js-yaml';
 
-import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, normalizeConnInfo, slurpXti, toState } from '../logic';
+import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, normalizeConnInfo, reformatTopLevel, slurpXti, toState } from '../logic';
 import { connect, disconnectAll, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
@@ -56,9 +56,11 @@ test("cmd apply test - 1 ", async () => {
                 expect(isDict(schema)).toBeTruthy();
                 if( schema ){
                     expect(schema.person).toBeTruthy();
+                    // Must transform claim_ast to internal before testing 
+                    reformatTopLevel(claim_ast);
                     for( let col in claim_ast.___tables.person ){
                         let v = (claim_ast.___tables.person as any)[col];
-                        expect(schema.person[col]?.data_type).toBe(v);
+                        expect(schema.person[col]?.data_type).toBe(v.data_type);
                     }
                 }
             }
