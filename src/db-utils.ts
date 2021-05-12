@@ -264,17 +264,16 @@ let no_datetime_lut: Dict<1> = {
 
 let xti_lut: Dict<Dict<string | Dict<string>>> = {
     mysql: {
-        boolean: {
-            expect_type: "tinyint"
-        }
+        boolean:  "tinyint",
     },
     pg: { datetime: "timestamp_tz" },
     sqlite3: {
         decimal: {
-            expect_type: "real",
+            expect_type: "float",
             numeric_precision: "",
             numeric_scale: "",
-        }
+        },
+        timestamp: "datetime",
     },
 };
 
@@ -305,8 +304,8 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             // Long form, multiple properties are put in XTI
                             for (let k in xti) {
                                 let v = xti[k];
-                                // * means store from whatever comes from the diff/claim
-                                if (v == "*") v = col_delta[k];
+                                // "" means store from whatever comes from the diff/claim
+                                if (v == "") v = col_delta[k];
                                 if (v) {
                                     xti_r[k] = v;
                                     // Keep track of number of changes in it 
