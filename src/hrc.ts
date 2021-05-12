@@ -63,7 +63,7 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
                         type = md[1];
                         if (isNumeric(type)) {
                             col.numeric_precision = Number(md[2]);
-                            if (md[3]) col.numeric_scale = Number(md[3]);
+                            if (md[4]) col.numeric_scale = Number(md[4]);
                         }
                         else if (isString(type))
                             col.max_length = Number(md[2]);
