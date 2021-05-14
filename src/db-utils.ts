@@ -285,7 +285,7 @@ let xti_lut: Dict<Dict<string | Dict<string>>> = {
 // valid changes that can be applied, without collisions. 
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
-export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>): Promise<Dict<any>> {
+export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?:boolean): Promise<Dict<any>|string> {
 
     xtra_type_info ||= { ___cnt: 0 };
 
@@ -294,7 +294,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
         let t_delta = delta[t];
         if (t_delta !== "*NOT") {
             //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
-            let r = await conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
+            let qb = conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
                     let col_delta = delta[t][col];
                     let setXtraTypeInfo = (data_type: string, xti: string | Dict<any>) => {
@@ -438,6 +438,8 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
+            let r = await qb;
+            if( to_sql ) return qb.toString();
         }
         else {
             let r = await conn.schema.dropTable(t);
