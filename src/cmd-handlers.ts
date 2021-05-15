@@ -5,7 +5,7 @@ import {
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
 import { getDirsFromFileList, slurpFile } from "./file-utils";
-import { existsSync, rmSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as path from "path";
 
 import cmder, { Command } from "commander";
@@ -74,6 +74,9 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
     switch (cmd) {
         case "join":
             {
+                let s_in = readFileSync(0);
+                console.log("s_in:",s_in);
+                if( s_in ) process.exit(0);
                 let state_base: Dict<any>;
                 if (state_dir) state_base = toState(state_dir, true);
                 let file_dicts: Dict<Dict<any>> = {};
