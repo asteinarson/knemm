@@ -830,7 +830,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
         let xti_new = await modifySchema(knex_c, diff, state_db, xti);
         // If XTI was modified, rewrite this file 
         // Should this really be done in storeState ?!
-        if (xti_new?.___cnt != ___cnt)
+        if(isDict(xti_new) && xti_new?.___cnt != ___cnt)
             writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
     } catch (e) {
         return ["syncDbWith: exception in modifySchema", e.toString()];
