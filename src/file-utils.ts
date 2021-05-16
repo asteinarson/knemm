@@ -75,3 +75,12 @@ export function isFile(path: string) {
         let x = 1;
     }
 }
+
+let std_inputs: Record<number, string> = {};
+export function getStoreStdin(fd?: number) {
+    if (!fd) fd = 0;
+    if (std_inputs[fd] == undefined)
+        std_inputs[fd] = readFileSync(fd).toString();
+    return std_inputs[fd];
+}
+

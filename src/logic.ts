@@ -8,7 +8,7 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { fileNameOf, isDir, pathOf, slurpFile } from "./file-utils";
+import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
@@ -64,13 +64,23 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
 
     // Copy input files here     
     for (let f of files || []) {
-        let fn = fileNameOf(f);
-        if (fn) {
-            let tgt_name = path.join(dir, fn);
-            copyFileSync(f, tgt_name);
-            if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
+        let tgt_name: string;
+        if (f != "-") {
+            let fn = fileNameOf(f);
+            if (fn) {
+                tgt_name = path.join(dir, fn);
+                copyFileSync(f, tgt_name);
+            }
+            else console.warn("storeState - failed extract filename from: " + f);
+        } else {
+            // We allow multiple stdin to be fed to this state 
+            let version = state.modules?.STDIN || 0;
+            version++;
+            state.modules.STDIN = version;
+            tgt_name = path.join(dir, "STDIN_" + version);
+            writeFileSync(tgt_name, getStoreStdin());
         }
-        else console.warn("storeState - failed extract filename from: " + f);
+        if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
     }
 
     // And write the new state
@@ -622,7 +632,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     }
     else if (file_or_db == "-") {
         // stdin - as a claim 
-        let s_in = readFileSync(0).toString();
+        let s_in = getStoreStdin();
         if (!s_in) return errorRv(`toStateClaim - File not found: ${file_or_db}`);
         // Undefined if YAML / JSON, try both 
         try {
@@ -878,7 +888,7 @@ type ClaimId = { branch: string, version: number };
 
 function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     // Special case for STDIN
-    if( name=="-" ) return { branch: "STDIN", version: 1 };
+    if (name == "-") return { branch: "STDIN", version: 1 };
 
     // Name plus version ? 
     let md = name.match(re_name_num_oext);
