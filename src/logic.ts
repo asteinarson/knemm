@@ -43,10 +43,9 @@ export function getStateDir(options: any) {
 
 export function storeState(state: Dict<any>, files?: string[], state_loc?: string, options?: Dict<any>) {
     // Have somewhere to store state ? 
-    if (!state.file && !state_loc)
-        return errorRv("storeState - No storage path/location provided ");
-
     let dir = state_loc || state.file;
+    if (!dir) return errorRv("storeState - No storage path/location provided ");
+
     let state_file: string;
     if (dir.slice(5) == ".yaml") {
         state_file = dir;
@@ -880,7 +879,7 @@ type ClaimId = { branch: string, version: number };
 function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     // Special case for STDIN
     if( name=="-" ) return { branch: "STDIN", version: 1 };
-    
+
     // Name plus version ? 
     let md = name.match(re_name_num_oext);
     if (md)
