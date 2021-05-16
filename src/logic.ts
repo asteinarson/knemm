@@ -548,7 +548,7 @@ export function normalizeClaim(
     r.format ||= "?";
 
     // Make the ID in ClaimId format 
-    let id = (file != "-" ? claimIdFromName(file) : { branch: "STDIN", version: 1 });
+    let id = claimIdFromName(file);
     if (!r.id) {
         if (!id) return;
         r.id = id;
@@ -621,10 +621,6 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
         }
         else return errorRv("toStateClaim - Failed slurpSchema");
     }
-    else if (isDir(file_or_db) || file_or_db.match(re_m_yaml) ||
-        (!options.looseNames && !claimIdFromName(file_or_db))) {
-        r = toState(file_or_db);
-    }
     else if (file_or_db == "-") {
         // stdin - as a claim 
         let s_in = readFileSync(0).toString();
@@ -643,6 +639,10 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
         }
         if (!r) return errorRv("toStateClaim - Input on stdin does not form a valid claim");
         r = normalizeClaim(r, "-", "internal", true);
+    }
+    else if (isDir(file_or_db) || file_or_db.match(re_m_yaml) ||
+        (!options.looseNames && !claimIdFromName(file_or_db))) {
+        r = toState(file_or_db);
     }
     else {
         // Try the various paths supplied 
@@ -878,6 +878,9 @@ const re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 type ClaimId = { branch: string, version: number };
 
 function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
+    // Special case for STDIN
+    if( name=="-" ) return { branch: "STDIN", version: 1 };
+    
     // Name plus version ? 
     let md = name.match(re_name_num_oext);
     if (md)
