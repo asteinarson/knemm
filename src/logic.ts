@@ -12,13 +12,13 @@ import { fileNameOf, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
-import { dump as yamlDump } from 'js-yaml';
+import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc";
 import { Knex } from 'knex';
 import { stringify } from 'node:querystring';
 import { builtinModules } from 'node:module';
-import { fstat } from 'node:fs';
+import { fstat, readFileSync } from 'node:fs';
 
 export type TableInfoOrErrors = Dict<any> | string[];
 
@@ -204,11 +204,11 @@ export function normalizeConnInfo(conn_info: Dict<any> | string) {
     }
 
     // This is a way to point Sqlite at a DB file, if we don't have it yet
-    if( conn_info.client=="sqlite3" && !conn_info.connection.filename ){
+    if (conn_info.client == "sqlite3" && !conn_info.connection.filename) {
         let db_name = conn_info.connection.database;
-        if( db_name ){
+        if (db_name) {
             let fn = sqliteDbToFilename(db_name);
-            if(fn) conn_info.connection.filename = fn;
+            if (fn) conn_info.connection.filename = fn;
         }
     }
 
@@ -344,7 +344,7 @@ export async function existsDb(db_file: string | Dict<any>, db_name?: string): P
     if (r) return true;
 }
 
-function sqliteDbToFilename(db_name:string){
+function sqliteDbToFilename(db_name: string) {
     for (let fn of [db_name, db_name + ".sqlite"]) {
         if (existsSync(fn)) {
             return fn;
@@ -357,7 +357,7 @@ function existsDbSqlite(conn_info: Dict<any>, db_name?: string) {
     if (!db_name) return;
     // We do not do a connectCheck here - 
     // as it would create the DB.
-    return sqliteDbToFilename(db_name)!=undefined;
+    return sqliteDbToFilename(db_name) != undefined;
 }
 
 export async function createDb(db: string | Dict<any>, db_name?: string): Promise<Dict<any> | string> {
@@ -548,7 +548,7 @@ export function normalizeClaim(
     r.format ||= "?";
 
     // Make the ID in ClaimId format 
-    let id = claimIdFromName(file);
+    let id = (file != "-" ? claimIdFromName(file) : { branch: "STDIN", version: 1 });
     if (!r.id) {
         if (!id) return;
         r.id = id;
@@ -624,6 +624,25 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     else if (isDir(file_or_db) || file_or_db.match(re_m_yaml) ||
         (!options.looseNames && !claimIdFromName(file_or_db))) {
         r = toState(file_or_db);
+    }
+    else if (file_or_db == "-") {
+        // stdin - as a claim 
+        let s_in = readFileSync(0).toString();
+        if (!s_in) return errorRv(`toStateClaim - File not found: ${file_or_db}`);
+        // Undefined if YAML / JSON, try both 
+        try {
+            let r_y = yamlLoad(s_in);
+            if (isDict(r_y)) r = r_y;
+        } catch (e) {
+            try {
+                let r_json = JSON.parse(s_in);
+                if (isDict(r_json)) r = r_json;
+            } catch (e) {
+                return errorRv("toStateClaim - Failed parsing stdin, exception: " + e.toString());
+            }
+        }
+        if (!r) return errorRv("toStateClaim - Input on stdin does not form a valid claim");
+        r = normalizeClaim(r, "-", "internal", true);
     }
     else {
         // Try the various paths supplied 
@@ -794,14 +813,14 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
 }
 
 
-function getXtiFile(dir:string, db_conn: Knex | Dict<any>) {
-    if( !dir || !db_conn ) return;
+function getXtiFile(dir: string, db_conn: Knex | Dict<any>) {
+    if (!dir || !db_conn) return;
     let xti_file = path.join(dir, "___xti." + getClientType(db_conn) + ".yaml");
     return xti_file;
 }
 
 export function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
-    if( !dir || !db_conn ) return;
+    if (!dir || !db_conn) return;
     let xti_file = getXtiFile(dir, db_conn);
     let r = slurpFile(xti_file, true, isDict);
     return r as any as Dict<any>;
@@ -830,7 +849,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
         let xti_new = await modifySchema(knex_c, diff, state_db, xti);
         // If XTI was modified, rewrite this file 
         // Should this really be done in storeState ?!
-        if(isDict(xti_new) && xti_new?.___cnt != ___cnt)
+        if (isDict(xti_new) && xti_new?.___cnt != ___cnt)
             writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
     } catch (e) {
         return ["syncDbWith: exception in modifySchema", e.toString()];

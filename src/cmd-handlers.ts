@@ -74,9 +74,6 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
     switch (cmd) {
         case "join":
             {
-                let s_in = readFileSync(0);
-                console.log("s_in:",s_in);
-                if( s_in ) process.exit(0);
                 let state_base: Dict<any>;
                 if (state_dir) state_base = toState(state_dir, true);
                 let file_dicts: Dict<Dict<any>> = {};
