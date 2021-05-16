@@ -77,7 +77,7 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
             let version = state.modules?.STDIN || 0;
             version++;
             state.modules.STDIN = version;
-            tgt_name = path.join(dir, "STDIN_" + version);
+            tgt_name = path.join(dir, "STDIN_" + version + (stdin_was_json ? ".json" : ".yaml"));
             writeFileSync(tgt_name, getStoreStdin());
         }
         if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
@@ -104,6 +104,9 @@ function excludeFromState(file: string) {
 }
 
 const re_yj = /\.(json|yaml|JSON|YAML)$/;
+
+// A temporary solution, better to store normalized claims in state
+let stdin_was_json = false;
 
 // Rebuild the state directory from claims that are stored in the directory
 export function rebuildState(state_dir: string, options: Dict<any>): boolean {
@@ -642,6 +645,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
             try {
                 let r_json = JSON.parse(s_in);
                 if (isDict(r_json)) r = r_json;
+                stdin_was_json = true;
             } catch (e) {
                 return errorRv("toStateClaim - Failed parsing stdin, exception: " + e.toString());
             }
