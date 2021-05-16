@@ -74,8 +74,7 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
             else console.warn("storeState - failed extract filename from: " + f);
         } else {
             // We allow multiple stdin to be fed to this state 
-            let version = state.modules?.STDIN || 0;
-            version++;
+            let version = state.modules?.STDIN || 1;
             state.modules.STDIN = version;
             tgt_name = path.join(dir, "STDIN_" + version + (stdin_was_json ? ".json" : ".yaml"));
             writeFileSync(tgt_name, getStoreStdin());
