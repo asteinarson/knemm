@@ -570,11 +570,13 @@ export function normalizeClaim(
     else {
         let r_id = safeClaimId(r.id);
         if (id && (r_id.branch != id.branch || r_id.version != id.version)) {
-            let msg = `normalizeClaim: ID declared in claim <${r.id.branch}:${r.id.version}> does not match that in filename: `;
-            if (!allow_loose)
-                return errorRv(msg);
-            else
-                console.warn(msg);
+            if( file!="-" ){
+                let msg = `normalizeClaim: ID declared in claim <${r.id.branch}:${r.id.version}> does not match that in filename: <${file}>`;
+                if (!allow_loose)
+                    return errorRv(msg);
+                else
+                    console.warn(msg);
+            }
         }
         r.id = r_id;
     }
@@ -925,11 +927,11 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
     if (!name && isString(claim_id))
         name = claim_id;
     let file_cl_id = claimIdFromName(name, allow_loose);
-    if (!allow_loose) return file_cl_id;
+    if (name!="-" && !allow_loose) return file_cl_id;
     if (claim_id) {
         // With loose naming, we prefer the ID given inside the claim
         let r = safeClaimId(claim_id);
-        if (file_cl_id && r && !propEqual(file_cl_id, r))
+        if (file_cl_id && r && !propEqual(file_cl_id, r) && name!="-")
             console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
         return r;
     }
