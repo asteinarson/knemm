@@ -334,7 +334,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         const is_new_column = !state[t]?.[col];
                         let col_base: Dict<any> = is_new_column ? {} : state[t][col];
                         let column: Knex.ColumnBuilder = null;
-                        // Knex needs to be given the ytype of the column (also when it already exists)
+                        // Knex needs to be given the type of the column (also when it already exists)
                         const data_type = col_delta.data_type ?? col_base.data_type;
                         switch (data_type) {
                             case "boolean":

@@ -715,6 +715,8 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
         let tv = tgt_col[tk], cv = cand_col[tk];
         if (!propEqual(tv, cv)) {
             switch (tk) {
+                case "___refs": 
+                    break;
                 case "data_type":
                     if (!typeContainsLoose(cv, tv)) {
                         // The candidate type does not hold, see if we can expand it 
@@ -801,7 +803,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 let diff_col: Dict<any> | string;
                 if (isDict(tgt_col)) {
                     let dc = matchDiffColumn(kc, cand_col, tgt_col);
-                    if (typeof dc == "object") {
+                    if (isDict(dc)) {
                         if (firstKey(dc))
                             diff_col = dc;
                     }
