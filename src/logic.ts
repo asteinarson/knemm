@@ -42,6 +42,7 @@ export function getStateDir(options: any) {
 }
 
 export function storeState(state: Dict<any>, new_claims?: Dict<Dict<any>>, state_loc?: string, options?: Dict<any>) {
+    if (options?.dry) return true;
     // Have somewhere to store state ? 
     let dir = state_loc || state.file;
     if (!dir) return errorRv("storeState - No storage path/location provided ");
@@ -66,8 +67,8 @@ export function storeState(state: Dict<any>, new_claims?: Dict<Dict<any>>, state
     for (let f in new_claims || {}) {
         let claim = new_claims[f];
         let fname = claim.id.branch + "_" + claim.id.version + ".yaml";
-        let tgt_name = path.join(dir,fname);
-        writeFileSync(tgt_name, yamlDump(claim) );
+        let tgt_name = path.join(dir, fname);
+        writeFileSync(tgt_name, yamlDump(claim));
         /*if (f != "-") {
             let fn = fileNameOf(f);
             if (fn) {
@@ -570,7 +571,7 @@ export function normalizeClaim(
     else {
         let r_id = safeClaimId(r.id);
         if (id && (r_id.branch != id.branch || r_id.version != id.version)) {
-            if( file!="-" ){
+            if (file != "-") {
                 let msg = `normalizeClaim: ID declared in claim <${r.id.branch}:${r.id.version}> does not match that in filename: <${file}>`;
                 if (!allow_loose)
                     return errorRv(msg);
@@ -843,21 +844,31 @@ export function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
     return r as any as Dict<any>;
 }
 
+type SyncResult = {
+    type: "errors" | "queries";
+    r: string[];
+};
 
-export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string | string[]> {
+export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | SyncResult> {
+    let SyncError = (msg: string | string[]) => {
+        let rv: SyncResult = { type: "errors", r: isArray(msg) ? msg : [msg] };
+        console.log(db_conn);
+        return rv;
+    }
+
     // Prepare
     db_conn = normalizeConnInfo(db_conn);
-    if (!db_conn) return "syncDbWith - Failed normalizeConnInfo for: " + db_conn;
+    if (!db_conn) return SyncError("syncDbWith - Failed normalizeConnInfo for: " + db_conn);
 
     let knex_c = await connect(db_conn);
-    if (!knex_c) return "syncDbWith - Failed connect";
+    if (!knex_c) return SyncError("syncDbWith - Failed connect");
     let xti = slurpXti(options.state, db_conn);
     let state_db = await slurpSchema(knex_c, xti, options.include, options.exclude);
-    if (!state_db) return "syncDbWith - Failed slurpSchema";
+    if (!state_db) return SyncError("syncDbWith - Failed slurpSchema");
 
     // Do the diff 
     let diff = matchDiff(state_db, state.___tables);
-    if (isArray(diff)) return diff;
+    if (isArray(diff)) return SyncError(diff);
     if (!firstKey(diff)) return true;
 
     // So we have a minimal diff to apply one the DB 
@@ -869,7 +880,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
         if (isDict(xti_new) && xti_new?.___cnt != ___cnt)
             writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
     } catch (e) {
-        return "syncDbWith: exception in modifySchema: " + e.toString();
+        return SyncError(["syncDbWith: exception in modifySchema: ", e.toString()]);
     }
 
     return true;
@@ -927,11 +938,11 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
     if (!name && isString(claim_id))
         name = claim_id;
     let file_cl_id = claimIdFromName(name, allow_loose);
-    if (name!="-" && !allow_loose) return file_cl_id;
+    if (name != "-" && !allow_loose) return file_cl_id;
     if (claim_id) {
         // With loose naming, we prefer the ID given inside the claim
         let r = safeClaimId(claim_id);
-        if (file_cl_id && r && !propEqual(file_cl_id, r) && name!="-")
+        if (file_cl_id && r && !propEqual(file_cl_id, r) && name != "-")
             console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
         return r;
     }
@@ -1050,7 +1061,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         if (name) {
             // Trying to insert claim from earlier part of history ? 
             if (branches[name] && id.version <= branches[name]) {
-                if( f!="-" || name!="STDIN" ){
+                if (f != "-" || name != "STDIN") {
                     console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${id.version} to apply now. Rebuild?`);
                     err_cnt++;
                     continue;

@@ -17,6 +17,7 @@ function addClaimOptions(cmd: cmder.Command) {
     cmd.option("-N --no-deps", "Do not read any dependencies - (not recommended, for debug)");
     cmd.option("-L --loose-names", "Allow loose naming of claim files (with version inside)");
     cmd.option("-T --xti <xti_file>", "Read extra type info from this file (yaml/json)");
+    cmd.option("-D --dry", "Dry run. Do not modify the state (or DB)");
 }
 
 function addDbOption(cmd: cmder.Command) {

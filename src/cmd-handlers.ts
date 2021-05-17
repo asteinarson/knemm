@@ -3,7 +3,7 @@ import {
     toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
-import { append, Dict, errorRv, firstKey, isDict, isArray } from "./utils";
+import { append, Dict, errorRv, firstKey, isDict, isArray, isString } from "./utils";
 import { getDirsFromFileList, slurpFile } from "./file-utils";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as path from "path";
@@ -65,9 +65,9 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
             options.path[ix] = options.path[ix].trim();
     }
 
-    if( options.xti ){
+    if (options.xti) {
         let xti = slurpFile(options.xti);
-        if( !xti ) return errorRv(`${cmd} - failed reading extra type info in: ${options.xti}`);
+        if (!xti) return errorRv(`${cmd} - failed reading extra type info in: ${options.xti}`);
         options.xti = xti;
     }
 
@@ -127,11 +127,17 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     parseDbSpec(options.database) :
                     parseDbFile(path.join(state_dir, "___db.yaml"));
                 if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected (or specified) database (see <connect>)", 10);
+                // Query logging implies dry running
+                if (options.showQueries) options.dry = true;
 
-                // See that DB currently fulfills existing claims
-                let rs = await syncDbWith(state_base, conn_info, options);
-                if (rs != true) return logResult(rs, options, 101);
-                console.log("apply - DB synced with existing state");
+                if (!options.dry) {
+                    // See that DB currently fulfills existing claims
+                    // We skip this in query printing mode - as the same queries would be 
+                    // repeated twice (with modifying code below).
+                    let rs = await syncDbWith(state_base, conn_info, options);
+                    if (rs != true) return logResult(rs.r, options, 101);
+                    console.log("apply - DB synced with existing state");
+                }
 
                 // Apply new claims on state 
                 if (files.length) {
@@ -149,8 +155,14 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
 
                     // See that DB fulfills those claims
                     let rs = await syncDbWith(state_base, conn_info, options);
-                    if (rs != true) return logResult(rs, options, 103);
-                    console.log("apply - DB synced with new claims merged into state");
+                    if (rs != true) {
+                        if (rs.type == "queries") {
+                            console.log("### Query log");
+                            rs.r.forEach(q => console.log(q));
+                        }
+                        else return logResult(rs.r, options, 103);
+                    }
+                    else console.log("apply - DB synced with new claims merged into state");
                 }
                 rc = 0;
                 break;
@@ -172,9 +184,9 @@ export async function handleTwoArgCmd(cmd: string, candidate: string, target: st
     let tgt = await toStateClaim(target, options);
     let r: Dict<any> | string[];
 
-    if( options.xti ){
+    if (options.xti) {
         let xti = slurpFile(options.xti);
-        if( !xti ) return errorRv(`${cmd} - failed reading extra type info in: ${options.xti}`);
+        if (!xti) return errorRv(`${cmd} - failed reading extra type info in: ${options.xti}`);
         options.xti = xti;
     }
 
