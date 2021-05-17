@@ -448,8 +448,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            //if( to_sql ) return qb.toSQL().toNative();
-            if( to_sql ) return qb.toSQL();
+            if( to_sql ) return qb.toString();
             let r = await qb;
         }
         else {
