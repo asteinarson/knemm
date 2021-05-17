@@ -69,20 +69,6 @@ export function storeState(state: Dict<any>, new_claims?: Dict<Dict<any>>, state
         let fname = claim.id.branch + "_" + claim.id.version + ".yaml";
         let tgt_name = path.join(dir, fname);
         writeFileSync(tgt_name, yamlDump(claim));
-        /*if (f != "-") {
-            let fn = fileNameOf(f);
-            if (fn) {
-                tgt_name = path.join(dir, fn);
-                copyFileSync(f, tgt_name);
-            }
-            else console.warn("storeState - failed extract filename from: " + f);
-        } else {
-            // We allow multiple stdin to be fed to this state 
-            let version = state.modules?.STDIN || 1;
-            state.modules.STDIN = version;
-            tgt_name = path.join(dir, "STDIN_" + version + (stdin_was_json ? ".json" : ".yaml"));
-            writeFileSync(tgt_name, getStoreStdin());
-        }*/
         if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
     }
 
