@@ -411,7 +411,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             if (col_delta.is_primary_key != undefined) {
                                 if (col_delta.is_primary_key) column.primary();
                                 else table.dropPrimary();
-                            }
+                            } 
                             if (col_delta.comment != undefined) {
                                 column.comment(col_delta.comment);
                             }
@@ -424,7 +424,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 if (col_delta.is_nullable) column.nullable();
                                 else column.notNullable();
                             }
-                            else if (!is_new_column && state.is_nullable == false)
+                            else if (!is_new_column && col_base.is_nullable == false)
                                 // Have to recreate 
                                 column.notNullable();
 
