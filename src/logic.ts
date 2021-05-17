@@ -41,7 +41,7 @@ export function getStateDir(options: any) {
     return state_dir;
 }
 
-export function storeState(state: Dict<any>, files?: string[], state_loc?: string, options?: Dict<any>) {
+export function storeState(state: Dict<any>, new_claims?: Dict<Dict<any>>, state_loc?: string, options?: Dict<any>) {
     // Have somewhere to store state ? 
     let dir = state_loc || state.file;
     if (!dir) return errorRv("storeState - No storage path/location provided ");
@@ -62,10 +62,13 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
     else
         reformatTopLevel(state);
 
-    // Copy input files here     
-    for (let f of files || []) {
-        let tgt_name: string;
-        if (f != "-") {
+    // Write input claims to state dir
+    for (let f in new_claims || {}) {
+        let claim = new_claims[f];
+        let fname = claim.id.branch + "_" + claim.id.version + ".yaml";
+        let tgt_name = path.join(dir,fname);
+        writeFileSync(tgt_name, yamlDump(claim) );
+        /*if (f != "-") {
             let fn = fileNameOf(f);
             if (fn) {
                 tgt_name = path.join(dir, fn);
@@ -78,7 +81,7 @@ export function storeState(state: Dict<any>, files?: string[], state_loc?: strin
             state.modules.STDIN = version;
             tgt_name = path.join(dir, "STDIN_" + version + (stdin_was_json ? ".json" : ".yaml"));
             writeFileSync(tgt_name, getStoreStdin());
-        }
+        }*/
         if (!existsSync(tgt_name)) console.warn(`storeState - Failed copy file: ${f} to ${tgt_name}`);
     }
 
@@ -134,7 +137,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     if (!dicts) return;
     let r = mergeClaims(dicts, state_base, options);
     if (isDict(r)) {
-        storeState(r, [], state_dir, options);
+        storeState(r, {}, state_dir, options);
         return true;
     }
     else {
@@ -155,7 +158,7 @@ export function sortMergeStoreState(
     let state = mergeClaims(dicts, state_base, options);
     if (isDict(state)) {
         if (state_dir && dicts.length)
-            storeState(state, Object.keys(file_dicts), state_dir, options);
+            storeState(state, file_dicts, state_dir, options);
     }
     return state;
 }
