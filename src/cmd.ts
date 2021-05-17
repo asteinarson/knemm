@@ -20,6 +20,10 @@ function addClaimOptions(cmd: cmder.Command) {
     cmd.option("-D --dry", "Dry run. Do not modify the state (or DB)");
 }
 
+function addDryOption(cmd: cmder.Command) {
+    cmd.option("-D --dry", "Dry run. Do not modify the state (or DB)");
+}
+
 function addDbOption(cmd: cmder.Command) {
     cmd.option("-d --database <db_file>", "Use this DB connection - instead of default");
 }
@@ -38,7 +42,7 @@ let cmds_mm: CmdDesc[] = [
         desc: "Join together all input claims and print them out. Optionally create a state dir (-s)",
         a1: "claims...",
         a2: null,
-        options: [addClaimOptions, addOutputOptions, addIncludeExcludeOptions],
+        options: [addClaimOptions, addOutputOptions, addIncludeExcludeOptions, addDryOption],
     },
     {
         name: "rebuild",
@@ -85,7 +89,7 @@ let cmds_mm: CmdDesc[] = [
         desc: "On this state (and connected DB), apply this claim(s)",
         a1: "claims...",
         a2: null,
-        options: [addClaimOptions, addDbOption, addApplyOptions],
+        options: [addClaimOptions, addApplyOptions],
     },
     /*{
         name: "reverse",
