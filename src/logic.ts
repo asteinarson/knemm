@@ -874,11 +874,15 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
     // So we have a minimal diff to apply one the DB 
     try {
         let ___cnt = xti?.___cnt;
-        let xti_new = await modifySchema(knex_c, diff, state_db, xti);
+        let query_log = options.showQueries;
+        let xti_new = await modifySchema(knex_c, diff, state_db, xti, query_log);
         // If XTI was modified, rewrite this file 
         // Should this really be done in storeState ?!
-        if (isDict(xti_new) && xti_new?.___cnt != ___cnt)
-            writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
+        if (isDict(xti_new)) {
+            if (xti_new?.___cnt != ___cnt)
+                writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
+        }
+        else return { type: "queries", r: [xti_new] };
     } catch (e) {
         return SyncError(["syncDbWith: exception in modifySchema: ", e.toString()]);
     }
