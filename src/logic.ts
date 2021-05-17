@@ -856,13 +856,15 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
 
     // Do the diff 
     let diff = matchDiff(state_db, state.___tables);
+    let query_log = options.showQueries;
     if (isArray(diff)) return SyncError(diff);
-    if (!firstKey(diff)) return true;
+    if (!firstKey(diff)){
+        return !query_log ? true : { type: "queries", r: [] };
+    }
 
     // So we have a minimal diff to apply one the DB 
     try {
         let ___cnt = xti?.___cnt;
-        let query_log = options.showQueries;
         let xti_new = await modifySchema(knex_c, diff, state_db, xti, query_log);
         // If XTI was modified, rewrite this file 
         // Should this really be done in storeState ?!
