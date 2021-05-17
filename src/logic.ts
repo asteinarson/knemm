@@ -1050,9 +1050,16 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         if (name) {
             // Trying to insert claim from earlier part of history ? 
             if (branches[name] && id.version <= branches[name]) {
-                console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${id.version} to apply now. Rebuild?`);
-                err_cnt++;
-                continue;
+                if( f!="-" || name!="STDIN" ){
+                    console.error(`dependencySort - Branch <${name}> is already at version ${branches[name]}. Was given version ${id.version} to apply now. Rebuild?`);
+                    err_cnt++;
+                    continue;
+                }
+                else {
+                    // Increment the version of STDIN branch
+                    let stdin_v = branches.STDIN || 0;
+                    file_dicts[f].id.version = stdin_v + 1;
+                }
             }
             // Register this claim - with explicit flag
             checkIncludeClaim(file_dicts[f]);
