@@ -278,6 +278,14 @@ let xti_lut: Dict<Dict<string | Dict<string>>> = {
 };
 
 
+const invalid_table_names:Dict<1> = {
+    ___refs: 1,
+}
+
+const invalid_column_names:Dict<1> = {
+    ___refs: 1,
+}
+
 
 // Apply schema changes on DB. 
 // It is assumed here that any changes passed in the 'tables' arg 
@@ -291,11 +299,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
 
     let client = getClientType(conn);
     for (let t in delta) {
+        if( invalid_table_names[t] ) continue;
         let t_delta = delta[t];
         if (t_delta !== "*NOT") {
             //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
             let qb = conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
+                    if( invalid_column_names[col] ) continue;
                     let col_delta = delta[t][col];
                     let setXtraTypeInfo = (data_type: string, xti: string | Dict<any>) => {
                         xtra_type_info[t] ||= {};
