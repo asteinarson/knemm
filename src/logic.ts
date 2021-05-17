@@ -844,16 +844,16 @@ export function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
 }
 
 
-export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string[]> {
+export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | string | string[]> {
     // Prepare
     db_conn = normalizeConnInfo(db_conn);
-    if (!db_conn) return ["syncDbWith - Failed normalizeConnInfo for: " + db_conn];
+    if (!db_conn) return "syncDbWith - Failed normalizeConnInfo for: " + db_conn;
 
     let knex_c = await connect(db_conn);
-    if (!knex_c) return ["syncDbWith - Failed connect"];
+    if (!knex_c) return "syncDbWith - Failed connect";
     let xti = slurpXti(options.state, db_conn);
     let state_db = await slurpSchema(knex_c, xti, options.include, options.exclude);
-    if (!state_db) return ["syncDbWith - Failed slurpSchema"];
+    if (!state_db) return "syncDbWith - Failed slurpSchema";
 
     // Do the diff 
     let diff = matchDiff(state_db, state.___tables);
@@ -869,7 +869,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
         if (isDict(xti_new) && xti_new?.___cnt != ___cnt)
             writeFileSync(getXtiFile(options.state, db_conn), yamlDump(xti_new));
     } catch (e) {
-        return ["syncDbWith: exception in modifySchema", e.toString()];
+        return "syncDbWith: exception in modifySchema: " + e.toString();
     }
 
     return true;

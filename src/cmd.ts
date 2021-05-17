@@ -23,6 +23,12 @@ function addDbOption(cmd: cmder.Command) {
     cmd.option("-d --database <db_file>", "Use this DB connection - instead of default");
 }
 
+function addApplyOptions(cmd: cmder.Command) {
+    addDbOption(cmd);
+    cmd.option("-q --show-queries ", "Show the generated SQL - instead of executing them");
+}
+
+
 import { CmdDesc, addBaseOptions } from './cmd-handlers';
 
 let cmds_mm: CmdDesc[] = [
@@ -78,7 +84,7 @@ let cmds_mm: CmdDesc[] = [
         desc: "On this state (and connected DB), apply this claim(s)",
         a1: "claims...",
         a2: null,
-        options: [addClaimOptions, addDbOption],
+        options: [addClaimOptions, addDbOption, addApplyOptions],
     },
     /*{
         name: "reverse",
