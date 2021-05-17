@@ -26,7 +26,7 @@ function addDbOption(cmd: cmder.Command) {
 
 function addApplyOptions(cmd: cmder.Command) {
     addDbOption(cmd);
-    cmd.option("-q --show-queries ", "Show the generated SQL - instead of executing them");
+    cmd.option("-Q --show-queries ", "Show the generated SQL - instead of executing them");
 }
 
 
