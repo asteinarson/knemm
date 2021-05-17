@@ -844,7 +844,7 @@ export function slurpXti(dir: string, db_conn: Knex | Dict<any>): Dict<any> {
     return r as any as Dict<any>;
 }
 
-type SyncResult = {
+export type SyncResult = {
     type: "errors" | "queries";
     r: string[];
 };
