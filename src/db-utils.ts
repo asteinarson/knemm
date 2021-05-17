@@ -85,7 +85,7 @@ export function getClientType(ci: Record<string, string> | Knex) {
     }
 }
 
-import { Dict, isDict } from "./utils";
+import { Dict, isDict, preferGet } from "./utils";
 
 // column props that are by default true 
 const default_true_props: Dict<boolean> = {
@@ -349,13 +349,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 break;
                             case "int":
                             case "integer":
-                                if (col_delta.has_auto_increment)
+                                if( preferGet("has_auto_increment",col_delta,col_base) )
                                     column = table.increments(col);
                                 else
                                     column = table.integer(col);
                                 break;
                             case "bigint":
-                                if (col_delta.has_auto_increment)
+                                if( preferGet("has_auto_increment",col_delta,col_base) )
                                     column = table.bigIncrements(col);
                                 else
                                     column = table.bigInteger(col);

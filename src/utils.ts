@@ -44,10 +44,18 @@ export function toLut<T>(keys: string[], v: T | T[]): Dict<T> {
 }
 
 export function tryGet<T>(k: string, dict: Dict<T>, fallback_value?: T) {
-    if (typeof dict == "object") {
+    if (isDict(dict)) {
         let r = dict?.[k];
         return r != undefined ? r : fallback_value;
     }
+}
+
+export function preferGet<T>(k: string, dict1: Dict<T>, dict2: Dict<T>, fallback_value?: T) {
+    if (isDict(dict1)) {
+        let r = dict1?.[k];
+        if( r != undefined ) return r;
+    }
+    return tryGet(k,dict2,fallback_value);
 }
 
 export function firstKey(o: object): any {
@@ -150,7 +158,7 @@ export function findValueOf(key: string, o: Dict<any> | any[]): any {
             if (k == key) return v;
             if (firstKey(v)) {
                 let r = findValueOf(key, v);
-                if (r!=undefined) return r;
+                if (r != undefined) return r;
             }
         }
     }
