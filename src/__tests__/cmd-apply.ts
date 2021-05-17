@@ -73,5 +73,7 @@ test("cmd apply test - 1 ", async () => {
 });
 
 test("cmd apply test - 2 ", async () => {
+    // Expand (widen) the type of some columns.
+    // See that NOT NULL, DEFAULT, UNIQUE are kept through that. 
 });
 
