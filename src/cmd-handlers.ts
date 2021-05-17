@@ -1,6 +1,6 @@
 import {
     toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile
+    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray, isString } from "./utils";
@@ -130,13 +130,21 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 // Query logging implies dry running
                 if (options.showQueries) options.dry = true;
 
-                if (!options.dry) {
+                function handleSyncResult(rs:SyncResult){
+                    if (rs.type == "queries") {
+                        console.log("### Query log");
+                        rs.r.forEach(q => console.log(q));
+                    }
+                    else return logResult(rs.r, options, -1);
+                }
+
+                if (!options.dry || !files.length) {
                     // See that DB currently fulfills existing claims
                     // We skip this in query printing mode - as the same queries would be 
                     // repeated twice (with modifying code below).
                     let rs = await syncDbWith(state_base, conn_info, options);
-                    if (rs != true) return logResult(rs.r, options, 101);
-                    console.log("apply - DB synced with existing state");
+                    if (rs == true) console.log("apply - DB synced with existing state");
+                    else if( handleSyncResult(rs) ) return 100;
                 }
 
                 // Apply new claims on state 
@@ -155,14 +163,8 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
 
                     // See that DB fulfills those claims
                     let rs = await syncDbWith(state_base, conn_info, options);
-                    if (rs != true) {
-                        if (rs.type == "queries") {
-                            console.log("### Query log");
-                            rs.r.forEach(q => console.log(q));
-                        }
-                        else return logResult(rs.r, options, 103);
-                    }
-                    else console.log("apply - DB synced with new claims merged into state");
+                    if (rs == true) console.log("apply - DB synced with new claims merged into state");
+                    else if( handleSyncResult(rs) ) return 103;
                 }
                 rc = 0;
                 break;
