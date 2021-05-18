@@ -136,6 +136,8 @@ export function isArrayWithElems(a: any): a is [] {
     //return a?.constructor == Array;
 }
 
+export function append<T>(acc: Dict<T> , to_add: typeof acc): Dict<T>;
+export function append<T>(acc: Array<T> , to_add: typeof acc): Array<T>;
 export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof acc {
     if (isArray(acc)) {
         for (let e of to_add as T[])
