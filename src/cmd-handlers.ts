@@ -3,7 +3,7 @@ import {
     toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
-import { append, Dict, errorRv, firstKey, isDict, isArray, isString } from "./utils";
+import { append, Dict, errorRv, firstKey, isDict, isArray, isString, toLut } from "./utils";
 import { getDirsFromFileList, slurpFile } from "./file-utils";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as path from "path";
@@ -59,7 +59,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         files = a1 as string[];
         let dirs = getDirsFromFileList(files);
         if (!options.path) options.path = dirs;
-        else options.path = append(options.path, dirs);
+        else options.path = Object.keys(toLut(append(options.path, dirs),1));
         // Trim paths 
         for (let ix in options.path)
             options.path[ix] = options.path[ix].trim();
