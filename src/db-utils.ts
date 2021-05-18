@@ -428,11 +428,11 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 // Have to recreate 
                                 column.notNullable();
 
-                            if (col_delta.default != undefined)
-                                column.defaultTo(col_delta.default);
-                            else if (!is_new_column && col_base.default)
+                            if (col_delta.default_value != undefined)
+                                column.defaultTo(col_delta.default_value);
+                            else if (!is_new_column && col_base.default_value)
                                 // Have to recreate 
-                                column.defaultTo(col_base.default);
+                                column.defaultTo(col_base.default_value);
 
                             const fk = col_delta.foreign_key;
                             if (fk) {
