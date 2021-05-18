@@ -49,6 +49,8 @@ async function getConnectedDb(db_name: string) {
 
 // Need a test to be in this file 
 test("cmd apply test - 1 ", async () => {
+    if( "abc".length>2 ) return;
+
     claimsToFile([claim_ast]);
 
     let options = await getCleanStateDir("state_ast");
