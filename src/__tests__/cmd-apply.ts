@@ -117,7 +117,7 @@ test("cmd apply test - 2 ", async () => {
                     expect(schema.author.id?.is_primary_key).toBe(true);
                     expect(schema.author.name?.data_type).toBe("varchar");
                     expect(schema.author.name?.max_length).toBe(32);
-                    expect(schema.author.name?.default_value).toBe("James");
+                    expect(schema.author.name?.default).toBe("James");
                     expect(schema.author.age?.data_type).toBe("int");
                     expect(schema.author.age?.is_nullable).toBe(false);
 
@@ -133,7 +133,7 @@ test("cmd apply test - 2 ", async () => {
                             expect(schema.author.name?.max_length).toBeFalsy();
                             // !!BUG!! Knex does not regenerate the default value of the column for MySQL
                             if( client!="mysql" )
-                                expect(schema.author.name?.default_value).toBe("James");
+                                expect(schema.author.name?.default).toBe("James");
                             expect(schema.author.age?.data_type).toBe("bigint");
                             expect(schema.author.age?.is_nullable).toBe(false);
 
@@ -144,7 +144,7 @@ test("cmd apply test - 2 ", async () => {
                                 let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
                                 expect(isDict(schema)).toBeTruthy();
                                 if (schema) {
-                                    expect(schema.author.name?.default_value).toBeFalsy();
+                                    expect(schema.author.name?.default).toBeFalsy();
                                     expect(schema.author.age?.is_nullable).toBe(undefined);
                                 }
                             }

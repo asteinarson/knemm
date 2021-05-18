@@ -38,7 +38,7 @@ export type ColumnProps = {
     is_unique?: boolean,
     is_primary_key?: boolean,
     has_auto_increment?: boolean,
-    default_value?: string | number | boolean,
+    default?: string | number | boolean,
     comment?: string,
     foreign_key?: {
         table: string,

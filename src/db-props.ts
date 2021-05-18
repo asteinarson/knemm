@@ -22,12 +22,12 @@ export let db_types_with_args: Dict<1> = {
 };
 
 // These are other props with (string?) args 
-export let db_with_args: Dict<string> = {
-    comment: "comment", 
-    default_value: "default", 
+export let db_with_args: Dict<1> = {
+    comment: 1, 
+    default: 1, 
 };
 
-export let db_column_words: Dict<string | number> = {
+export let db_column_words: Dict<number> = {
     data_type: 1,
     ...db_column_flags,
     ...db_type_args,
