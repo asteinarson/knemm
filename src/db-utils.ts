@@ -235,12 +235,16 @@ export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (strin
                         if (c.foreign_key_schema == "public")
                             delete c.foreign_key_schema;
                     }
-                    if (client == "mysql" && c.default_value) {
-                        // !!BUG!! This is most likely a bug in SchemaInspector 
-                        let dv = c.default_value;
-                        if (dv[0] == dv.slice(-1) && dv[0] == "'"){
-                            dv = dv.slice(1,-1);
-                            c.default_value = dv;
+                    if (c.default_value) {
+                        c.default = c.default_value;
+                        delete c.default_value;
+                        if (client == "mysql") {
+                            // !!BUG!! This is most likely a bug in SchemaInspector 
+                            let dv = c.default;
+                            if (dv[0] == dv.slice(-1) && dv[0] == "'") {
+                                dv = dv.slice(1, -1);
+                                c.default = dv;
+                            }
                         }
                     }
                     // Make the two foreign key entries a sub table 
@@ -302,7 +306,7 @@ const invalid_column_names: Dict<1> = {
 // valid changes that can be applied, without collisions. 
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
-export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?: boolean|"debug"): Promise<Dict<any> | string> {
+export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?: boolean | "debug"): Promise<Dict<any> | string> {
 
     xtra_type_info ||= { ___cnt: 0 };
 
@@ -437,11 +441,11 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 // Have to recreate 
                                 column.notNullable();
 
-                            if (col_delta.default_value !== undefined)
-                                column.defaultTo(col_delta.default_value);
-                            else if (!is_new_column && col_base.default_value)
+                            if (col_delta.default !== undefined)
+                                column.defaultTo(col_delta.default);
+                            else if (!is_new_column && col_base.default)
                                 // Have to recreate 
-                                column.defaultTo(col_base.default_value);
+                                column.defaultTo(col_base.default);
 
                             const fk = col_delta.foreign_key;
                             if (fk) {
@@ -457,11 +461,11 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            if (to_sql){
+            if (to_sql) {
                 let sql = qb.toString();
-                if( to_sql=="debug" )
-                    writeFileSync("./modifySchema_"+(debug_sql_cnt++)+".sql",sql);
-                else 
+                if (to_sql == "debug")
+                    writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
+                else
                     return sql;
             }
             let r = await qb;
