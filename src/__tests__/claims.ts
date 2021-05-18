@@ -181,7 +181,7 @@ export let claim_author_3 = {
             //    is_primary_key: false,
             //},
             name: {
-                default_value: undefined as any,
+                default_value: null as any,
             },
             age: {
                 is_nullable: true,
@@ -189,3 +189,5 @@ export let claim_author_3 = {
         },
     }
 };
+// It does not stick above
+//claim_author_3.___tables.author.name.default_value = null;
