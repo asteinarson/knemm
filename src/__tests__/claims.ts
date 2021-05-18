@@ -176,6 +176,9 @@ export let claim_author_3 = {
     },
     ___tables: {
         author: {
+            //id: {
+            //    is_primary_key: false,
+            //},
             name: {
                 default: undefined as any,
             },

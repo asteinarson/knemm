@@ -9,7 +9,7 @@ import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, norma
 import { connect, disconnectAll, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
-import { claim_p1, claim_apply_simple_types as claim_ast } from './claims';
+import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
@@ -17,10 +17,10 @@ import * as dotenv from 'dotenv'
 import * as rimraf from 'rimraf';
 dotenv.config();
 
-afterAll( disconnectAll );
+afterAll(disconnectAll);
 
 
-async function getCleanStateDir( name:string ){
+async function getCleanStateDir(name: string) {
     // Make sure we have an empty test dir - for our state
     let state_dir = pJoin(tmpdir(), name);
     let options = {
@@ -31,13 +31,13 @@ async function getCleanStateDir( name:string ){
     return options;
 }
 
-async function getConnectedDb( db_name:string ){
+async function getConnectedDb(db_name: string) {
     let db_conn = normalizeConnInfo(":");
     db_conn.connection.database = db_name;
     // Drop test DB if exists
-    let r:any = await existsDb(db_conn);
-    if( r==true ){
-        r = await dropDb(db_conn,db_name);
+    let r: any = await existsDb(db_conn);
+    if (r == true) {
+        r = await dropDb(db_conn, db_name);
         expect(isDict(r)).toBe(true);
     }
 
@@ -45,32 +45,33 @@ async function getConnectedDb( db_name:string ){
     return db;
 }
 
-claimsToFile([claim_ast]);
 
 // Need a test to be in this file 
 test("cmd apply test - 1 ", async () => {
+    claimsToFile([claim_ast]);
+
     let options = await getCleanStateDir("state_ast");
     let state_dir = options.state;
     let sd = getStateDir(options);
     expect(sd).toBe(state_dir);
 
     // The DB conn  
-    let db = await getConnectedDb("claim_ast");
-    if( isDict(db) ){
+    let db = await getConnectedDb("state_ast");
+    if (isDict(db)) {
         // Connect it 
-        let r:any = await connectState(state_dir,db,options);
-        if( r== true ){
+        let r: any = await connectState(state_dir, db, options);
+        if (r == true) {
             // And apply   
             r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
             expect(r).toBe(0);
-            if( !r ){
-                let schema = await slurpSchema(await connect(db), slurpXti(state_dir,db) );
+            if (!r) {
+                let schema = await slurpSchema(await connect(db), slurpXti(state_dir, db));
                 expect(isDict(schema)).toBeTruthy();
-                if( schema ){
+                if (schema) {
                     expect(schema.person).toBeTruthy();
                     // Must transform claim_ast to internal before testing 
                     reformatTopLevel(claim_ast);
-                    for( let col in claim_ast.___tables.person ){
+                    for (let col in claim_ast.___tables.person) {
                         let v = (claim_ast.___tables.person as any)[col];
                         expect(schema.person[col]?.data_type).toBe(v.data_type);
                     }
@@ -78,7 +79,7 @@ test("cmd apply test - 1 ", async () => {
             }
         }
     }
-    else{ 
+    else {
         // Sort of console.log 
         expect("isDict(db)").toBe(0);
     }
@@ -87,6 +88,69 @@ test("cmd apply test - 1 ", async () => {
 test("cmd apply test - 2 ", async () => {
     // Expand (widen) the type of some columns.
     // See that NOT NULL, DEFAULT, UNIQUE are kept through that.  
+
+    claimsToFile([claim_author_1, claim_author_2, claim_author_3]);
+
+    let name = "state_author";
+    let options = await getCleanStateDir(name);
+
+    // The DB conn  
+    let db = await getConnectedDb(name);
+    if (isDict(db)) {
+        // Connect it 
+        let r: any = await connectState(options.state, db, options);
+        if (r == true) {
+            // And apply 1st step    
+            r = await handleOneArgCmd("apply", [fileOf(claim_author_1)], options);
+            expect(r).toBe(0);
+            if (!r) {
+                let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                expect(isDict(schema)).toBeTruthy();
+                if (schema) {
+                    expect(schema.author).toBeTruthy();
+                    expect(schema.author.id?.data_type).toBe("int");
+                    expect(schema.author.id?.is_primary_key).toBe(true);
+                    expect(schema.author.name?.data_type).toBe("varchar");
+                    expect(schema.author.name?.max_length).toBe(32);
+                    expect(schema.author.name?.default).toBe("James");
+                    expect(schema.author.age?.data_type).toBe("int");
+                    expect(schema.author.age?.is_nullable).toBe(false);
+
+                    // And apply 2nd step    
+                    r = await handleOneArgCmd("apply", [fileOf(claim_author_2)], options);
+                    expect(r).toBe(0);
+                    if (!r) {
+                        let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                        expect(isDict(schema)).toBeTruthy();
+                        if (schema) {
+                            expect(schema.author.id?.data_type).toBe("bigint");
+                            expect(schema.author.name?.data_type).toBe("text");
+                            expect(schema.author.name?.max_length).toBeFalsy();
+                            expect(schema.author.name?.default).toBe("James");
+                            expect(schema.author.age?.data_type).toBe("bigint");
+                            expect(schema.author.age?.is_nullable).toBe(false);
+
+                            // And apply 3rd step    
+                            r = await handleOneArgCmd("apply", [fileOf(claim_author_3)], options);
+                            expect(r).toBe(0);
+                            if (!r) {
+                                let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                                expect(isDict(schema)).toBeTruthy();
+                                if (schema) {
+                                    expect(schema.author.name?.default).toBeFalsy();
+                                    expect(schema.author.age?.is_nullable).toBe(true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        // Sort of console.log 
+        expect("isDict(db)").toBe(0);
+    }
 
 });
 
