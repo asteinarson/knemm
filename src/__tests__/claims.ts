@@ -189,5 +189,3 @@ export let claim_author_3 = {
         },
     }
 };
-// It does not stick above
-//claim_author_3.___tables.author.name.default_value = null;
