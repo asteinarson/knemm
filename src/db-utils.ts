@@ -146,6 +146,7 @@ const default_type_vals: Dict<Dict<string | number>> = {
 }
 
 import schemaInspector from 'knex-schema-inspector';
+import { writeFileSync } from 'fs';
 export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
     // Workaround for ESM import 
@@ -301,7 +302,7 @@ const invalid_column_names: Dict<1> = {
 // valid changes that can be applied, without collisions. 
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
-export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?: boolean): Promise<Dict<any> | string> {
+export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?: boolean|"debug"): Promise<Dict<any> | string> {
 
     xtra_type_info ||= { ___cnt: 0 };
 
@@ -456,12 +457,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            let debug_sql = false;
-            if( debug_sql ){
+            if (to_sql){
                 let sql = qb.toString();
-                let x = 1;
+                if( to_sql=="debug" )
+                    writeFileSync("./modifySchema_"+(debug_sql_cnt++)+".sql",sql);
+                else 
+                    return sql;
             }
-            if (to_sql) return qb.toString();
             let r = await qb;
         }
         else {
@@ -472,3 +474,4 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
     return xtra_type_info;
 }
 
+let debug_sql_cnt = 1;
