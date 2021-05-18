@@ -745,7 +745,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     }
                     else errors.push(`${col_name} - Not possible to remove auto_increment. Drop the primary key instead`);
                     break;
-                case "default":
+                case "default_value":
                     // We can always set a default 
                     r.default = tv;
                     break;
