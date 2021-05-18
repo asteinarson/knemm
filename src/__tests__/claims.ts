@@ -137,7 +137,7 @@ export let claim_author_1 = {
             name: {
                 data_type: "varchar",
                 max_length: 32,
-                default: "James",
+                default_value: "James",
             },
             age: {
                 data_type: "int",
@@ -180,7 +180,7 @@ export let claim_author_3 = {
             //    is_primary_key: false,
             //},
             name: {
-                default: undefined as any,
+                default_value: undefined as any,
             },
             age: {
                 is_nullable: true,

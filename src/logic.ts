@@ -1284,7 +1284,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                 if (claim.id.branch != m_tbl.___owner)
                                     m_tbl[c_name].___owner = claim.id.branch;
                             }
-                            else errors.push(`${t}:${c_name} - Unknown column keywords: ${unknowns}`);
+                            else errors.push(`${t}:${c_name} - Unknown column keywords: ${JSON.stringify(unknowns)}`);
                         }
                         else errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
                     }

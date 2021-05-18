@@ -28,6 +28,7 @@ async function getCleanStateDir(name: string) {
         state: state_dir,
     };
     let rm = await rimraf.sync(state_dir);
+    let sd = getStateDir(options);
     return options;
 }
 
