@@ -747,7 +747,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     break;
                 case "default_value":
                     // We can always set a default 
-                    r.default = tv;
+                    r.default_value = tv;
                     break;
                 case "foreign_key":
                     // Accept if candidate does not specify another foreign key 
