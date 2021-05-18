@@ -95,7 +95,8 @@ test("cmd apply test - 2 ", async () => {
     claimsToFile([claim_author_1, claim_author_2, claim_author_3]);
 
     let name = "state_author";
-    let options = await getCleanStateDir(name);
+    let options = (await getCleanStateDir(name)) as Dict<any>;
+    options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -120,7 +121,7 @@ test("cmd apply test - 2 ", async () => {
                     expect(schema.author.age?.is_nullable).toBe(false);
 
                     // And apply 2nd step    
-                    r = await handleOneArgCmd("apply", [fileOf(claim_author_2)], options);
+                    r = await handleOneArgCmd("apply" , [fileOf(claim_author_2)], options);
                     expect(r).toBe(0);
                     if (!r) {
                         let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
