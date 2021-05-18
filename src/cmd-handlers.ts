@@ -152,14 +152,19 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     let file_dicts: Dict<Dict<any>> = {};
                     let es: string[] = [];
                     for (let f of files) {
-                        let r = await fileToClaim(f, options);
-                        if (r) file_dicts[f] = r;
+                        let r = await toStateClaim(f, options);
+                        if (r){
+                            if( r.file )
+                                file_dicts[f] = r;
+                            else 
+                                es.push("apply - only accepts claim: " + f + " found: "+r.source);
+                        }
                         else es.push("apply - failed parsing claim: " + f);
                     }
                     if (es.length) return logResult(es, options, 101);
                     let state = sortMergeStoreState(file_dicts, state_dir, state_base, options);
                     if (isArray(state)) return logResult(state, options, 102);
-                    console.log("apply - New claims merged into state state");
+                    console.log("apply - New claims merged into state");
 
                     // See that DB fulfills those claims
                     let rs = await syncDbWith(state_base, conn_info, options);
