@@ -119,3 +119,69 @@ export let claim_apply_simple_types = {
         },
     }
 };
+
+
+export let claim_author_1 = {
+    format: "internal",
+    id: {
+        branch: "author",
+        version: 1
+    },
+    ___tables: {
+        author: {
+            id: {
+                data_type: "int",
+                is_primary_key: true,
+                has_auto_increment: true
+            },
+            name: {
+                data_type: "varchar",
+                max_length: 32,
+                default: "James",
+            },
+            age: {
+                data_type: "int",
+                is_nullable: false,
+            },
+        },
+    }
+};
+
+export let claim_author_2 = {
+    format: "internal",
+    id: {
+        branch: "author",
+        version: 2
+    },
+    ___tables: {
+        author: {
+            id: {
+                data_type: "bigint",
+            },
+            name: {
+                data_type: "text",
+            },
+            age: {
+                data_type: "bigint",
+            },
+        },
+    }
+};
+
+export let claim_author_3 = {
+    format: "internal",
+    id: {
+        branch: "author",
+        version: 3
+    },
+    ___tables: {
+        author: {
+            name: {
+                default: undefined as any,
+            },
+            age: {
+                is_nullable: true,
+            },
+        },
+    }
+};

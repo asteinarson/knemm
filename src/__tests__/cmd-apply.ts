@@ -19,36 +19,48 @@ dotenv.config();
 
 afterAll( disconnectAll );
 
-claimsToFile([claim_ast]);
 
-// Need a test to be in this file 
-test("cmd apply test - 1 ", async () => {
+async function getCleanStateDir( name:string ){
     // Make sure we have an empty test dir - for our state
-    let state_dir = pJoin(tmpdir(), "state_ast");
+    let state_dir = pJoin(tmpdir(), name);
     let options = {
         internal: true,
         state: state_dir,
     };
     let rm = await rimraf.sync(state_dir);
-    let sd = getStateDir(options);
-    expect(sd).toBe(state_dir);
+    return options;
+}
 
-    // The DB conn  
+async function getConnectedDb( db_name:string ){
     let db_conn = normalizeConnInfo(":");
-    db_conn.connection.database = "claim_ast";
+    db_conn.connection.database = db_name;
     // Drop test DB if exists
     let r:any = await existsDb(db_conn);
     if( r==true ){
-        r = await dropDb(db_conn,"claim_ast");
+        r = await dropDb(db_conn,db_name);
         expect(isDict(r)).toBe(true);
     }
 
     let db = await createDb(db_conn);
+    return db;
+}
+
+claimsToFile([claim_ast]);
+
+// Need a test to be in this file 
+test("cmd apply test - 1 ", async () => {
+    let options = await getCleanStateDir("state_ast");
+    let state_dir = options.state;
+    let sd = getStateDir(options);
+    expect(sd).toBe(state_dir);
+
+    // The DB conn  
+    let db = await getConnectedDb("claim_ast");
     if( isDict(db) ){
         // Connect it 
         let r:any = await connectState(state_dir,db,options);
         if( r== true ){
-            // And apply 
+            // And apply   
             r = await handleOneArgCmd("apply", [fileOf(claim_ast)], options);
             expect(r).toBe(0);
             if( !r ){
@@ -74,6 +86,7 @@ test("cmd apply test - 1 ", async () => {
 
 test("cmd apply test - 2 ", async () => {
     // Expand (widen) the type of some columns.
-    // See that NOT NULL, DEFAULT, UNIQUE are kept through that. 
+    // See that NOT NULL, DEFAULT, UNIQUE are kept through that.  
+
 });
 
