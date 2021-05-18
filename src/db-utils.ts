@@ -200,11 +200,11 @@ export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (strin
                     let xti_c = xti?.[tn]?.[c_name];
                     if (xti_c?.expect_type == type) {
                         // Add in column properties reported in XTI
-                        for( let k in xti_c ){
-                            if( k=="expect_type" ) continue;
+                        for (let k in xti_c) {
+                            if (k == "expect_type") continue;
                             c[k] = xti_c[k];
                             // Update local var
-                            if( k=="data_type" ) type = c[k];
+                            if (k == "data_type") type = c[k];
                         }
                     }
 
@@ -229,10 +229,18 @@ export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (strin
                             delete c[k];
                     }
                     // Delete the schema property ? 
-                    if (conn.client.config.client == "pg" && c.schema == "public") {
+                    if (client == "pg" && c.schema == "public") {
                         delete c.schema;
                         if (c.foreign_key_schema == "public")
                             delete c.foreign_key_schema;
+                    }
+                    if (client == "mysql" && c.default_value) {
+                        // !!BUG!! This is most likely a bug in SchemaInspector 
+                        let dv = c.default_value;
+                        if (dv[0] == dv.slice(-1) && dv[0] == "'"){
+                            dv = dv.slice(1,-1);
+                            c.default_value = dv;
+                        }
                     }
                     // Make the two foreign key entries a sub table 
                     if (c.foreign_key_table || c.foreign_key_column) {
@@ -264,7 +272,7 @@ let no_datetime_lut: Dict<1> = {
 
 let xti_lut: Dict<Dict<string | Dict<string>>> = {
     mysql: {
-        boolean:  "tinyint",
+        boolean: "tinyint",
     },
     pg: { datetime: "timestamp_tz" },
     sqlite3: {
@@ -278,11 +286,11 @@ let xti_lut: Dict<Dict<string | Dict<string>>> = {
 };
 
 
-const invalid_table_names:Dict<1> = {
+const invalid_table_names: Dict<1> = {
     ___refs: 1,
 }
 
-const invalid_column_names:Dict<1> = {
+const invalid_column_names: Dict<1> = {
     ___refs: 1,
 }
 
@@ -293,19 +301,19 @@ const invalid_column_names:Dict<1> = {
 // valid changes that can be applied, without collisions. 
 // Apart from table names, everything passed down here is assumed to 
 // be a change.
-export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?:boolean): Promise<Dict<any>|string> {
+export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?: boolean): Promise<Dict<any> | string> {
 
     xtra_type_info ||= { ___cnt: 0 };
 
     let client = getClientType(conn);
     for (let t in delta) {
-        if( invalid_table_names[t] ) continue;
+        if (invalid_table_names[t]) continue;
         let t_delta = delta[t];
         if (t_delta !== "*NOT") {
             //let tbl_met = state[t] ? conn.schema.alterTable : conn.schema.createTable;
             let qb = conn.schema[state[t] ? "alterTable" : "createTable"](t, (table) => {
                 for (let col in delta[t]) {
-                    if( invalid_column_names[col] ) continue;
+                    if (invalid_column_names[col]) continue;
                     let col_delta = delta[t][col];
                     let setXtraTypeInfo = (data_type: string, xti: string | Dict<any>) => {
                         xtra_type_info[t] ||= {};
@@ -349,13 +357,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 break;
                             case "int":
                             case "integer":
-                                if( preferGet("has_auto_increment",col_delta,col_base) )
+                                if (preferGet("has_auto_increment", col_delta, col_base))
                                     column = table.increments(col);
                                 else
                                     column = table.integer(col);
                                 break;
                             case "bigint":
-                                if( preferGet("has_auto_increment",col_delta,col_base) )
+                                if (preferGet("has_auto_increment", col_delta, col_base))
                                     column = table.bigIncrements(col);
                                 else
                                     column = table.bigInteger(col);
@@ -411,7 +419,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             if (col_delta.is_primary_key != undefined) {
                                 if (col_delta.is_primary_key) column.primary();
                                 else table.dropPrimary();
-                            } 
+                            }
                             if (col_delta.comment != undefined) {
                                 column.comment(col_delta.comment);
                             }
@@ -448,7 +456,12 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            if( to_sql ) return qb.toString();
+            let debug_sql = false;
+            if( debug_sql ){
+                let sql = qb.toString();
+                let x = 1;
+            }
+            if (to_sql) return qb.toString();
             let r = await qb;
         }
         else {
