@@ -362,6 +362,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         if (tail) sql += " " + tail;
                         return sql;
                     }
+                    const alterTableSql = (lead: string, ident?: string, tail?: string) => {
+                        let sql = `ALTER TABLE ${quoteIdentifier(conn, t)}`;
+                        sql += lead;
+                        if (ident) sql += ` "${ident}"`;
+                        if (tail) sql += " " + tail;
+                        return sql;
+                    }
                     const alterColumnSql = (lead: string, value?: any, tail?: string) => {
                         return affectColumnSql("ALTER",lead,value,tail);
                     }
@@ -454,7 +461,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                     // !!BUG!! Knex approach fails for PG
                                     //table.dropPrimary();
                                     let sql:string;
-                                    if( client=="pg" ) xtra_sql.push( alterColumnSql( `DROP CONSTRAINT "${t}_pk"` ) );
+                                    if( client=="pg" ) xtra_sql.push( alterTableSql( "DROP CONSTRAINT ", t+"_pkey" ) );
                                     else if( client=="mysql" ) {
                                         let sql = modifyColumnSql( preferGet("data_type", col_delta, col_base) );
                                         sql  += " NULL, DROP PRIMARY KEY"
