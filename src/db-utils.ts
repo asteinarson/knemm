@@ -454,7 +454,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                     // !!BUG!! Knex approach fails for PG
                                     //table.dropPrimary();
                                     let sql:string;
-                                    if( client=="pg" ) xtra_sql.push( alterColumnSql( `DROP CONSTRAINT `, t+"_pk" ) );
+                                    if( client=="pg" ) xtra_sql.push( alterColumnSql( `DROP CONSTRAINT "${t}_pk"` ) );
                                     else if( client=="mysql" ) {
                                         let sql = modifyColumnSql( preferGet("data_type", col_delta, col_base) );
                                         sql  += " NULL, DROP PRIMARY KEY"
@@ -513,7 +513,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             if (to_sql) {
                 let sql = qb.toString();
                 if (xtra_sql.length)
-                    sql += ";\n" + xtra_sql.join("\n");
+                    sql += ";\n" + xtra_sql.join(";\n");
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
                 else
