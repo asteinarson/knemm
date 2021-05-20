@@ -53,7 +53,7 @@ export function tryGet<T>(k: string, dict: Dict<T>, fallback_value?: T) {
 export function preferGet<T>(k: string, dict1: Dict<T>, dict2: Dict<T>, fallback_value?: T) {
     if (isDict(dict1)) {
         let r = dict1?.[k];
-        if( r != undefined ) return r;
+        if( r !== undefined ) return r;
     }
     return tryGet(k,dict2,fallback_value);
 }

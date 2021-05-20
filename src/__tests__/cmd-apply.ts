@@ -132,7 +132,7 @@ test("cmd apply test - 2 ", async () => {
                             expect(schema.author.name?.data_type).toBe("text");
                             expect(schema.author.name?.max_length).toBeFalsy();
                             // !!BUG!! Knex does not regenerate the default value of the column for MySQL
-                            if( client!="mysql" )
+                            //if( client!="mysql" )
                                 expect(schema.author.name?.default).toBe("James");
                             expect(schema.author.age?.data_type).toBe("bigint");
                             expect(schema.author.age?.is_nullable).toBe(false);
