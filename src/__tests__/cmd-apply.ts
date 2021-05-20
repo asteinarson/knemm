@@ -122,7 +122,7 @@ test("cmd apply test - 2 ", async () => {
                     expect(schema.author.age?.is_nullable).toBe(false);
 
                     // And apply 2nd step    
-                    r = await handleOneArgCmd("apply" , [fileOf(claim_author_2)], options);
+                    r = await handleOneArgCmd("apply", [fileOf(claim_author_2)], options);
                     expect(r).toBe(0);
                     if (!r) {
                         let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
@@ -131,9 +131,7 @@ test("cmd apply test - 2 ", async () => {
                             //expect(schema.author.id?.data_type).toBe("bigint");
                             expect(schema.author.name?.data_type).toBe("text");
                             expect(schema.author.name?.max_length).toBeFalsy();
-                            // !!BUG!! Knex does not regenerate the default value of the column for MySQL
-                            //if( client!="mysql" )
-                                expect(schema.author.name?.default).toBe("James");
+                            expect(schema.author.name?.default).toBe("James");
                             expect(schema.author.age?.data_type).toBe("bigint");
                             expect(schema.author.age?.is_nullable).toBe(false);
 
