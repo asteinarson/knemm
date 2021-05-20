@@ -396,7 +396,8 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             case "int":
                             case "integer":
                                 // !! This is round about, but necessary to work around how Knex generates SQL
-                                if (preferGet("has_auto_increment", col_base, col_delta))
+                                if (preferGet("has_auto_increment", col_base, col_delta) ||
+                                    preferGet("is_primary_key", col_base, col_delta))
                                     column = table.increments(col);
                                 else
                                     column = table.integer(col);
