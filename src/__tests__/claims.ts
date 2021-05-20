@@ -227,9 +227,9 @@ export let claim_customer_2 = {
     },
     ___tables: {
         customer: {
-            id: {
-                is_primary_key: false,
-            },
+            //id: {
+            //    is_primary_key: false,
+            //},
             name: {
                 default: null as any,
             },
