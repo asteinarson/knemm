@@ -207,7 +207,6 @@ test("cmd apply test - 3 ", async () => {
                             expect(schema.customer.name?.default).toBe(undefined);
                             expect(schema.customer.email?.is_unique).toBeFalsy();
                             expect(schema.customer.age?.is_nullable).toBe(undefined);
-        
                         }
                     }
                 }
