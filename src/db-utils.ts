@@ -50,6 +50,13 @@ export function quoteIdentifier(knex_conn: Knex, what: string) {
     return md ? md[1] : "";
 }
 
+export function formatValue(v: string | number | boolean | null) {
+    if (isString(v)) return `'${v}'`;
+    if (isNumber(v)) return `${v}`;
+    if (typeof v == "boolean") return v ? "TRUE" : "FALSE";
+    return "NULL";
+}
+
 export async function disconnectAll() {
     for (let k in knex_conns) {
         await knex_conns[k].destroy();
@@ -86,7 +93,7 @@ export function getClientType(ci: Record<string, string> | Knex) {
     }
 }
 
-import { Dict, isDict, preferGet } from "./utils";
+import { Dict, isDict, isNumber, preferGet } from "./utils";
 
 // column props that are by default true 
 const default_true_props: Dict<boolean> = {
@@ -148,6 +155,7 @@ const default_type_vals: Dict<Dict<string | number>> = {
 
 import schemaInspector from 'knex-schema-inspector';
 import { writeFileSync } from 'fs';
+import { isString } from 'lodash';
 export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
     // Workaround for ESM import 
@@ -345,6 +353,22 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         }
                     }
 
+                    // Generate an ALTER TABLE ALTER <column>... 
+                    const affectColumnSql = (method:"ALTER"|"MODIFY"|"CHANGE", lead: string, value?: any, tail?: string) => {
+                        let sql = `ALTER TABLE ${quoteIdentifier(conn, t)} ${method} ${quoteIdentifier(conn, col)} `
+                        sql += lead;
+                        if (value !== undefined)
+                            sql += " " + formatValue(value);
+                        if (tail) sql += " " + tail;
+                        return sql;
+                    }
+                    const alterColumnSql = (lead: string, value?: any, tail?: string) => {
+                        return affectColumnSql("ALTER",lead,value,tail);
+                    }
+                    const modifyColumnSql = (lead: string, value?: any, tail?: string) => {
+                        return affectColumnSql("MODIFY",lead,value,tail);
+                    }
+
                     if (col_delta != "*NOT") {
                         const is_new_column = !state[t]?.[col];
                         let col_base: Dict<any> = is_new_column ? {} : state[t][col];
@@ -422,10 +446,21 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 setXtraTypeInfo(data_type, xti);
 
                             if (!is_new_column) column.alter();
+
                             // Add other properties 
                             if (col_delta.is_primary_key != undefined) {
                                 if (col_delta.is_primary_key) column.primary();
-                                else table.dropPrimary();
+                                else{
+                                    // !!BUG!! Knex approach fails for PG
+                                    //table.dropPrimary();
+                                    let sql:string;
+                                    if( client=="pg" ) xtra_sql.push( alterColumnSql( `DROP CONSTRAINT `, t+"_pk" ) );
+                                    else if( client=="mysql" ) {
+                                        let sql = modifyColumnSql( preferGet("data_type", col_delta, col_base) );
+                                        sql  += " NULL, DROP PRIMARY KEY"
+                                        xtra_sql.push( sql );
+                                    }
+                                }
                             }
                             if (col_delta.comment != undefined) {
                                 column.comment(col_delta.comment);
@@ -447,11 +482,9 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             if (!is_new_column) {
                                 let default_v = preferGet("default", col_delta, col_base);
                                 if (default_v !== undefined) {
-                                    let sql = `ALTER TABLE ${quoteIdentifier(conn, t)} ALTER ${quoteIdentifier(conn, col)} `;
-                                    if (default_v != null)
-                                        sql += `SET DEFAULT '${default_v}';`;
-                                    else
-                                        sql += `DROP DEFAULT;`;
+                                    let sql: string;
+                                    if (default_v != null) sql = alterColumnSql("SET DEFAULT", default_v);
+                                    else sql = alterColumnSql("DROP DEFAULT");
                                     xtra_sql.push(sql);
                                 }
                             }
@@ -479,7 +512,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             });
             if (to_sql) {
                 let sql = qb.toString();
-                if( xtra_sql.length )
+                if (xtra_sql.length)
                     sql += ";\n" + xtra_sql.join("\n");
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
@@ -487,13 +520,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     return sql;
             }
             let r = await qb;
-            if( xtra_sql.length ){
-                r = await conn.raw( xtra_sql.join("\n") );
+            if (xtra_sql.length) {
+                r = await conn.raw(xtra_sql.join("\n"));
             }
         }
         else {
             let r = await conn.schema.dropTable(t);
-            delete xtra_type_info[t]; 
+            delete xtra_type_info[t];
         }
     }
     return xtra_type_info;
