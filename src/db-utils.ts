@@ -487,7 +487,9 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     return sql;
             }
             let r = await qb;
-            let r1 = await conn.raw( xtra_sql.join("\n") );
+            if( xtra_sql.length ){
+                r = await conn.raw( xtra_sql.join("\n") );
+            }
         }
         else {
             let r = await conn.schema.dropTable(t);
