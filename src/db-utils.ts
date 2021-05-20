@@ -493,7 +493,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
         }
         else {
             let r = await conn.schema.dropTable(t);
-            delete xtra_type_info[t];
+            delete xtra_type_info[t]; 
         }
     }
     return xtra_type_info;

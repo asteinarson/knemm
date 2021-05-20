@@ -9,7 +9,7 @@ import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, norma
 import { connect, disconnectAll, getClientType, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
-import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3 } from './claims';
+import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
@@ -90,7 +90,7 @@ test("cmd apply test - 1 ", async () => {
 
 test("cmd apply test - 2 ", async () => {
     // Expand (widen) the type of some columns.
-    // See that NOT NULL, DEFAULT, UNIQUE are kept through that.  
+    // See that NOT NULL, DEFAULT are kept through that.  
 
     claimsToFile([claim_author_1, claim_author_2, claim_author_3]);
 
@@ -102,8 +102,6 @@ test("cmd apply test - 2 ", async () => {
     let db = await getConnectedDb(name);
     if (isDict(db)) {
         let client = getClientType(db);
-        // sqlite does not natively support ALTER TABLE beyond rename
-        if( client=="sqlite3" ) return; 
 
         // Connect it 
         let r: any = await connectState(options.state, db, options);
@@ -123,6 +121,9 @@ test("cmd apply test - 2 ", async () => {
                     expect(schema.author.name?.default).toBe("James");
                     expect(schema.author.age?.data_type).toBe("int");
                     expect(schema.author.age?.is_nullable).toBe(false);
+
+                    // sqlite does not natively support ALTER TABLE beyond rename
+                    if (client == "sqlite3") return;
 
                     // And apply 2nd step    
                     r = await handleOneArgCmd("apply", [fileOf(claim_author_2)], options);
@@ -161,4 +162,58 @@ test("cmd apply test - 2 ", async () => {
     }
 
 });
+
+test("cmd apply test - 3 ", async () => {
+    // Start w NOT NULL and UNIQUE. Drop those, verify
+
+    claimsToFile([claim_customer_1, claim_customer_2]);
+
+    let name = "state_customer";
+    let options = (await getCleanStateDir(name)) as Dict<any>;
+    //options.showQueries = "debug";
+
+    // The DB conn  
+    let db = await getConnectedDb(name);
+    if (isDict(db)) {
+        let client = getClientType(db);
+
+        // Connect it 
+        let r: any = await connectState(options.state, db, options);
+        if (r == true) {
+            // And apply 1st step    
+            r = await handleOneArgCmd("apply", [fileOf(claim_customer_1)], options);
+            expect(r).toBe(0);
+            if (!r) {
+                let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                expect(isDict(schema)).toBeTruthy();
+                if (schema) {
+                    expect(schema.customer).toBeTruthy();
+                    expect(schema.customer.id?.is_primary_key).toBe(true);
+                    expect(schema.customer.name?.default).toBe("James");
+                    expect(schema.customer.email?.is_unique).toBe(true);
+                    expect(schema.customer.age?.is_nullable).toBe(false);
+
+                    // sqlite does not natively support ALTER TABLE beyond rename
+                    if (client == "sqlite3") return;
+
+                    // Apply the 2nd step 
+                    r = await handleOneArgCmd("apply", [fileOf(claim_customer_2)], options);
+                    expect(r).toBe(0);
+                    if (!r) {
+                        let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                        expect(isDict(schema)).toBeTruthy();
+                        if (schema) {
+                            expect(schema.customer.id?.is_primary_key).toBeFalsy();
+                            expect(schema.customer.name?.default).toBe("Dolly");
+                            expect(schema.customer.email?.is_unique).toBeFalsy();
+                            expect(schema.customer.age?.is_nullable).toBe(undefined);
+        
+                        }
+                    }
+                }
+            }
+        }
+    }
+});
+
 

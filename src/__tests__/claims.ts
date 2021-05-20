@@ -189,3 +189,58 @@ export let claim_author_3 = {
         },
     }
 };
+
+
+export let claim_customer_1 = {
+    format: "internal",
+    id: {
+        branch: "customer",
+        version: 1
+    },
+    ___tables: {
+        customer: {
+            id: {
+                data_type: "int",
+                is_primary_key: true,
+            },
+            name: {
+                data_type: "text",
+                default: "Dolly",
+            },
+            email: {
+                data_type: "text",
+                is_unique: true,
+            },
+            age: {
+                data_type: "int",
+                is_nullable: false,
+            },
+        },
+    }
+};
+
+export let claim_customer_2 = {
+    format: "internal",
+    id: {
+        branch: "customer",
+        version: 2
+    },
+    ___tables: {
+        customer: {
+            id: {
+                is_primary_key: false,
+            },
+            name: {
+                default: null as any,
+            },
+            email: {
+                data_type: "text",
+                is_unique: false,
+            },
+            age: {
+                data_type: "int",
+                is_nullable: true,
+            },
+        },
+    }
+};
