@@ -354,7 +354,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
 
                     // Generate an ALTER TABLE ALTER <column>... 
-                    const affectColumnSql = (method:"ALTER"|"MODIFY"|"CHANGE", lead: string, value?: any, tail?: string) => {
+                    const affectColumnSql = (method: "ALTER" | "MODIFY" | "CHANGE", lead: string, value?: any, tail?: string) => {
                         let sql = `ALTER TABLE ${quoteIdentifier(conn, t)} ${method} ${quoteIdentifier(conn, col)} `
                         sql += lead;
                         if (value !== undefined)
@@ -370,10 +370,10 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         return sql;
                     }
                     const alterColumnSql = (lead: string, value?: any, tail?: string) => {
-                        return affectColumnSql("ALTER",lead,value,tail);
+                        return affectColumnSql("ALTER", lead, value, tail);
                     }
                     const modifyColumnSql = (lead: string, value?: any, tail?: string) => {
-                        return affectColumnSql("MODIFY",lead,value,tail);
+                        return affectColumnSql("MODIFY", lead, value, tail);
                     }
 
                     if (col_delta != "*NOT") {
@@ -457,15 +457,15 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             // Add other properties 
                             if (col_delta.is_primary_key != undefined) {
                                 if (col_delta.is_primary_key) column.primary();
-                                else{
+                                else {
                                     // !!BUG!! Knex approach fails for PG
                                     //table.dropPrimary();
-                                    let sql:string;
-                                    if( client=="pg" ) xtra_sql.push( alterTableSql( "DROP CONSTRAINT ", t+"_pkey" ) );
-                                    else if( client=="mysql" ) {
-                                        let sql = modifyColumnSql( preferGet("data_type", col_delta, col_base) );
-                                        sql  += " NULL, DROP PRIMARY KEY"
-                                        xtra_sql.push( sql );
+                                    let sql: string;
+                                    if (client == "pg") xtra_sql.push(alterTableSql("DROP CONSTRAINT ", t + "_pkey"));
+                                    else if (client == "mysql") {
+                                        let sql = modifyColumnSql(preferGet("data_type", col_delta, col_base));
+                                        sql += " NULL, DROP PRIMARY KEY"
+                                        xtra_sql.push(sql);
                                     }
                                 }
                             }
@@ -526,9 +526,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 else
                     return sql;
             }
-            let r = await qb;
-            if (xtra_sql.length) {
-                r = await conn.raw(xtra_sql.join("\n"));
+            try {
+                let r = await qb;
+                if (xtra_sql.length) {
+                    r = await conn.raw(xtra_sql.join(";\n"));
+                }
+            } catch (e) {
+                console.error("modifySchema - SQL exec exc: " + e.toString());
             }
         }
         else {

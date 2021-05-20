@@ -170,7 +170,7 @@ test("cmd apply test - 3 ", async () => {
 
     let name = "state_customer";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    //options.showQueries = "debug";
+    options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
