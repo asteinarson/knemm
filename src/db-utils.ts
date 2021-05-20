@@ -44,6 +44,7 @@ export async function disconnect(knex_conn: Knex) {
 let re_extract_quoted = /from([^;]+);?/i;
 export function quoteIdentifier(knex_conn: Knex, what: string) {
     // This is roundabout, but I don't find direct way to do it in Knex
+    // TODO! We can extract the quote char, store it in a cache, together w connection (or its type)
     let sql = knex_conn.select("*").from(what).toString();
     let md = sql.match(re_extract_quoted);
     return md ? md[1] : "";
@@ -309,6 +310,7 @@ const invalid_column_names: Dict<1> = {
 export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any>, xtra_type_info?: Dict<any>, to_sql?: boolean | "debug"): Promise<Dict<any> | string> {
 
     xtra_type_info ||= { ___cnt: 0 };
+    let xtra_sql: string[] = [];
 
     let client = getClientType(conn);
     for (let t in delta) {
@@ -320,7 +322,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 for (let col in delta[t]) {
                     if (invalid_column_names[col]) continue;
                     let col_delta = delta[t][col];
-                    let setXtraTypeInfo = (data_type: string, xti: string | Dict<any>) => {
+                    const setXtraTypeInfo = (data_type: string, xti: string | Dict<any>) => {
                         xtra_type_info[t] ||= {};
                         let xti_r = (xtra_type_info[t][col] ||= { data_type });
                         if (isDict(xti)) {
@@ -441,11 +443,25 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 // Have to recreate 
                                 column.notNullable();
 
-                            if (col_delta.default !== undefined)
-                                column.defaultTo(col_delta.default);
-                            else if (!is_new_column && col_base.default)
-                                // Have to recreate 
-                                column.defaultTo(col_base.default);
+                            // Since there is an issue w Knex and MySQL, we do this property separately 
+                            if (!is_new_column) {
+                                let default_v = preferGet("default", col_delta, col_base);
+                                if (default_v !== undefined) {
+                                    let sql = `ALTER TABLE ${quoteIdentifier(conn, t)} ALTER ${quoteIdentifier(conn, col)} `;
+                                    if (default_v != null)
+                                        sql += `SET DEFAULT '${default_v}';`;
+                                    else
+                                        sql += `DROP DEFAULT;`;
+                                    xtra_sql.push(sql);
+                                }
+                            }
+                            else {
+                                if (col_delta.default !== undefined)
+                                    column.defaultTo(col_delta.default);
+                                else if (!is_new_column && col_base.default)
+                                    // Have to recreate 
+                                    column.defaultTo(col_base.default);
+                            }
 
                             const fk = col_delta.foreign_key;
                             if (fk) {
@@ -463,12 +479,15 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             });
             if (to_sql) {
                 let sql = qb.toString();
+                if( xtra_sql.length )
+                    sql += ";\n" + xtra_sql.join("\n");
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
                 else
                     return sql;
             }
             let r = await qb;
+            let r1 = await conn.raw( xtra_sql.join("\n") );
         }
         else {
             let r = await conn.schema.dropTable(t);
