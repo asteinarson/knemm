@@ -189,7 +189,7 @@ test("cmd apply test - 3 ", async () => {
                 if (schema) {
                     expect(schema.customer).toBeTruthy();
                     expect(schema.customer.id?.is_primary_key).toBe(true);
-                    expect(schema.customer.name?.default).toBe("James");
+                    expect(schema.customer.name?.default).toBe("Dolly");
                     expect(schema.customer.email?.is_unique).toBe(true);
                     expect(schema.customer.age?.is_nullable).toBe(false);
 
@@ -204,7 +204,7 @@ test("cmd apply test - 3 ", async () => {
                         expect(isDict(schema)).toBeTruthy();
                         if (schema) {
                             expect(schema.customer.id?.is_primary_key).toBeFalsy();
-                            expect(schema.customer.name?.default).toBe("Dolly");
+                            expect(schema.customer.name?.default).toBe(undefined);
                             expect(schema.customer.email?.is_unique).toBeFalsy();
                             expect(schema.customer.age?.is_nullable).toBe(undefined);
         
