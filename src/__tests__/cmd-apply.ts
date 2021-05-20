@@ -102,6 +102,9 @@ test("cmd apply test - 2 ", async () => {
     let db = await getConnectedDb(name);
     if (isDict(db)) {
         let client = getClientType(db);
+        // sqlite does not natively support ALTER TABLE beyond rename
+        if( client=="sqlite3" ) return; 
+
         // Connect it 
         let r: any = await connectState(options.state, db, options);
         if (r == true) {
