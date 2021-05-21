@@ -219,7 +219,7 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
 test("cmd apply test - 4 - foreign key", async () => {
     // Start w NOT NULL and UNIQUE. Drop those, verify.
 
-    claimsToFile([claim_author_1, claim_author_2,claim_book_1,claim_book_2]);
+    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2]);
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
@@ -248,10 +248,24 @@ test("cmd apply test - 4 - foreign key", async () => {
                     expect(schema.book.author_id?.foreign_key).toBeTruthy();
                     expect(schema.book.author_id?.foreign_key?.table).toBe("author");
                     expect(schema.book.author_id?.foreign_key?.column).toBe("id");
+
+                    // And apply 2nd step    
+                    r = await handleOneArgCmd("apply", [fileOf(claim_book_2)], options);
+                    expect(r).toBe(0);
+                    if (!r) {
+                        let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                        expect(isDict(schema)).toBeTruthy();
+                        if (schema) {
+                            expect(schema.book.author_id?.data_type).toBe("int");
+                            expect(schema.book.author_id?.foreign_key).toBeFalsy();
+                        }
+                    }
                 }
+
             }
         }
     }
+}
 });
 
 
