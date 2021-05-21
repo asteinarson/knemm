@@ -244,7 +244,7 @@ test("cmd apply test - 4 - foreign key", async () => {
                     expect(schema.book).toBeTruthy();
                     expect(schema.author.id?.data_type).toBe("int");
                     expect(schema.author.name?.data_type).toBe("text");
-                    expect(schema.author.author_id?.data_type).toBe("int");
+                    expect(schema.book.author_id?.data_type).toBe("int");
                     expect(schema.book.author_id?.foreign_key).toBeTruthy();
                     expect(schema.book.author_id?.foreign_key?.table).toBe("author");
                     expect(schema.book.author_id?.foreign_key?.column).toBe("id");
