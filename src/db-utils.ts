@@ -258,7 +258,7 @@ export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (strin
                     }
                     // Make the two foreign key entries a sub table 
                     if (c.foreign_key_table || c.foreign_key_column) {
-                        c.foreign_key = { table: c.foreign_key_table, column: c.c.foreign_key_column }
+                        c.foreign_key = { table: c.foreign_key_table, column: c.foreign_key_column }
                         delete c.foreign_key_table;
                         delete c.foreign_key_column;
                     }
