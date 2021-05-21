@@ -751,13 +751,21 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     break;
                 case "foreign_key":
                     // Accept if candidate does not specify another foreign key 
-                    if (tv) {
+                    if (isDict(tv)) {
                         if (!cv) {
-                            // It would be good to first check for existense of table:column
-                            r.foreign_key = tv;
+                            // ! It would be good to first check for existense of table:column
+                            if( tv.table && tv.column ) r.foreign_key = tv;
+                            else errors.push(`${col_name} - Foreign key lacks table/column: ${JSON.stringify(tv)}`);
                         }
-                        else errors.push(`${col_name} - Foreign key info mismatch: ${cv.table}:${cv.column} => ${tv.table}:${tv.column}`);
+                        else {
+                            if( tv.table!=cv.table || tv.column!=cv.column )
+                                errors.push(`${col_name} - Foreign key info mismatch: ${cv.table}:${cv.column} => ${tv.table}:${tv.column}`);
+                        }
                     }
+                    else if( tv=="*NOT" || tv===null ){
+                        r.foreign_key = "*NOT";
+                    }
+                    else errors.push(`${col_name} - Foreign key - unable to parse: ${tv}`);
                     break;
                 default:
                     errors.push(`${col_name} - Unhandled column keyword: ${tk}`);

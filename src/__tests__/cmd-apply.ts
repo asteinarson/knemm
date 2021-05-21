@@ -265,7 +265,6 @@ test("cmd apply test - 4 - foreign key", async () => {
             }
         }
     }
-}
 });
 
 
