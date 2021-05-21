@@ -686,7 +686,7 @@ function propEqual(v1: PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. Or an array of errors, if not possible. 
-function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>): TableInfoOrErrors {
+function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate:Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
 
@@ -734,6 +734,9 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     break;
                 case "is_primary_key":
                     // We can actually go both ways here - w.o data loss 
+                    // For primary key - and an integer type - we must upgrade 
+                    // the type to unsigned (for possibility of MySQL).
+                    // Or do via XTI (?)
                     if (tv || cv == true) {
                         r.is_primary_key = tv;
                     }
@@ -753,8 +756,14 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     // Accept if candidate does not specify another foreign key 
                     if (isDict(tv)) {
                         if (!cv) {
-                            // ! It would be good to first check for existense of table:column
-                            if( tv.table && tv.column ) r.foreign_key = tv;
+                            if( tv.table && tv.column ){
+                                // Check for the existence of this table and column
+                                if( candidate[tv.table as any]?.[tv.column as any] ){
+                                    // And that the type matches
+                                    r.foreign_key = tv;
+                                }
+                                else errors.push(`${col_name} - Foreign key referenced table/column is missing: ${JSON.stringify(tv)}`);
+                            }
                             else errors.push(`${col_name} - Foreign key lacks table/column: ${JSON.stringify(tv)}`);
                         }
                         else {
@@ -796,7 +805,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
                 if (isDict(tgt_col)) {
-                    let dc = matchDiffColumn(kc, cand_col, tgt_col);
+                    let dc = matchDiffColumn(kc, cand_col, tgt_col, candidate);
                     if (isDict(dc)) {
                         if (firstKey(dc))
                             diff_col = dc;
