@@ -58,6 +58,8 @@ test("cmd apply test - 1 - Single claim, multiple data types", async () => {
     let sd = getStateDir(options);
     expect(sd).toBe(state_dir);
 
+    //options.showQueries = "debug";
+
     // The DB conn  
     let db = await getConnectedDb("state_ast");
     if (isDict(db)) {
@@ -96,7 +98,7 @@ test("cmd apply test - 2 - widen types, keep NOT NULL, DEFAULT", async () => {
 
     let name = "state_author";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    //options.showQueries = "debug";
+    options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -223,7 +225,7 @@ test("cmd apply test - 4 - foreign key", async () => {
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    options.showQueries = "debug";
+    //options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
