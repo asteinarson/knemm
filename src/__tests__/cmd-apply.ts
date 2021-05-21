@@ -98,7 +98,7 @@ test("cmd apply test - 2 - widen types, keep NOT NULL, DEFAULT", async () => {
 
     let name = "state_author";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    options.showQueries = "debug";
+    //options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -225,7 +225,7 @@ test("cmd apply test - 4 - foreign key", async () => {
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    //options.showQueries = "debug";
+    options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -252,6 +252,7 @@ test("cmd apply test - 4 - foreign key", async () => {
                     expect(schema.book.author_id?.foreign_key?.column).toBe("id");
 
                     // And apply 2nd step    
+                    if(!r) return;
                     r = await handleOneArgCmd("apply", [fileOf(claim_book_2)], options);
                     expect(r).toBe(0);
                     if (!r) {
