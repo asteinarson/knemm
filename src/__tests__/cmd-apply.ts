@@ -9,7 +9,7 @@ import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, norma
 import { connect, disconnectAll, getClientType, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
-import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2 } from './claims';
+import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2, claim_book_1, claim_book_2 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
@@ -48,7 +48,7 @@ async function getConnectedDb(db_name: string) {
 
 
 // Need a test to be in this file 
-test("cmd apply test - 1 ", async () => {
+test("cmd apply test - 1 - Single claim, multiple data types", async () => {
     //if( "abc".length>2 ) return;
 
     claimsToFile([claim_ast]);
@@ -88,7 +88,7 @@ test("cmd apply test - 1 ", async () => {
     }
 });
 
-test("cmd apply test - 2 ", async () => {
+test("cmd apply test - 2 - widen types, keep NOT NULL, DEFAULT", async () => {
     // Expand (widen) the type of some columns.
     // See that NOT NULL, DEFAULT are kept through that.  
 
@@ -163,14 +163,14 @@ test("cmd apply test - 2 ", async () => {
 
 });
 
-test("cmd apply test - 3 ", async () => {
+test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
     // Start w NOT NULL and UNIQUE. Drop those, verify
 
     claimsToFile([claim_customer_1, claim_customer_2]);
 
     let name = "state_customer";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    options.showQueries = "debug";
+    //options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -203,6 +203,7 @@ test("cmd apply test - 3 ", async () => {
                         let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
                         expect(isDict(schema)).toBeTruthy();
                         if (schema) {
+                            // ! Knex cannot drop primary keys correctly as of now (PG)
                             //expect(schema.customer.id?.is_primary_key).toBeFalsy();
                             expect(schema.customer.name?.default).toBe(undefined);
                             expect(schema.customer.email?.is_unique).toBeFalsy();
@@ -214,5 +215,44 @@ test("cmd apply test - 3 ", async () => {
         }
     }
 });
+
+test("cmd apply test - 4 - foreign key", async () => {
+    // Start w NOT NULL and UNIQUE. Drop those, verify.
+
+    claimsToFile([claim_author_1, claim_author_2,claim_book_1,claim_book_2]);
+
+    let name = "state_author_book";
+    let options = (await getCleanStateDir(name)) as Dict<any>;
+    options.showQueries = "debug";
+
+    // The DB conn  
+    let db = await getConnectedDb(name);
+    if (isDict(db)) {
+        let client = getClientType(db);
+
+        // Connect it 
+        let r: any = await connectState(options.state, db, options);
+        if (r == true) {
+            // And apply 1st step    
+            r = await handleOneArgCmd("apply", [fileOf(claim_author_2), fileOf(claim_book_1)], options);
+            expect(r).toBe(0);
+            if (!r) {
+                let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                expect(isDict(schema)).toBeTruthy();
+                if (schema) {
+                    expect(schema.author).toBeTruthy();
+                    expect(schema.book).toBeTruthy();
+                    expect(schema.author.id?.data_type).toBe("int");
+                    expect(schema.author.name?.data_type).toBe("text");
+                    expect(schema.author.author_id?.data_type).toBe("int");
+                    expect(schema.book.author_id?.foreign_key).toBeTruthy();
+                    expect(schema.book.author_id?.foreign_key?.table).toBe("author");
+                    expect(schema.book.author_id?.foreign_key?.column).toBe("id");
+                }
+            }
+        }
+    }
+});
+
 
 

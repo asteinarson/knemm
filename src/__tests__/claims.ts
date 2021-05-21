@@ -244,3 +244,49 @@ export let claim_customer_2 = {
         },
     }
 };
+
+export let claim_book_1 = {
+    format: "internal",
+    id: {
+        branch: "book",
+        version: 1
+    },
+    depends: {
+        author: 2,
+    }, 
+    ___tables: {
+        customer: {
+            id: {
+                data_type: "int", 
+                is_primary_key: true,
+            },
+            name: {
+                data_type: "text",
+                is_nullable: false,
+            },
+            author_id: {
+                data_type: "int",
+                foreign_key: {
+                    table: "author",
+                    column: "id",
+                },
+            }
+        }
+    }
+};
+
+export let claim_book_2 = {
+    format: "internal",
+    id: {
+        branch: "book",
+        version: 2
+    },
+    ___tables: {
+        customer: {
+            author_id: {
+                foreign_key: "*NOT",
+            }
+        }
+    }
+};
+
