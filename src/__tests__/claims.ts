@@ -255,7 +255,7 @@ export let claim_book_1 = {
         author: 2,
     }, 
     ___tables: {
-        customer: {
+        book: {
             id: {
                 data_type: "int", 
                 is_primary_key: true,
@@ -282,7 +282,7 @@ export let claim_book_2 = {
         version: 2
     },
     ___tables: {
-        customer: {
+        book: {
             author_id: {
                 foreign_key: "*NOT",
             }
