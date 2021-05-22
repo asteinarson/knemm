@@ -525,25 +525,39 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            let sql = qb.toString() + ";";
+            //let sql = qb.toString() + ";";
+            let sql_a = qb.toSQL() as any as Dict<any>[];
             if (check_autoinc_type_fix && client == "mysql") {
                 // Patch the generated SQL to remove the forced 'unsigned' modifier 
-                let ix = sql.indexOf("unsigned not null auto_increment");
-                if (ix > 0) {
-                    sql = sql.slice(0, ix) + sql.slice(ix + 8);
-                }
+                sql_a.forEach( e => {
+                    let ix = e.sql.indexOf("unsigned not null auto_increment");
+                    if (ix > 0) {
+                        e.sql = e.sql.slice(0, ix) + e.sql.slice(ix + 8);
+                    }
+                });
             }
-            if (xtra_sql.length)
-                sql += xtra_sql.join(";") + ";";
+            if (xtra_sql.length){
+                xtra_sql.forEach( sql => sql_a.push({sql,bindings:[]}) );
+                //sql += xtra_sql.join(";") + ";";
                 //sql += "\n" + xtra_sql.join(";\n") + ";";
+            }
             if (to_sql) {
+                let sql = "";
+                for( let v of sql_a ){
+                    if(sql) sql += "\n";
+                    sql += v.sql + ";";
+                }
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
                 else return sql;
             }
             try {
-                let r = await conn.raw(sql);
-                let x = 1;
+                for( let v of sql_a ){
+                    let r = await conn.raw(v.sql);  
+                    let x = 1;
+                }
+                //let r = await conn.raw(sql);
+                //let x = 1;
             } catch (e) {
                 console.error("modifySchema - SQL exec exc: " + e.toString());
                 throw e;
