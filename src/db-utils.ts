@@ -494,7 +494,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 column.notNullable();
 
                             // Since there is an issue w Knex and MySQL, we do this property separately 
-                            if (!is_new_column) {
+                            if (!is_new_column && client=="pg") {
                                 let default_v = preferGet("default", col_delta, col_base);
                                 if (default_v !== undefined) {
                                     let sql: string;
@@ -505,7 +505,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                             }
                             else {
                                 if (col_delta.default !== undefined)
-                                    column.defaultTo(col_delta.default);
+                                     column.defaultTo(col_delta.default);
                                 else if (!is_new_column && col_base.default)
                                     // Have to recreate 
                                     column.defaultTo(col_base.default);
