@@ -209,11 +209,13 @@ export let claim_customer_1 = {
             },
             email: {
                 data_type: "text",
-                is_unique: true,
+                //is_unique: true,
+                is_nullable: false,
             },
             age: {
                 data_type: "int",
-                is_nullable: false,
+                //is_nullable: false,
+                is_unique: true,
             },
         },
     }
