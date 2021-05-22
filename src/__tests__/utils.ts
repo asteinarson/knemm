@@ -48,7 +48,7 @@ test("tryGet test", () => {
     expect(tryGet("tested", src, 121)).toBe(false);
     expect(tryGet("city", src, "Berlin")).toBe("Berlin");
     expect(tryGet("town", src, "Berlin")).toBe("London");
-    expect(tryGet("town", null, "Berlin")).toBe("Berlin");
+    expect(tryGet("town", null, "Berlin")).toBe(undefined);
     expect(tryGet("town", undefined, "Berlin")).toBe(undefined);
 });
 
