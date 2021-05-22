@@ -366,7 +366,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     const alterTableSql = (lead: string, ident?: string, tail?: string) => {
                         let sql = `ALTER TABLE ${quoteIdentifier(conn, t)} `;
                         sql += lead;
-                        if (ident) sql += ` "${ident}"`;
+                        if (ident) sql += ` ${quoteIdentifier(conn, ident)}`;
                         if (tail) sql += " " + tail;
                         return sql;
                     }
