@@ -6,7 +6,7 @@ that wants to manage its DB schema in a declarative way. It relies largely on th
 for connecting with and executing queries. 
 
 Knemm uses a declarative YAML (or JSON) syntax specifying what tables should exist and columns 
-should behave. The basic part of this is called a *claim* and can look something like: 
+should behave. The basic part of this is called a _claim_ and can look something like: 
 
 
 
