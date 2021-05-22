@@ -194,8 +194,8 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
                     // !!ISSUE!! Currentl Knex suppresses generation of DEFAULT values for TEXT fields
                     if( client!="mysql")
                         expect(schema.customer.name?.default).toBe("Dolly");
-                    expect(schema.customer.email?.is_unique).toBe(true);
-                    expect(schema.customer.age?.is_nullable).toBe(false);
+                    expect(schema.customer.age?.is_unique).toBe(true);
+                    expect(schema.customer.email?.is_nullable).toBe(false);
 
                     // sqlite does not natively support ALTER TABLE beyond rename
                     if (client == "sqlite3") return;
