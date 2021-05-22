@@ -534,7 +534,8 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 }
             }
             if (xtra_sql.length)
-                sql += "\n" + xtra_sql.join(";\n") + ";";
+                sql += xtra_sql.join(";") + ";";
+                //sql += "\n" + xtra_sql.join(";\n") + ";";
             if (to_sql) {
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
