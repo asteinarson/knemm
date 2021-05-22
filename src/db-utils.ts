@@ -247,7 +247,7 @@ export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (strin
                     if (c.default_value) {
                         c.default = c.default_value;
                         delete c.default_value;
-                        if (client == "mysql") {
+                        if (client == "mysql" || client=="sqlite3") {
                             // !!BUG!! This is most likely a bug in SchemaInspector 
                             let dv = c.default;
                             if (dv[0] == dv.slice(-1) && dv[0] == "'") {
