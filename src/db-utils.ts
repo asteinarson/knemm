@@ -525,34 +525,24 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            let sql: string;
+            let sql = qb.toString();
             if (check_autoinc_type_fix && client == "mysql") {
                 // Patch the generated SQL to remove the forced 'unsigned' modifier 
-                sql = qb.toString();
                 let ix = sql.indexOf("unsigned not null auto_increment");
                 if (ix > 0) {
                     sql = sql.slice(0, ix) + sql.slice(ix + 8);
                 }
-                else sql = undefined;
             }
-            if (sql || to_sql) {
-                if (!sql) sql = qb.toString();
-                if (xtra_sql.length)
-                    sql += ";\n" + xtra_sql.join(";\n");
+            if (xtra_sql.length)
+                sql += ";\n" + xtra_sql.join(";\n");
+            if (to_sql) {
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
-                else if (to_sql)
-                    return sql;
+                else return sql;
             }
             try {
-                if( !sql ){
-                    let r = await qb;
-                    if (xtra_sql.length) {
-                        r = await conn.raw(xtra_sql.join(";\n"));
-                    }
-                } else {
-                    let r = await conn.raw(sql);
-                }
+                let r = await conn.raw(sql);
+                let x = 1;
             } catch (e) {
                 console.error("modifySchema - SQL exec exc: " + e.toString());
                 throw e;
