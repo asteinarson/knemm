@@ -468,7 +468,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                                 else {
                                     // !!BUG!! Knex approach fails for PG
                                     //table.dropPrimary();
-                                    let sql: string;
                                     if (client == "pg") xtra_sql.push(alterTableSql("DROP CONSTRAINT ", t + "_pkey"));
                                     else if (client == "mysql") {
                                         let sql = modifyColumnSql(preferGet("data_type", col_delta, col_base));
@@ -525,7 +524,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            //let sql = qb.toString() + ";";
             let sql_a = qb.toSQL() as any as Dict<any>[];
             if (check_autoinc_type_fix && client == "mysql") {
                 // Patch the generated SQL to remove the forced 'unsigned' modifier 
@@ -538,8 +536,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
             }
             if (xtra_sql.length){
                 xtra_sql.forEach( sql => sql_a.push({sql,bindings:[]}) );
-                //sql += xtra_sql.join(";") + ";";
-                //sql += "\n" + xtra_sql.join(";\n") + ";";
             }
             if (to_sql) {
                 let sql = "";
@@ -556,8 +552,6 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     let r = await conn.raw(v.sql);  
                     let x = 1;
                 }
-                //let r = await conn.raw(sql);
-                //let x = 1;
             } catch (e) {
                 console.error("modifySchema - SQL exec exc: " + e.toString());
                 throw e;
