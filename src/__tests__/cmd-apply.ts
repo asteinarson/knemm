@@ -172,7 +172,7 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
 
     let name = "state_customer";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    options.showQueries = "debug";
+    //options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -192,7 +192,7 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
                     expect(schema.customer).toBeTruthy();
                     expect(schema.customer.id?.is_primary_key).toBe(true);
                     // !!ISSUE!! Currentl Knex suppresses generation of DEFAULT values for TEXT fields
-                    if( client!="mysql")
+                    //if( client!="mysql")
                         expect(schema.customer.name?.default).toBe("Dolly");
                     expect(schema.customer.age?.is_unique).toBe(true);
                     expect(schema.customer.email?.is_nullable).toBe(false);
@@ -233,6 +233,7 @@ test("cmd apply test - 4 - foreign key", async () => {
     let db = await getConnectedDb(name);
     if (isDict(db)) {
         let client = getClientType(db);
+        if( client=="sqlite3" ) return;  // No fk here, by default
 
         // Connect it 
         let r: any = await connectState(options.state, db, options);
