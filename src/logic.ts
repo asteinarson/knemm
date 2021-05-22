@@ -758,9 +758,12 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                         if (!cv) {
                             if( tv.table && tv.column ){
                                 // Check for the existence of this table and column
-                                if( candidate[tv.table as any]?.[tv.column as any] ){
+                                let fk_ref_col = candidate[tv.table as any]?.[tv.column as any];
+                                if( fk_ref_col ){
                                     // And that the type matches
-                                    r.foreign_key = tv;
+                                    if( fk_ref_col.data_type==tgt_col.data_type )
+                                        r.foreign_key = tv;
+                                    else errors.push(`${col_name} - Foreign key referenced column type differs: ${fk_ref_col.data_type} vs ${tgt_col.data_type}`);
                                 }
                                 else errors.push(`${col_name} - Foreign key referenced table/column is missing: ${JSON.stringify(tv)}`);
                             }
