@@ -525,7 +525,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            let sql = qb.toString();
+            let sql = qb.toString() + ";";
             if (check_autoinc_type_fix && client == "mysql") {
                 // Patch the generated SQL to remove the forced 'unsigned' modifier 
                 let ix = sql.indexOf("unsigned not null auto_increment");
@@ -534,7 +534,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                 }
             }
             if (xtra_sql.length)
-                sql += ";\n" + xtra_sql.join(";\n");
+                sql += "\n" + xtra_sql.join(";\n") + ";";
             if (to_sql) {
                 if (to_sql == "debug")
                     writeFileSync("./modifySchema_" + (debug_sql_cnt++) + ".sql", sql);
