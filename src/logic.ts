@@ -92,9 +92,6 @@ function excludeFromState(file: string) {
 
 const re_yj = /\.(json|yaml|JSON|YAML)$/;
 
-// A temporary solution, better to store normalized claims in state
-let stdin_was_json = false;
-
 // Rebuild the state directory from claims that are stored in the directory
 export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     if (!existsSync(state_dir))
@@ -634,7 +631,6 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
             try {
                 let r_json = JSON.parse(s_in);
                 if (isDict(r_json)) r = r_json;
-                stdin_was_json = true;
             } catch (e) {
                 return errorRv("toStateClaim - Failed parsing stdin, exception: " + e.toString());
             }
