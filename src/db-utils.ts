@@ -93,7 +93,7 @@ export function getClientType(ci: Record<string, string> | Knex) {
     }
 }
 
-import { Dict, isDict, isNumber, preferGet } from "./utils";
+import { isString, Dict, isDict, isNumber, preferGet } from "./utils";
 
 // column props that are by default true 
 const default_true_props: Dict<boolean> = {
@@ -155,7 +155,6 @@ const default_type_vals: Dict<Dict<string | number>> = {
 
 import schemaInspector from 'knex-schema-inspector';
 import { writeFileSync } from 'fs';
-import { isString } from 'lodash';
 export async function slurpSchema(conn: Knex, xti?: Dict<any>, includes?: (string | RegExp)[], excludes?: (string | RegExp)[])
     : Promise<Record<string, any>> {
     // Workaround for ESM import 
