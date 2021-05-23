@@ -16,9 +16,7 @@ import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
 
 import { formatInternal, formatHrCompact } from "./hrc";
 import { Knex } from 'knex';
-import { stringify } from 'node:querystring';
-import { builtinModules } from 'node:module';
-import { fstat, readFileSync } from 'node:fs';
+import { fstat, readFileSync } from 'fs';
 
 export type TableInfoOrErrors = Dict<any> | string[];
 

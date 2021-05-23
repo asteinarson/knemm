@@ -24,7 +24,7 @@ async function getCleanStateDir(name: string) {
     // Make sure we have an empty test dir - for our state
     let state_dir = pJoin(tmpdir(), name);
     let options = {
-        internal: true,
+        internal: true, 
         state: state_dir,
     };
     let rm = await rimraf.sync(state_dir);
