@@ -1,4 +1,4 @@
-import { Dict, firstKey, isArray, isDict } from '../utils';
+import { Dict, firstKey, isArray, isDict, isString } from '../utils';
 
 import { dump as yamlDump } from 'js-yaml';
 
@@ -6,7 +6,6 @@ import { join as pJoin } from 'path';
 //import os from 'os';
 import { tmpdir } from 'os';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
-import { isString } from 'lodash';
 import { appendFileSync } from 'fs';
 
 // Need a test to be in this file 
