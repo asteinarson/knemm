@@ -8,7 +8,7 @@ for connecting with and executing generated queries.
 As of now, clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the Typescript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
 
 Then you also likely want to add a database backend. The best supported ones are Postgresql and MySQL. SqLite is also supported but is feature limited at this time (no column modifications): 
-```bash 
+```shell 
 $ npm i pg   # Install the Postgres DB driver 
 ``` 
 
@@ -49,15 +49,15 @@ The first format is called **internal** and is always used internally when compa
 
 ### Claims - Example
 The first YAML source above will be processed (merged) by the command `join`: 
-```bash
+```shell
 $ knemm join Person_1.yaml 
 person:
   id: int pk auto
   email: varchar(255) unique
   first_name: varchar(64)
 ```
-The command read the single input claim, merged it into an empty state and printed it back in **hrc** format. Can we convert it back yto internal form?  
-```bash
+The command read the single input claim, merged it into an empty state and printed it back in **hrc** format. Can we convert it back to internal form?  
+```shell
 $ knemm join Person_1.yaml | knemm join -i - 
 person:
   ___owner: STDIN
@@ -97,7 +97,7 @@ person:
     second_name: varchar(64)
 ```
 Then we can merge the two claims: 
-```bash
+```shell
 $ knemm join Person_1.yaml Person_2.yaml 
 person:
   id: int pk auto
@@ -106,7 +106,7 @@ person:
   second_name: varchar(64)
 ```
 Actually we don't have to specify each claim it should use. It suffices that we specifies *the highest versioned claim on each branch*: 
-```bash
+```shell
 $ knemm join Person_2.yaml 
 person:
    # ... same as above
@@ -126,7 +126,7 @@ person:
     email: text
 ```
 Then we can merge the two claims: 
-```bash
+```shell
 $ knemm join Person_3.yaml 
 person:
   id: int pk auto
@@ -137,17 +137,6 @@ person:
 As you see, we only modified the data type of `email`. The `unique` property was declared before, and it just remained there: 
 
 > **knemm** aims at fulfilling each claim with the smallest possible modification. 
-
-# Branches / modules
-**Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
-
-One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
-
-Knemm will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
-
-So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
-
-The two **'m'**:s in *Knemm* stands for just that, *multi-migrations* (several connected flows of DB migrations connected with dependecy points and explicit expectations). 
 
 ## Claim ID:s 
 
@@ -168,7 +157,7 @@ id:
   version: 4
 ```
 or the ID can be contained in their filenames: 
-```bash
+```shell
 $ ls Person*.yaml 
 Person_1.yaml  Person_2.yaml  Person_4.yaml Person_7.yaml
 ```
@@ -180,6 +169,18 @@ person:
     first_name: varchar(64)
 ```
 The file just contains the **___tables** section. So we then have a very compact way of expressing DB claims. 
+
+# Branches / modules
+**Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
+
+One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
+
+Knemm will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
+
+So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
+
+The two **'m'**:s in *Knemm* stands for just that, *multi-migrations* (several connected flows of DB migrations connected with dependecy points and explicit expectations). 
+
 
 
 
