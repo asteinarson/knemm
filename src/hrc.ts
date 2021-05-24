@@ -1,9 +1,6 @@
 
 import { invert as ldInvert, Dict, firstKey, notInLut } from './utils';
 
-//import pkg from 'lodash';
-//const { invert: ldInvert } = pkg;
-
 import { multiReplace } from "./str-utils";
 
 //let re_enc_needed = /[_ \(\)]/;

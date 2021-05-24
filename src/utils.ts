@@ -1,4 +1,3 @@
-import { isObject } from "lodash";
 
 export type Dict<T> = Record<string, T>;
 export type BaseTypes = string | number | boolean;

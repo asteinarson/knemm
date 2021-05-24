@@ -3,8 +3,6 @@ import {
     notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt,
     objectMap, append, objectPrune, deepCopy
 } from './utils';
-//import pkg from 'lodash';
-//const { invert: ldInvert } = pkg;
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
