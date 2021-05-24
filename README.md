@@ -7,6 +7,11 @@ for connecting with and executing generated queries.
 # Installing 
 As of now, clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the Typescript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
 
+Then you also likely want to add a database backend. The best supported ones are Postgresql and MySQL. SqLite is also supported but is feature limited at this time (no column modifications): 
+```bash 
+$ npm i pg   # Install the Postgres DB driver 
+``` 
+
 # Claims
 Knemm uses a declarative YAML (or JSON) syntax (termed a **claim**), specifying what tables should exist and what is expected of named columns. A claim gives a minimum requirement that a database (or a collection of other claims - a **state**) should satisfy. 
 
