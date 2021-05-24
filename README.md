@@ -10,8 +10,7 @@ As of now, clone this repository (to a Linux/Unix host). Then run `npm install`.
 # Claims
 Knemm uses a declarative YAML (or JSON) syntax (termed a **claim**), specifying what tables should exist and what is expected of named columns. A claim gives a minimum requirement that a database (or a collection of other claims - a **state**) should satisfy. 
 
-Here's what a claim can look like: 
-
+Here's what a claim can look like (the example below uses this stored in a file `Person_1.yaml`): 
 ```yaml
 id:
   branch: Person
@@ -41,7 +40,35 @@ ___tables:
         first_name: varchar(64)
 ```
 
-The first format is called **internal** and is always used internally when comparing, processing and merging claims. The second format - **hrc** - is used for compact notation - when reading / writing files. A claim can be converted back and forth between these two formats, without loss, so for practical purposes, they are interchangeable. (**hrc** stands for: ***h**uman **r**eadable **c**ompact form*.)
+The first format is called **internal** and is always used internally when comparing, processing and merging claims. The second format - **hrc** - is used for compact notation - when reading / writing files. A correctly formed claim can be converted back and forth between these two formats, without loss, so for practical purposes, they are interchangeable. (**hrc** stands for: ***h**uman **r**eadable **c**ompact form*.)
+
+### Claims - Example 1
+The first YAML source above will be processed (merged) by the command `join`: 
+```bash
+$ knemm join Person_1.yaml 
+person:
+  id: int pk auto
+  email: varchar(255) unique
+  first_name: varchar(64)
+```
+The command read the single input claim, merged it into an empty state and printed it back in **hrc** format. Can we convert it back yto internal form?  
+```bash
+$ knemm join Person_1.yaml | knemm join -i - 
+person:
+  ___owner: STDIN
+  id:
+    data_type: int
+    is_primary_key: true
+    has_auto_increment: true
+  email:
+    max_length: 255
+    data_type: varchar
+    is_unique: true
+  first_name:
+    max_length: 64
+    data_type: varchar
+```
+Yes, we could, by piping the output to another `knemm`, specifying `-i` (generate output in internal format) - and specifying STDIN as the source for the claim (via the last **-**). Since the first command stripped away the claim ID, `knemm` has added `STDIN` as the ID of the claim. 
 
 ## Claims on the same branch
 In the YAML above, your see that the ID of it is `Person_1`. Say that we want to add a column `second_name` to the table, then we can create a second claim: 
