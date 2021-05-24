@@ -4,8 +4,10 @@ Knemm is a tool and library intended for DB schema administration and inspection
 that wants to manage its DB schema in a declarative way. It relies largely on the _Knex.js_ library
 for connecting with and executing generated queries. 
 
+**STATUS:** **knemm** is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Details and features are not yet stable.  
+
 # Installing 
-As of now, clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the Typescript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
+As of now, clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the TypeScript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
 
 Then you also likely want to add a database backend. The best supported ones are Postgresql and MySQL. SqLite is also supported but is feature limited at this time (no column modifications): 
 ```shell 
@@ -178,7 +180,7 @@ $ knemm join -s person-app Person_3.yaml
 $ ls person-app 
 Person_1.yaml  Person_2.yaml  Person_3.yaml  ___merge.yaml
 ```
-So we got a directory created and a file `___merge.yaml` created there. And each claim that was used to build it was copied here. You can inpsect the generated file `___merge.yaml` in a text viewer. It contains the merge and a couple of internal properties has been added to it. Keep in mind: 
+So we got a directory created and a file `___merge.yaml` created there. And each claim that was used to build it was copied here. You can inspect the generated file `___merge.yaml` in a text viewer. It contains the merge and a couple of internal properties has been added to it. Keep in mind: 
 > `___merge.yaml` is automatically generated and should not be manually edited. 
 
 Now if we (later) want to inspect a given state, we can run: 
