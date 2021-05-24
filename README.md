@@ -161,7 +161,7 @@ or the ID can be contained in their filenames:
 $ ls Person*.yaml 
 Person_1.yaml  Person_2.yaml  Person_4.yaml Person_7.yaml
 ```
-In the latter case, one can omit the ID from the internal YAML - and optionally leave out the whole YAML/JSON top level, and end up with the content of 'Person_1.yaml' being: 
+In the latter case, one can omit the ID from the internal YAML - and optionally leave out the whole YAML/JSON top level, and end up with the content of `Person_1.yaml` being: 
 ```yaml
 person:
     id: int pk auto
@@ -169,6 +169,28 @@ person:
     first_name: varchar(64)
 ```
 The file just contains the **___tables** section. So we then have a very compact way of expressing DB claims. 
+
+# States
+So far we have specified claims as inputs and had `knemm` check and merge them and then print the result to stdout. However, if we have an application, we likely want to store its DB schema more persistently. To achieve this, we can specify a state directory, via `-s` to `knemm`:
+```shell
+$ knemm join -s person-app Person_3.yaml 
+# Same output as before 
+$ ls person-app 
+Person_1.yaml  Person_2.yaml  Person_3.yaml  ___merge.yaml
+```
+So we got a directory created and a file `___merge.yaml` created there. And each claim that was used to build it was copied here. You can inpsect the generated file `___merge.yaml` in a text viewer. It contains the merge and a couple of internal properties has been added to it. Keep in mind: 
+> `___merge.yaml` is automatically generated and should not be manually edited. 
+
+Now if we (later) want to inspect a given state, we can run: 
+```bash
+$ knemm join -s person-app 
+# ... we get the full table state printed out here
+```
+
+# States and Databases
+The state we created above still (by itself) is not a DB schema. However, one can use it to check if a DB fulfills that given state. If not, one can request a diff to be generated, that can be applied to a given DB. Or one can apply the given state to a given DB. 
+
+It can be noted that a given DB can either lag behind the state, it can be in sync with it, or even ahead of it. None of these are **wrong**. They are just states and differences.
 
 # Branches / modules
 **Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
