@@ -113,17 +113,6 @@ The idea of putting changes in new (higher versioned) claim files (instead of ju
 
 So one should really only edit a claim file **before** it has been deployed somewhere. 
 
-# Branches / modules
-**Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
-
-One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
-
-Knemm will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
-
-So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
-
-The two **'m'**:s in *Knemm* stands for just that, *multi-migrations* (several connected flows of DB migrations connected with dependecy points and explicit expectations). 
-
 ### Claim invariability - Example 
 We realize that some emails can be very long. So we would like to have a `TEXT` column there, instead of the `VARCHAR`. We add a new claim - `Person_3.yaml`: 
 
@@ -143,6 +132,17 @@ person:
 As you see, we only modified the data type of `email`. The `unique` property was declared before, and it just remained there: 
 
 > **knemm** aims at fulfilling each claim with the smallest possible modification. 
+
+# Branches / modules
+**Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
+
+One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
+
+Knemm will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
+
+So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
+
+The two **'m'**:s in *Knemm* stands for just that, *multi-migrations* (several connected flows of DB migrations connected with dependecy points and explicit expectations). 
 
 ## Claim ID:s 
 
