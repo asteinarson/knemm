@@ -42,7 +42,7 @@ ___tables:
 
 The first format is called **internal** and is always used internally when comparing, processing and merging claims. The second format - **hrc** - is used for compact notation - when reading / writing files. A correctly formed claim can be converted back and forth between these two formats, without loss, so for practical purposes, they are interchangeable. (**hrc** stands for: ***h**uman **r**eadable **c**ompact form*.)
 
-### Claims - Example 1
+### Claims - Example
 The first YAML source above will be processed (merged) by the command `join`: 
 ```bash
 $ knemm join Person_1.yaml 
@@ -84,6 +84,29 @@ Claims on the same branch are always merged sequentially, so a higher version nu
   - Adding tables/columns to the branch
   - Modifying previously declared properties - in this branch
   - Dropping / removing tables (or columns) - also on the same branch
+
+### Claims on the same branch - Example
+We store below in a file `Person_2.yaml`: 
+```yaml
+person:
+    second_name: varchar(64)
+```
+Then we can merge the two claims: 
+```bash
+$ knemm join Person_1.yaml Person_2.yaml 
+person:
+  id: int pk auto
+  email: varchar(255) unique
+  first_name: varchar(64)
+  second_name: varchar(64)
+```
+Actually we don't have to specify each claim it should use. It suffices that we specifies *the highest versioned claim on each branch*: 
+```bash
+$ knemm join Person_2.yaml 
+person:
+   # ... same as above
+```
+`knemm` understands by itself that it should use `Person_1` as a depenency, if it can be found. 
 
 ## Claim invariability 
 The idea of putting changes in new (higher versioned) claim files (instead of just editing the previous claim file) is that the first claim might already be distributed and applied on existing databases. 
