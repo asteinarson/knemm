@@ -4,6 +4,9 @@ Knemm is a tool and library intended for DB schema administration and inspection
 that wants to manage its DB schema in a declarative way. It relies largely on the _Knex.js_ library
 for connecting with and executing generated queries. 
 
+# Installing 
+As of now, clone this repository (to a Linux/Unix host), runt `npm install`. Then build the Typescript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal (try `npm link` if NPM has not generated exec stubs).
+
 # Claims
 Knemm uses a declarative YAML (or JSON) syntax (termed a **claim**), specifying what tables should exist and what is expected of named columns. A claim gives a minimum requirement that a database (or a collection of other claims - a **state**) should satisfy. 
 
