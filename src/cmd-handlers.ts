@@ -1,6 +1,7 @@
 import {
     toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
+    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, 
+    sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
 } from './logic';
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray, isString, toLut } from "./utils";
@@ -10,6 +11,7 @@ import * as path from "path";
 
 import cmder, { Command } from "commander";
 import { connectCheck, slurpSchema } from './db-utils';
+
 export type CmdOptionAdder = (cmd: cmder.Command) => void;
 export type CmdDesc = { name: string, a1: string, a2: string, desc: string, options?: CmdOptionAdder[] };
 
