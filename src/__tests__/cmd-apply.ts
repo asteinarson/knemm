@@ -229,7 +229,7 @@ test("cmd apply test - 4 - foreign key", async () => {
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    //options.showQueries = "debug";
+    options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);

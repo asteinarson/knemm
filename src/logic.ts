@@ -678,7 +678,7 @@ function propEqual(v1: PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. Or an array of errors, if not possible. 
-function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate: Dict<any>): TableInfoOrErrors {
+function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate: Dict<any>, r_delta:Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
 
@@ -757,6 +757,8 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             if (tv.table && tv.column) {
                                 // Check for the existence of this table and column
                                 let fk_ref_col = candidate[tv.table as any]?.[tv.column as any];
+                                if( !fk_ref_col ) 
+                                    fk_ref_col = r_delta[tv.table as any]?.[tv.column as any];
                                 if (fk_ref_col) {
                                     // And that the type matches
                                     if (fk_ref_col.data_type == tgt_col.data_type)
@@ -818,7 +820,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
                 if (isDict(tgt_col)) {
-                    let dc = matchDiffColumn(kc, cand_col, tgt_col, candidate);
+                    let dc = matchDiffColumn(kc, cand_col, tgt_col, candidate, r);
                     if (isDict(dc)) {
                         if (firstKey(dc))
                             diff_col = dc;
