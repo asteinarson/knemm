@@ -711,7 +711,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             r.is_nullable = true;
                     }
                     else {
-                        if( cv[col_name] ){
+                        if( candidate[col_name] ){
                             // Only an issue if column existed
                             // If the column is a primary key, it is automatically not nullable
                             if (!tgt_col.is_primary_key)
