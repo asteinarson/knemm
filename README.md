@@ -2,17 +2,18 @@
 Knemm is a tool and library intended for DB schema administration, manipulation and inspection, for relational (SQL) databases. It can be used both as a standalone CLI tool and as a Node.js dependency
 for an app that wants to manage its DB schema in a declarative way. It relies largely on the _Knex.js_ library for connecting with and executing generated queries. 
 
-**STATUS:** **knemm** is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Features and details are very much still stabilizing. Feedback and contribution is welcome.  
+**STATUS:** `knemm` is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Features and details are very much still stabilizing. Feedback and contribution is welcome.  
 
 - [Installing](#installing)
     - [Via NPM](#via-npm)
     - [Via git repo](#via-git-repo)
 - [Claims](#claims)
-    - [Claims - Example](#claims---example)
+    - [CLI Example](#cli-example)
   - [Claims on the same branch](#claims-on-the-same-branch)
-    - [Claims on the same branch - Example](#claims-on-the-same-branch---example)
+    - [Same branch - Example](#same-branch---example)
   - [Claim invariability](#claim-invariability)
-    - [Claim invariability - Example](#claim-invariability---example)
+    - [Invariability - Example](#invariability---example)
+  - [Claims used for migration](#claims-used-for-migration)
   - [Claim ID:s](#claim-ids)
     - [Explicit / implicit claim ID:s](#explicit--implicit-claim-ids)
 - [States](#states)
@@ -69,7 +70,7 @@ ___tables:
 
 The first format is called **internal** and is always used internally when comparing, processing and merging claims. The second format - **hrc** - is used for compact notation - when reading / writing files. A correctly formed claim can be converted back and forth between these two formats, without loss, so for practical purposes, they are interchangeable. (**hrc** stands for: ***h**uman **r**eadable **c**ompact form*.)
 
-### Claims - Example
+### CLI Example
 The first YAML source above will be processed (merged) by the command `join`: 
 ```shell
 $ knemm join Person_1.yaml 
@@ -112,7 +113,7 @@ Claims on the same branch are always  merged sequentially, so a higher version n
   - Modifying previously declared properties - in this branch
   - Dropping / removing tables (or columns) - also on the same branch
 
-### Claims on the same branch - Example
+### Same branch - Example
 We store below in a file `Person_2.yaml`: 
 ```yaml
 person:
@@ -140,7 +141,7 @@ The idea of putting changes in new (higher versioned) claim files (instead of ju
 
 So one should really only edit a claim file **before** it has been deployed somewhere. 
 
-### Claim invariability - Example 
+### Invariability - Example 
 We realize that some emails addresses can be very long. So we would like to have a `TEXT` column there, instead of the `VARCHAR`. We add a new claim - `Person_3.yaml`: 
 
 ```yaml
@@ -158,7 +159,23 @@ person:
 ```
 As you see, we only modified the data type of `email`. The `unique` property was declared before, and it just remained there: 
 
-> **knemm** aims at fulfilling each claim with the smallest possible modification. 
+>`knemm` aims at fulfilling each claim with the smallest possible modification. 
+
+## Claims used for migration
+The `knemm` workflow just specifies what we want a certain part of the database to fulfill **at a given moment**. This differs from much schema management in which each migration step has two points:
+  * Exactly what the database should be before - **A**
+  * Exactly what the database is like after - **B**
+
+>Now, claims in `knemm` say nothing about what the database should look like **before** the claim is tested and applied. If the database already fulfills the claim, then nothing is done. If say a column already exists (say as a `tinyint`) and the claim wants and `int`, then the column is widened. If the column is a `bigint`, then it more than fulfills the claim, and it is kept as such. 
+
+A bit more formally, often in migration, this is the model:
+  * Before: **A** == **DB state** 
+  * After: **B** == **DB state** 
+
+With `knemm` it is relaxed/simplified to: 
+  * After: **B** <= **DB state** 
+
+(With **A** being the outcome of the previous migration step, **B** the target of the current state).
 
 ## Claim ID:s 
 
