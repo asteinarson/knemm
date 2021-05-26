@@ -258,7 +258,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
             {
                 let r = await createDb(conn_info, dbname);
                 if (typeof r == "string") {
-                    console.log("createdb - failed: " + r);
+                    console.log("knedb - failed: " + r);
                     rc = 10;
                     break;
                 }
@@ -286,7 +286,7 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
             {
                 let r = await dropDb(conn_info, dbname);
                 if (!isDict(r)) {
-                    console.log("createdb - failed: " + r);
+                    console.log("knedb - failed: " + r);
                     rc = 10;
                     break;
                 }
