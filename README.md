@@ -11,8 +11,9 @@ Install via:
 $ npm i --global knemm
 ```
 Now there should be two new commands available: 
- - `knemm`; This is the main command to manage schema 
- - `knedb`: This is a companion command to handle/create/drop databases 
+ - `knemm`; This is the main command to manage schema. 
+ - `knedb`: This is a companion command to handle/create/drop databases. 
+
 Interfaces for PostgresQL (pg), MySQL and Sqlite3 are enabled by default in the package. 
 
 ### Via git repo
