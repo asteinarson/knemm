@@ -713,7 +713,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     else {
                         // If the column is a primary key, it is automatically not nullable
                         if (!tgt_col.is_primary_key)
-                            errors.push(`${col_name} - Cannot safely go from notNullable => nullable `);
+                            errors.push(`${col_name} - Cannot safely go from nullable => notNullable `);
                     }
                     break;
                 case "is_unique":
@@ -774,7 +774,8 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     break;
                 case "numeric_precision":
                 case "numeric_scale":
-                    // Forward if we have a data type change
+                case "max_length":
+                        // Forward if we have a data type change
                     // !! Also forward if the value itself changes - a bit tricky
                     if( tgt_col.data_type ) {
                         if( tgt_col.data_type!=cand_col?.data_type )
