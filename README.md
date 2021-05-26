@@ -278,7 +278,7 @@ Knemm will then check those requirements, and either the combination works out j
 
 So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
 
-The two **'m'**:s in *Knemm* stands for just that - *multi-migrations*. That is, several connected flows of DB migrations connected with dependency points and explicit expectations. 
+The two **'m'**:s in *Knemm* stands for just that - *multi-migrations*. That is, several connected flows of DB migrations, connected with dependency points and explicit expectations. 
 
 
 
