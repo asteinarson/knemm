@@ -29,7 +29,8 @@
       "ts",
       "tsx",
       "js"
-    ]
+    ],
+    "modulePathIgnorePatterns" : [".*\\.d.ts"]
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",

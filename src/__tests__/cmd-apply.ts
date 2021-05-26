@@ -9,7 +9,7 @@ import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, norma
 import { connect, disconnectAll, getClientType, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
-import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2, claim_book_1, claim_book_2 } from './claims';
+import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2, claim_book_1, claim_book_2, claim_book_3 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
@@ -24,7 +24,7 @@ async function getCleanStateDir(name: string) {
     // Make sure we have an empty test dir - for our state
     let state_dir = pJoin(tmpdir(), name);
     let options = {
-        internal: true, 
+        internal: true,
         state: state_dir,
     };
     let rm = await rimraf.sync(state_dir);
@@ -193,9 +193,9 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
                     expect(schema.customer.id?.is_primary_key).toBe(true);
                     // !!ISSUE!! Currently Knex suppresses generation of DEFAULT values for TEXT fields
                     //if( client!="mysql")
-                        expect(schema.customer.name?.default).toBe("Dolly");
+                    expect(schema.customer.name?.default).toBe("Dolly");
                     // !!ISSUE!! Knex schema inspector does not return is_unique for our column
-                    if( client!="sqlite3")
+                    if (client != "sqlite3")
                         expect(schema.customer.age?.is_unique).toBe(true);
                     expect(schema.customer.email?.is_nullable).toBe(false);
 
@@ -225,7 +225,7 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
 test("cmd apply test - 4 - foreign key", async () => {
     // Start w NOT NULL and UNIQUE. Drop those, verify.
 
-    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2]);
+    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2, claim_book_3]);
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
@@ -235,7 +235,7 @@ test("cmd apply test - 4 - foreign key", async () => {
     let db = await getConnectedDb(name);
     if (isDict(db)) {
         let client = getClientType(db);
-        if( client=="sqlite3" ) return;  // No fk here, by default
+        if (client == "sqlite3") return;  // No fk here, by default
 
         // Connect it 
         let r: any = await connectState(options.state, db, options);
@@ -265,6 +265,10 @@ test("cmd apply test - 4 - foreign key", async () => {
                         if (schema) {
                             expect(schema.book.author_id?.data_type).toBe("int");
                             expect(schema.book.author_id?.foreign_key).toBeFalsy();
+
+                            // And apply 3rd step - new field has wrong type - should fail 
+                            r = await handleOneArgCmd("apply", [fileOf(claim_book_3)], options);
+                            expect(r).not.toBe(0);
                         }
                     }
                 }

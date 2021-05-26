@@ -552,7 +552,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     let x = 1;
                 }
             } catch (e) {
-                console.error("modifySchema - SQL exec exc: " + e.toString());
+                console.error("modifySchema - SQL exec exception: " + e.toString());
                 throw e;
             }
         }

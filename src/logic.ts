@@ -767,7 +767,8 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                         }
                     }
                     else if( tv=="*NOT" || tv===null ){
-                        r.foreign_key = "*NOT";
+                        if( cv?.foreign_key  )
+                            r.foreign_key = "*NOT";
                     }
                     else errors.push(`${col_name} - Foreign key - unable to parse: ${tv}`);
                     break;

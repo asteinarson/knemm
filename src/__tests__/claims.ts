@@ -112,7 +112,7 @@ export let claim_apply_simple_types = {
             length: "float",
             length_prec: "double",
             age_in_seconds: "bigint",
-            income: "decimal(5,3)", 
+            income: "decimal(5,3)",
             date1: "date",
             datetime1: "datetime",
             timestamp1: "timestamp",
@@ -255,11 +255,11 @@ export let claim_book_1 = {
     },
     depends: {
         author: 2,
-    }, 
+    },
     ___tables: {
         book: {
             id: {
-                data_type: "int", 
+                data_type: "int",
                 is_primary_key: true,
             },
             name: {
@@ -287,6 +287,24 @@ export let claim_book_2 = {
         book: {
             author_id: {
                 foreign_key: "*NOT",
+            }
+        }
+    }
+};
+
+export let claim_book_3 = {
+    format: "internal",
+    id: {
+        branch: "book",
+        version: 3
+    },
+    ___tables: {
+        book: {
+            name: {
+                foreign_key: {
+                    table: "author",
+                    column: "id",
+                },
             }
         }
     }
