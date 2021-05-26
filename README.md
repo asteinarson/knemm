@@ -141,7 +141,7 @@ The idea of putting changes in new (higher versioned) claim files (instead of ju
 So one should really only edit a claim file **before** it has been deployed somewhere. 
 
 ### Claim invariability - Example 
-We realize that some emails can be very long. So we would like to have a `TEXT` column there, instead of the `VARCHAR`. We add a new claim - `Person_3.yaml`: 
+We realize that some emails addresses can be very long. So we would like to have a `TEXT` column there, instead of the `VARCHAR`. We add a new claim - `Person_3.yaml`: 
 
 ```yaml
 person:
