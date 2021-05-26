@@ -6,12 +6,12 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 
 # Installing 
 ### Via NPM
-Install via: 
+Install with: 
 ```bash
 $ npm i --global knemm
 ```
 Now there should be two new commands available: 
- - `knemm`; This is the main command to manage schema. 
+ - `knemm`: This is the main command to manage schema. 
  - `knedb`: This is a companion command to handle/create/drop databases. 
 
 Interfaces for PostgresQL (pg), MySQL and Sqlite3 are enabled by default in the package. 
