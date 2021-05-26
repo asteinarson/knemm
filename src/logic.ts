@@ -711,9 +711,12 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             r.is_nullable = true;
                     }
                     else {
-                        // If the column is a primary key, it is automatically not nullable
-                        if (!tgt_col.is_primary_key)
-                            errors.push(`${col_name} - Cannot safely go from nullable => notNullable `);
+                        if( cv[col_name] ){
+                            // Only an issue if column existed
+                            // If the column is a primary key, it is automatically not nullable
+                            if (!tgt_col.is_primary_key)
+                                errors.push(`${col_name} - Cannot safely go from nullable => notNullable `);
+                        }
                     }
                     break;
                 case "is_unique":
