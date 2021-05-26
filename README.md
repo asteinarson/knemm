@@ -2,7 +2,7 @@
 Knemm is a tool and library intended for DB schema administration, manipulation and inspection, for relational (SQL) databases. It can be used both as a standalone CLI tool and as a Node.js dependency
 for an app that wants to manage its DB schema in a declarative way. It relies largely on the _Knex.js_ library for connecting with and executing generated queries. 
 
-**STATUS:** **knemm** is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Details and features are not yet stable.  
+**STATUS:** **knemm** is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Features and details are very much still stabilizing. Feedback and contribution is welcome.  
 
 # Installing 
 As of now, clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the TypeScript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
@@ -56,7 +56,7 @@ person:
   email: varchar(255) unique
   first_name: varchar(64)
 ```
-The command read the single input claim, merged it into an empty state and printed it back in **hrc** format. Can we convert it back to internal form?  
+The command read the single input claim (in **internal** format), merged it into an empty state and printed it back in **hrc** format. Can we convert it back to internal form?  
 ```shell
 $ knemm join Person_1.yaml | knemm join -i - 
 person:
@@ -85,7 +85,7 @@ ___tables:
         second_name: varchar(64)
 ```
 
-Claims on the same branch are always merged sequentially, so a higher version number can do one or more of: 
+Claims on the same branch are always  merged sequentially, so a higher version number can do one or more of: 
   - Adding tables/columns to the branch
   - Modifying previously declared properties - in this branch
   - Dropping / removing tables (or columns) - also on the same branch
@@ -111,7 +111,7 @@ $ knemm join Person_2.yaml
 person:
    # ... same as above
 ```
-`knemm` understands by itself that it should use `Person_1` as a depenency, if it can be found. 
+`knemm` understands by itself that it should use `Person_1` as a depenency, if found. 
 
 ## Claim invariability 
 The idea of putting changes in new (higher versioned) claim files (instead of just editing the previous claim file) is that the first claim might already be distributed and applied on existing databases. 
