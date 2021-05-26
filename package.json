@@ -8,9 +8,17 @@
     "type": "git",
     "url": "https://github.com/asteinarson/knemm.git"
   },
+  "files": ["lib","shell"],
   "scripts": {
     "test": "jest"
   },
+  "bin": {
+    "knemm": "./shell/knemm",
+    "knedb": "./shell/knedb"
+  },
+  "keywords": ["database","sql","declarative","management"],
+  "author": "Arne Steinarson (https://github.com/asteinarson)",
+  "license": "GPLv3",
   "jest": {
     "transform": {
       "^.+\\.(ts|tsx)$": "ts-jest"
@@ -23,13 +31,6 @@
       "js"
     ]
   },
-  "bin": {
-    "knemm": "./shell/knemm",
-    "knedb": "./shell/knedb"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@types/jest": "^26.0.23",
     "@types/js-yaml": "^4.0.0",
