@@ -678,7 +678,7 @@ function propEqual(v1: PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. Or an array of errors, if not possible. 
-function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate:Dict<any>): TableInfoOrErrors {
+function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate: Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
 
@@ -693,7 +693,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
         let tv = tgt_col[tk], cv = cand_col[tk];
         if (!propEqual(tv, cv)) {
             switch (tk) {
-                case "___refs": 
+                case "___refs":
                     break;
                 case "data_type":
                     if (!typeContainsLoose(cv, tv)) {
@@ -748,12 +748,12 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     // Accept if candidate does not specify another foreign key 
                     if (isDict(tv)) {
                         if (!cv) {
-                            if( tv.table && tv.column ){
+                            if (tv.table && tv.column) {
                                 // Check for the existence of this table and column
                                 let fk_ref_col = candidate[tv.table as any]?.[tv.column as any];
-                                if( fk_ref_col ){
+                                if (fk_ref_col) {
                                     // And that the type matches
-                                    if( fk_ref_col.data_type==tgt_col.data_type )
+                                    if (fk_ref_col.data_type == tgt_col.data_type)
                                         r.foreign_key = tv;
                                     else errors.push(`${col_name} - Foreign key referenced column type differs: ${fk_ref_col.data_type} vs ${tgt_col.data_type}`);
                                 }
@@ -762,15 +762,24 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             else errors.push(`${col_name} - Foreign key lacks table/column: ${JSON.stringify(tv)}`);
                         }
                         else {
-                            if( tv.table!=cv.table || tv.column!=cv.column )
+                            if (tv.table != cv.table || tv.column != cv.column)
                                 errors.push(`${col_name} - Foreign key info mismatch: ${cv.table}:${cv.column} => ${tv.table}:${tv.column}`);
                         }
                     }
-                    else if( tv=="*NOT" || tv===null ){
-                        if( cv )
+                    else if (tv == "*NOT" || tv === null) {
+                        if (cv)
                             r.foreign_key = "*NOT";
                     }
                     else errors.push(`${col_name} - Foreign key - unable to parse: ${tv}`);
+                    break;
+                case "numeric_precision":
+                case "numeric_scale":
+                    // Forward if we have a data type change
+                    // !! Also forward if the value itself changes - a bit tricky
+                    if( tgt_col.data_type ) {
+                        if( tgt_col.data_type!=cand_col?.data_type )
+                            r[tk] = tv;
+                    }
                     break;
                 default:
                     errors.push(`${col_name} - Unhandled column keyword: ${tk}`);
@@ -870,7 +879,7 @@ export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, 
     let diff = matchDiff(state_db, state.___tables);
     let query_log = options.showQueries;
     if (isArray(diff)) return SyncError(diff);
-    if (!firstKey(diff)){
+    if (!firstKey(diff)) {
         return !query_log ? true : { type: "queries", r: [] };
     }
 
