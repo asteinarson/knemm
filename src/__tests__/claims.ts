@@ -292,7 +292,7 @@ export let claim_book_2 = {
     }
 };
 
-export let claim_book_3 = {
+export let claim_book_3_fail = {
     format: "internal",
     id: {
         branch: "book",
@@ -310,3 +310,26 @@ export let claim_book_3 = {
     }
 };
 
+export let claim_book_3 = {
+    format: "internal",
+    id: {
+        branch: "book",
+        version: 3
+    },
+    ___tables: {
+        book: {
+            name: "*NOT"
+        }
+    }
+};
+
+export let claim_book_4 = {
+    format: "internal",
+    id: {
+        branch: "book",
+        version: 4
+    },
+    ___tables: {
+        book: "*NOT",
+    }
+};

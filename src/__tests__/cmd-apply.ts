@@ -9,7 +9,7 @@ import { connectState, createDb, dropDb, existsDb, getStateDir, matchDiff, norma
 import { connect, disconnectAll, getClientType, slurpSchema } from '../db-utils';
 import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureStart, jestWarnGet } from './test-utils';
 
-import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2, claim_book_1, claim_book_2, claim_book_3 } from './claims';
+import { claim_p1, claim_apply_simple_types as claim_ast, claim_author_1, claim_author_2, claim_author_3, claim_customer_1, claim_customer_2, claim_book_1, claim_book_2, claim_book_3, claim_book_3_fail, claim_book_4 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 
@@ -225,11 +225,11 @@ test("cmd apply test - 3 - drop NOT NULL, UNIQUE, PRIMARY KEY", async () => {
 test("cmd apply test - 4 - foreign key", async () => {
     // Start w NOT NULL and UNIQUE. Drop those, verify.
 
-    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2, claim_book_3]);
+    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2, claim_book_3_fail]);
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
-    options.showQueries = "debug";
+    //options.showQueries = "debug";
 
     // The DB conn  
     let db = await getConnectedDb(name);
@@ -267,7 +267,7 @@ test("cmd apply test - 4 - foreign key", async () => {
                             expect(schema.book.author_id?.foreign_key).toBeFalsy();
 
                             // And apply 3rd step - new field has wrong type - should fail 
-                            r = await handleOneArgCmd("apply", [fileOf(claim_book_3)], options);
+                            r = await handleOneArgCmd("apply", [fileOf(claim_book_3_fail)], options);
                             expect(r).not.toBe(0);
                         }
                     }
@@ -278,5 +278,63 @@ test("cmd apply test - 4 - foreign key", async () => {
     }
 });
 
+test("cmd apply test - 5 - drop column and table", async () => {
+    // Use claims of last test. Then drop a column. Then a table.
+
+    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2, claim_book_3, , claim_book_4]);
+
+    let name = "state_author_book";
+    let options = (await getCleanStateDir(name)) as Dict<any>;
+    options.showQueries = "debug";
+
+    // The DB conn  
+    let db = await getConnectedDb(name);
+    if (isDict(db)) {
+        let client = getClientType(db);
+
+        // Connect it 
+        let r: any = await connectState(options.state, db, options);
+        if (r == true) {
+            // And apply 1st step    
+            r = await handleOneArgCmd("apply", [fileOf(claim_author_2), fileOf(claim_book_2)], options);
+            expect(r).toBe(0);
+            if (!r) {
+                let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                expect(isDict(schema)).toBeTruthy();
+                if (schema) {
+                    expect(schema.author).toBeTruthy();
+                    expect(schema.book).toBeTruthy();
+                    expect(schema.author.name?.data_type).toBe("text");
+                    expect(schema.book.author_id?.data_type).toBe("int");
+
+                    // Apply 2nd step 
+                    r = await handleOneArgCmd("apply", [fileOf(claim_book_3)], options);
+                    expect(r).toBe(0);
+                    if (!r) {
+                        let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                        expect(isDict(schema)).toBeTruthy();
+                        if (schema) {
+                            expect(schema.book).toBeTruthy();
+                            expect(schema.book.name).toBeFalsy();
+
+                            // Apply 3rd step 
+                            r = await handleOneArgCmd("apply", [fileOf(claim_book_4)], options);
+                            expect(r).toBe(0);
+                            if (!r) {
+                                let schema = await slurpSchema(await connect(db), slurpXti(options.state, db));
+                                expect(isDict(schema)).toBeTruthy();
+                                if (schema) {
+                                    expect(schema.author).toBeTruthy();
+                                    expect(schema.book).toBeFalsy();
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+});
 
 
