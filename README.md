@@ -19,7 +19,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 - [States](#states)
   - [The purpose of states](#the-purpose-of-states)
     - [Database to state - an example](#database-to-state---an-example)
-- [States and Databases](#states-and-databases)
+  - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
 
 # Installing 
@@ -262,12 +262,12 @@ person:
     max_length: 64
     data_type: varchar
 ```
-In PSQL we never created the columns _first_name_, _second_name_, and `knemm` generates the needed change as a diff (in **internal** format). 
+In PSQL we never created the columns _first_name_, _second_name_, and `knemm` detects this, and generates the needed change as a diff (in **internal** format). 
 
 >A **state** can refer to either a `___merge.yaml` stored in a state dir, or a state directly generated from a DB schema (as above), or as the output from a `knemm join` command.  
 
-# States and Databases
-It can be noted that a given DB can either lag behind the state, it can be in sync with it, or even ahead of it. None of these are **wrong**. They are just states and differences.
+## States and Databases
+It can be noted that a given DB can either lag behind the merge state, it can be in sync with it, or even ahead of it. None of these are **wrong**. They are just states and differences.
 
 # Branches / modules
 **Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
