@@ -128,7 +128,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     parseDbFile(path.join(state_dir, "___db.yaml"));
                 if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected (or specified) database (see <connect>)", 10);
                 // Query logging implies dry running
-                if (options.showQueries) options.dry = true;
+                if (options.showQueries==true) options.dry = true;
 
                 function handleSyncResult(rs:SyncResult){
                     if (rs.type == "queries") {
