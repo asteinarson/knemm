@@ -717,6 +717,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             if (!tgt_col.is_primary_key)
                                 errors.push(`${col_name} - Cannot safely go from nullable => notNullable `);
                         }
+                        else r.is_nullable = false;
                     }
                     break;
                 case "is_unique":
@@ -727,6 +728,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     }
                     else if(candidate[col_name]) 
                         errors.push(`${col_name} - Cannot safely go to unique `);
+                    else r.is_unique = true;
                     break;
                 case "is_primary_key":
                     // We can actually go both ways here - w.o data loss 
@@ -838,7 +840,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
         } else {
             if (tgt_table == "*NOT") {
                 // We only need to generate this if the table exists in the candidate
-                if (cand_table && cand_table[kt] && cand_table[kt] != "*NOT")
+                if ( cand_table && cand_table != "*NOT")
                     r[kt] = "*NOT";
             }
         }
