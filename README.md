@@ -262,11 +262,11 @@ person:
     max_length: 64
     data_type: varchar
 ```
-In PSQL we never created the columns _first_name_, _second_name_, and `knemm` generates the needed chaneg as a diff (in **internal** format). 
+In PSQL we never created the columns _first_name_, _second_name_, and `knemm` generates the needed change as a diff (in **internal** format). 
+
+>A **state** can refer to either a `___merge.yaml` stored in a state dir, or a state directly generated from a DB schema (as above), or as the output from a `knemm join` command.  
 
 # States and Databases
-The state we created above still (by itself) is not a DB schema. However, one can use it to check if a DB fulfills that given state. If not, one can request a diff to be generated, that can be applied to a given DB. Or one can apply the given state to a given DB. 
-
 It can be noted that a given DB can either lag behind the state, it can be in sync with it, or even ahead of it. None of these are **wrong**. They are just states and differences.
 
 # Branches / modules
