@@ -725,7 +725,8 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                         if (cv)
                             r.is_unique = false;
                     }
-                    else errors.push(`${col_name} - Cannot safely go to unique `);
+                    else if(candidate[col_name]) 
+                        errors.push(`${col_name} - Cannot safely go to unique `);
                     break;
                 case "is_primary_key":
                     // We can actually go both ways here - w.o data loss 
