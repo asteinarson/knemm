@@ -1,6 +1,6 @@
 {
   "name": "knemm",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Intuitive SQL schema management with declarative YAML",
   "main": "cmd.js",
   "type": "module",
@@ -16,7 +16,7 @@
     "knemm": "./shell/knemm",
     "knedb": "./shell/knedb"
   },
-  "keywords": ["database","sql","declarative","management"],
+  "keywords": ["database","sql","schema","declarative","management"],
   "author": "Arne Steinarson (https://github.com/asteinarson)",
   "license": "GPLv3",
   "jest": {

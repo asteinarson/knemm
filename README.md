@@ -136,7 +136,7 @@ $ knemm join Person_2.yaml
 person:
    # ... same as above
 ```
-`knemm` understands by itself that it should use `Person_1` as a depenency, if found. 
+`knemm` understands by itself that it should use `Person_1` as a dependency, if found. 
 
 ## Claim invariability 
 The idea of putting changes in new (higher versioned) claim files (instead of just editing the previous claim file) is that the first claim might already be distributed and applied on existing databases. 
