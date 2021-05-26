@@ -968,7 +968,7 @@ function getClaimId(name: string, claim_id: Dict<any> | string, allow_loose?: bo
         // With loose naming, we prefer the ID given inside the claim
         let r = safeClaimId(claim_id);
         if (file_cl_id && r && !propEqual(file_cl_id, r) && name != "-")
-            console.warn(`getClaimId - ID differes between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
+            console.warn(`getClaimId - ID differs between filename <${name}> and inner value: <${r.branch}:${r.version}>`);
         return r;
     }
     return file_cl_id;
@@ -1078,7 +1078,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         return true;
     }
 
-    // Iterate claims we were explicitely give
+    // Iterate claims we were explicitly give
     let err_cnt = 0;
     for (let f in file_dicts) {
         let id = getClaimId(f, file_dicts[f].id, options.looseNames);
@@ -1203,10 +1203,10 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     // Collect full linear ordering here
     let deps_ordered: Dict<any>[] = [];
 
-    // It could be we should detect when dependcies are "unhealthy" like: 
+    // It could be we should detect when dependencies are "unhealthy" like: 
     // customer_2 depends on cart_2
     // cart_1 depends on customer_3 
-    // there are other "bad possibilties" as well. 
+    // there are other "bad possibilities" as well. 
     let sortBranchUpTo = (bc: BranchClaims, version?: number) => {
         while (bc.ix < bc.sorted_versions.length) {
             let v = bc.sorted_versions[bc.ix];

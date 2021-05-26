@@ -155,7 +155,7 @@ export let claim_author_2 = {
     },
     ___tables: {
         author: {
-            // Cannot expamnd a primary key for now
+            // Cannot expand a primary key for now
             // id: {
             //     data_type: "bigint",
             // },

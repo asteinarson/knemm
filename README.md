@@ -191,7 +191,7 @@ There can be holes between version numbers, so this if just these claims exist, 
   * Person_7 
 
 ### Explicit / implicit claim ID:s
-A claim ID can either be explicitely declared:
+A claim ID can either be explicitly declared:
 ```yaml
 id:
   branch: Person
@@ -278,7 +278,7 @@ Knemm will then check those requirements, and either the combination works out j
 
 So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
 
-The two **'m'**:s in *Knemm* stands for just that - *multi-migrations*. That is, several connected flows of DB migrations connected with dependecy points and explicit expectations. 
+The two **'m'**:s in *Knemm* stands for just that - *multi-migrations*. That is, several connected flows of DB migrations connected with dependency points and explicit expectations. 
 
 
 
