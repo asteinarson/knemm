@@ -1,8 +1,23 @@
-# knemm
+# knemm <!-- omit in toc -->
 Knemm is a tool and library intended for DB schema administration, manipulation and inspection, for relational (SQL) databases. It can be used both as a standalone CLI tool and as a Node.js dependency
 for an app that wants to manage its DB schema in a declarative way. It relies largely on the _Knex.js_ library for connecting with and executing generated queries. 
 
 **STATUS:** **knemm** is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Features and details are very much still stabilizing. Feedback and contribution is welcome.  
+
+- [Installing](#installing)
+    - [Via NPM](#via-npm)
+    - [Via git repo](#via-git-repo)
+- [Claims](#claims)
+    - [Claims - Example](#claims---example)
+  - [Claims on the same branch](#claims-on-the-same-branch)
+    - [Claims on the same branch - Example](#claims-on-the-same-branch---example)
+  - [Claim invariability](#claim-invariability)
+    - [Claim invariability - Example](#claim-invariability---example)
+  - [Claim ID:s](#claim-ids)
+    - [Explicit / implicit claim ID:s](#explicit--implicit-claim-ids)
+- [States](#states)
+- [States and Databases](#states-and-databases)
+- [Branches / modules](#branches--modules)
 
 # Installing 
 ### Via NPM
