@@ -1,8 +1,8 @@
 {
-  "name": "mifl",
+  "name": "knemm",
   "version": "0.1.1",
   "description": "",
-  "main": "index.js",
+  "main": "cmd.js",
   "type": "module",
   "repository": {
     "type": "git",
