@@ -229,7 +229,7 @@ $ knemm join -s person-app
 ```
 
 ## The purpose of states
-Maybe you see now that `knemm` primarily builds and manages a YAML tree representing database requirements. Claims are usually not applied directly to databases. 
+Maybe you see now that `knemm` primarily builds and manages a JSON tree representing database requirements. Claims are usually not applied directly to databases. 
 
 The key to why this works is that every database schema can be converted into a state (a YAML/JSON tree). And from there we can process, compare and generate diffs. These diffs can then be applied back on an actual DB.
 
@@ -239,7 +239,7 @@ We start by creating a database, using the `knedb` helper (here a Postgres DB):
 $ knedb create me?my_pass@pg PersonTest
 Database <PersonTest> on client type <pg> was created.
 ```
-Then enter a PSQL prompt, for the newly created DB:
+Then, in a PSQL prompt, run this SQL on the newly created DB:
 ```SQL
 > CREATE TABLE person (id serial primary key, email text unique);
 ```
@@ -278,7 +278,7 @@ Knemm will then check those requirements, and either the combination works out j
 
 So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
 
-The two **'m'**:s in *Knemm* stands for just that, *multi-migrations* (several connected flows of DB migrations connected with dependecy points and explicit expectations). 
+The two **'m'**:s in *Knemm* stands for just that - *multi-migrations*. That is, several connected flows of DB migrations connected with dependecy points and explicit expectations. 
 
 
 
