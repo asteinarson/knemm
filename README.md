@@ -17,6 +17,8 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
   - [Claim ID:s](#claim-ids)
     - [Explicit / implicit claim ID:s](#explicit--implicit-claim-ids)
 - [States](#states)
+  - [The purpose of states](#the-purpose-of-states)
+    - [Database to state - an example](#database-to-state---an-example)
 - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
 
@@ -159,7 +161,7 @@ person:
 ```
 As you see, we only modified the data type of `email`. The `unique` property was declared before, and it just remained there: 
 
->`knemm` aims at fulfilling each claim with the smallest possible modification. 
+>`knemm` aims at fulfilling each claim with the smallest possible modification.
 
 ## Claims used for migration
 The `knemm` workflow just specifies what we want a certain part of the database to fulfill **at a given moment**. This differs from much schema management in which each migration step has two points:
@@ -218,13 +220,49 @@ $ ls person-app
 Person_1.yaml  Person_2.yaml  Person_3.yaml  ___merge.yaml
 ```
 So we got a directory created and a file `___merge.yaml` created there. And each claim that was used to build it was copied here. You can inspect the generated file `___merge.yaml` in a text viewer. It contains the merge and a couple of internal properties has been added to it. Keep in mind: 
-> `___merge.yaml` is automatically generated and should not be manually edited. 
+>`___merge.yaml` is automatically generated and should not be manually edited. 
 
 Now if we (later) want to inspect a given state, we can run: 
 ```bash
 $ knemm join -s person-app 
 # ... we get the full table state printed out here
 ```
+
+## The purpose of states
+Maybe you see now that `knemm` primarily builds and manages a YAML tree representing database requirements. Claims are usually not applied directly to databases. 
+
+The key to why this works is that every database schema can be converted into a state (a YAML/JSON tree). And from there we can process compare and generate diffs. 
+
+### Database to state - an example
+We start by creating a database, using `knedb` helper (her a Postgres DB):
+```bash 
+$ knedb create me?my_pass@pg PersonTest
+Database <PersonTest> on client type <pg> was created.
+```
+Then enter a PSQL prompt, for the new DB:
+```SQL
+> CREATE TABLE person (id serial primary key, email text unique);
+```
+Then let's see that as a state: 
+```bash
+$ knemm join me?my_pass@pg:PersonTest
+person:
+  id: int pk auto
+  email: text
+```
+
+Since we now have two states, we can do a diff, from the DB to the target merge: 
+```bash
+$ knemm diff arst?15392holo@pg:PT1 ./person-app/
+person:
+  first_name:
+    data_type: varchar
+    max_length: 64
+  second_name:
+    max_length: 64
+    data_type: varchar
+```
+In PSQL we never created the columns _first_name_, _second_name_, and `knemm` generates the needed chaneg as a diff (in **internal** format). 
 
 # States and Databases
 The state we created above still (by itself) is not a DB schema. However, one can use it to check if a DB fulfills that given state. If not, one can request a diff to be generated, that can be applied to a given DB. Or one can apply the given state to a given DB. 
