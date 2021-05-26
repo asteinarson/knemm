@@ -519,7 +519,10 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                         }
                     } else {
                         table.dropColumn(col);
-                        delete xtra_type_info[t][col];
+                        if( xtra_type_info[t]?.[col] ){
+                            delete xtra_type_info[t][col];
+                            xtra_type_info.___cnt++;
+                        }
                     }
                 }
             });
