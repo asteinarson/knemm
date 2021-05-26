@@ -698,7 +698,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                 case "data_type":
                     if (!typeContainsLoose(cv, tv)) {
                         // The candidate type does not hold, see if we can expand it 
-                        if (typeContainsLoose(tv, cv))
+                        if (!cv || typeContainsLoose(tv, cv))
                             r.data_type = tv;
                         else
                             errors.push(`${col_name} - Types are not compatible: ${cv}, ${tv} `);
@@ -811,7 +811,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 else {
                     if (tgt_col == "*NOT") {
                         // We only need to generate this if the table exists in the candidate
-                        if (firstKey(cand_col) && cand_col != "*NOT")
+                        if (!firstKey(cand_col) && cand_col != "*NOT")
                             diff_col = "*NOT";
                     }
                 }
