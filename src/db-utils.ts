@@ -523,7 +523,13 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     }
                 }
             });
-            let sql_a = qb.toSQL() as any as Dict<any>[];
+            let sql_a:Dict<any>[];
+            try { 
+                sql_a = qb.toSQL() as any as Dict<any>[];
+            }catch(e){
+                console.error("modifySchema - toSQL exception 1: " + e.toString());
+                throw e;
+            }
             if (check_autoinc_type_fix && client == "mysql") {
                 // Patch the generated SQL to remove the forced 'unsigned' modifier 
                 sql_a.forEach( e => {
@@ -552,7 +558,7 @@ export async function modifySchema(conn: Knex, delta: Dict<any>, state: Dict<any
                     let x = 1;
                 }
             } catch (e) {
-                console.error("modifySchema - SQL exec exception: " + e.toString());
+                console.error("modifySchema - SQL exec exception 2: " + e.toString());
                 throw e;
             }
         }

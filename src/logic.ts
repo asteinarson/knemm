@@ -811,6 +811,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
         if (typeof tgt_table == "object") {
             // Iterate columns 
             for (let kc in tgt_table) {
+                if( kc=="___owner" ) continue;
                 let tgt_col = tgt_table[kc];
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
@@ -825,7 +826,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 else {
                     if (tgt_col == "*NOT") {
                         // We only need to generate this if the table exists in the candidate
-                        if (!firstKey(cand_col) && cand_col != "*NOT")
+                        if (firstKey(cand_col) && cand_col != "*NOT")
                             diff_col = "*NOT";
                     }
                 }
@@ -1323,8 +1324,15 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                         if (m_col.___owner == claim.id.branch ||
                             (!m_col.___owner && m_tbl.___owner == claim.id.branch)) {
                             // Modifying what we declared ourselves 
-                            let es = mergeOwnColumnClaim(m_col, col, options);
-                            if (es) errors = [...errors, ...es];
+                            if( isDict(col) ){
+                                let es = mergeOwnColumnClaim(m_col, col, options);
+                                if (es) errors = [...errors, ...es];
+                            }
+                            else if( col=="*NOT" ){
+                                // !! Also check for references !
+                                m_tbl[c_name] = "*NOT";                                
+                            }
+                            else errors.push(`${t}:${c_name} - Could not parse column: ${JSON.stringify(col)}`);
                         } else {
                             // Make claims on a column of another branch/module
                             for (let p in col) {
@@ -1359,7 +1367,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                     else {
                         // A directive to drop the table 
                         if (!merge[t].___refs || !firstKey(merge[t].___refs)) {
-                            // See that it is just not being declared
+                            // See that it is just not being declared !! also drop from merge if so !!
                             if (Object.keys(merge[t]).length > 1)
                                 merge[t] = "*NOT";
                         }
