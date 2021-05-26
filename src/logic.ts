@@ -682,11 +682,11 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
     let r: Dict<any> = {};
     let errors: string[] = [];
 
-    if (!firstKey(cand_col)) {
-        // The column does not exist in the candidate, so duplicate all properties 
-        // into the diff 
-        return { ...tgt_col };
-    }
+    // if (!firstKey(cand_col)) {
+    //     // The column does not exist in the candidate, so duplicate all properties 
+    //     // into the diff 
+    //     return { ...tgt_col };
+    // }
 
     for (let tk in tgt_col) {
         // If property is different, we need to do something 
@@ -811,7 +811,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 else {
                     if (tgt_col == "*NOT") {
                         // We only need to generate this if the table exists in the candidate
-                        if (!firstKey(cand_col) && cand_col != "*NOT")
+                        if (firstKey(cand_col) && cand_col != "*NOT")
                             diff_col = "*NOT";
                     }
                 }

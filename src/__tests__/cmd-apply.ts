@@ -281,7 +281,7 @@ test("cmd apply test - 4 - foreign key", async () => {
 test("cmd apply test - 5 - drop column and table", async () => {
     // Use claims of last test. Then drop a column. Then a table.
 
-    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2, claim_book_3_fail, claim_book_4]);
+    claimsToFile([claim_author_1, claim_author_2, claim_book_1, claim_book_2, claim_book_3, claim_book_4]);
 
     let name = "state_author_book";
     let options = (await getCleanStateDir(name)) as Dict<any>;
