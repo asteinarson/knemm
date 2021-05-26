@@ -171,8 +171,8 @@ The `knemm` workflow just specifies what we want a certain part of the database 
 >Now, claims in `knemm` say nothing about what the database should look like **before** the claim is tested and applied. If the database already fulfills the claim, then nothing is done. If say a column already exists (say as a `tinyint`) and the claim wants and `int`, then the column is widened. If the column is a `bigint`, then it more than fulfills the claim, and it is kept as such. 
 
 A bit more formally, often in migration, this is the model:
-  * Before: **A** == **DB state** 
-  * After: **B** == **DB state** 
+  * Before: **A** === **DB state** 
+  * After: **B** === **DB state** 
 
 With `knemm` it is relaxed/simplified to: 
   * After: **B** <= **DB state** 
@@ -231,19 +231,19 @@ $ knemm join -s person-app
 ## The purpose of states
 Maybe you see now that `knemm` primarily builds and manages a YAML tree representing database requirements. Claims are usually not applied directly to databases. 
 
-The key to why this works is that every database schema can be converted into a state (a YAML/JSON tree). And from there we can process compare and generate diffs. 
+The key to why this works is that every database schema can be converted into a state (a YAML/JSON tree). And from there we can process, compare and generate diffs. These diffs can then be applied back on an actual DB.
 
 ### Database to state - an example
-We start by creating a database, using `knedb` helper (her a Postgres DB):
+We start by creating a database, using the `knedb` helper (here a Postgres DB):
 ```bash 
 $ knedb create me?my_pass@pg PersonTest
 Database <PersonTest> on client type <pg> was created.
 ```
-Then enter a PSQL prompt, for the new DB:
+Then enter a PSQL prompt, for the newly created DB:
 ```SQL
 > CREATE TABLE person (id serial primary key, email text unique);
 ```
-Then let's see that as a state: 
+We exit PSQL. Then let's see that as a state: 
 ```bash
 $ knemm join me?my_pass@pg:PersonTest
 person:
