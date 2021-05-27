@@ -3,6 +3,9 @@ import {
     toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, 
     sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
 } from './logic';
+
+import { Claim, State, TableProps, isClaim } from "./types";
+
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray, isString, toLut } from "./utils";
 import { getDirsFromFileList, slurpFile } from "./file-utils";
@@ -76,13 +79,13 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
     switch (cmd) {
         case "join":
             {
-                let state_base: Dict<any>;
+                let state_base: State;
                 if (state_dir) state_base = toState(state_dir, true);
-                let file_dicts: Dict<Dict<any>> = {};
+                let file_dicts: Dict<Claim> = {};
                 for (let f of files) {
                     let r = await toStateClaim(f, options);
                     if (r) {
-                        if (r.source == "*file") file_dicts[r.file] = r;
+                        if (isClaim(r)) file_dicts[r.file] = r;
                         else {
                             if (state_dir)
                                 return errorRv(`join: Cannot specify additional DB or state dirs in <join> (already using state in: ${state_dir})`, 10);
@@ -151,12 +154,12 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
 
                 // Apply new claims on state 
                 if (files.length) {
-                    let file_dicts: Dict<Dict<any>> = {};
+                    let file_dicts: Dict<Claim> = {};
                     let es: string[] = [];
                     for (let f of files) {
                         let r = await toStateClaim(f, options);
                         if (r){
-                            if( r.file )
+                            if( isClaim(r) )
                                 file_dicts[f] = r;
                             else 
                                 es.push("apply - only accepts claim: " + f + " found: "+r.source);

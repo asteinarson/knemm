@@ -14,6 +14,16 @@ export type ClaimStateSource = "*file" | "*state" | "*db";
 //export type TableDirectives = "*NOT";
 //export type ColumnDirectives = "*NOT";
 
+//export type TableProps2 = Dict<ColumnProps | "*NOT" | "*UNREF"> | "*NOT";
+export function isTableProps(o:any): o is TableProps {
+    return isDict(o);
+}
+
+export type TableProps = {
+    ___owner?: string,
+    [k: string]: ColumnProps | string
+};
+
 export type ClaimState_O = {
     id?: ClaimId,
     source?: ClaimStateSource,
@@ -23,7 +33,7 @@ export type ClaimState_O = {
     format: FormatTypeWUnk,
     depends?: Dict<number>,
     modules?: Dict<number>,
-    ___tables: Dict<TableProps>,
+    ___tables: Dict<TableProps|"*NOT">,
     ___dependee?: Dict<number>
 };
 
@@ -31,27 +41,31 @@ export interface ClaimState {
     source?: ClaimStateSource,
     file?: string,
     format: FormatTypeWUnk,
-    ___tables: Dict<TableProps>,
+    ___tables: Dict<TableProps|"*NOT">,
 };
 
 export interface Claim extends ClaimState {
-    id?: ClaimId,
+    id: ClaimId,
     depends?: Dict<number>,
     ___dependee?: Dict<number>
-}; 
+};
 
 export interface State extends ClaimState {
-    modules?: Dict<number>,
+    modules: Dict<number>,
     directory?: string,
     connection?: any,    // Actually Knex
-}; 
-
+};
 
 export function isClaimState(o: any): o is ClaimState {
     return !!(isDict(o) && o.___tables);
 }
+export function isClaim(o: any): o is Claim {
+    return !!(isDict(o) && o.___tables && o.id);
+}
+export function isState(o: any): o is State {
+    return !!(isDict(o) && o.___tables && o.modules);
+} 
 
-export type TableProps = Dict<ColumnProps | "*NOT" | "*UNREF"> | "*NOT";
 
 export type BTDict1 = Dict<BaseTypes> | BaseTypes;
 export type BTDict2 = Dict<BTDict1> | BaseTypes;

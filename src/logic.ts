@@ -6,7 +6,7 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState } from "./types";
+import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps } from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
@@ -39,7 +39,7 @@ export function getStateDir(options: any) {
     return state_dir;
 }
 
-export function storeState(state: ClaimState | Dict<TableProps>, new_claims?: Dict<Claim>, state_loc?: string, options?: Dict<any>) {
+export function storeState(state: State | Dict<TableProps>, new_claims?: Dict<Claim>, state_loc?: string, options?: Dict<any>) {
     if (options?.dry) return true;
     // Have somewhere to store state ? 
     let dir = state_loc;
@@ -57,7 +57,7 @@ export function storeState(state: ClaimState | Dict<TableProps>, new_claims?: Di
         return errorRv("storeState - Dir does not exist: " + dir);
 
     // Normalize the state
-    if (!isClaimState(state))
+    if (!isState(state))
         state = getInitialState(state);
     else
         reformatTopLevel(state);
@@ -99,7 +99,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
         return errorRv(`rebuildState - Directory ${state_dir} not found`);
 
     // Build a list of modules with last versions 
-    let file_dicts: Dict<ClaimState> = {};
+    let file_dicts: Dict<Claim> = {};
     for (const f of readdirSync(state_dir)) {
         if (excludeFromState(f)) continue;
         if (f.match(re_yj)) {
@@ -119,7 +119,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
     let dicts = dependencySort(file_dicts, state_base, options);
     if (!dicts) return;
     let r = mergeClaims(dicts, state_base, options);
-    if (isDict(r)) {
+    if (isState(r)) {
         storeState(r, {}, state_dir, options);
         return true;
     }
@@ -129,9 +129,9 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
 }
 
 export function sortMergeStoreState(
-    file_dicts: Dict<ClaimState>,
+    file_dicts: Dict<Claim>,
     state_dir: string,
-    state_base: ClaimState,
+    state_base: State,
     options: Dict<any>)
     : Dict<any> | string[] {
     let dicts = dependencySort(file_dicts, state_base, options);
@@ -139,7 +139,7 @@ export function sortMergeStoreState(
     if (!dicts.length) return state_base;
 
     let state = mergeClaims(dicts, state_base, options);
-    if (isDict(state)) {
+    if (isState(state)) {
         if (state_dir && dicts.length)
             storeState(state, file_dicts, state_dir, options);
     }
@@ -486,7 +486,7 @@ export async function connectState(state_dir: string, db_spec: string | Dict<any
     return true;
 }
 
-export function toState(dir_file: string, quiet?: boolean): ClaimState {
+export function toState(dir_file: string, quiet?: boolean): State {
     if (!existsSync(dir_file))
         return quiet ? undefined : errorRv(`toState - State dir/file does not exist: ${dir_file}`);
     let m_yaml: string;
@@ -506,7 +506,8 @@ export function toState(dir_file: string, quiet?: boolean): ClaimState {
     r.source = "*state";
     r.file = m_yaml;
     r.format = "internal";
-    return r as ClaimState;
+    r.modules = {};
+    return r as State;
 }
 
 export type FormatType = "internal" | "hr-compact";
@@ -538,7 +539,7 @@ export function normalizeClaim(
     if (isClaimState(claim))
         r = claim;
     else
-        r = { ___tables: claim, format: "?" }
+        r = { ___tables: claim, format: "?", id: undefined }
 
     r.source = "*file";
     r.file = file;
@@ -601,10 +602,10 @@ export function fileToClaim(file: string, quiet?: boolean, format?: FormatType, 
 let re_m_yaml = /___merge.yaml$/;
 
 // Read a file, a directory or a DB into a schema state object
-export async function toStateClaim(file_or_db: string, options: Dict<any>): Promise<Dict<any>> {
+export async function toStateClaim(file_or_db: string, options: Dict<any>): Promise<Claim | State> {
     if (!file_or_db) return null;
 
-    let r: Dict<any>;
+    let r: Claim | State;
     if (isDbScpec(file_or_db)) {
         let knex_c = await dbSpecToKnex(file_or_db);
         if (!knex_c) return errorRv("toStateClaim - Could not connect to DB");
@@ -616,7 +617,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
                 connection: knex_c,
                 format: "internal",
                 ___tables: rs
-            }
+            } as State;
         }
         else return errorRv("toStateClaim - Failed slurpSchema");
     }
@@ -625,19 +626,18 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
         let s_in = getStoreStdin();
         if (!s_in) return errorRv(`toStateClaim - File not found: ${file_or_db}`);
         // Undefined if YAML / JSON, try both 
+        let r_y: any;
         try {
             let r_y = yamlLoad(s_in);
-            if (isDict(r_y)) r = r_y;
         } catch (e) {
             try {
-                let r_json = JSON.parse(s_in);
-                if (isDict(r_json)) r = r_json;
+                let r_y = JSON.parse(s_in);
             } catch (e) {
                 return errorRv("toStateClaim - Failed parsing stdin, exception: " + e.toString());
             }
         }
-        if (!r) return errorRv("toStateClaim - Input on stdin does not form a valid claim");
-        r = normalizeClaim(r, "-", "internal", true);
+        if (isDict(r_y)) return errorRv("toStateClaim - Input on stdin does not form a valid claim");
+        r = normalizeClaim(r_y, "-", "internal", true);
     }
     else if (isDir(file_or_db) || file_or_db.match(re_m_yaml) ||
         (!options.looseNames && !claimIdFromName(file_or_db))) {
@@ -1049,9 +1049,9 @@ function findOptionalClaims(cl_by_br: Dict<Claim[]>, options: Dict<any>, above?:
 }
 
 // Sort input trees according to dependency specification 
-export function dependencySort(file_dicts: Dict<Claim>, state_base: State, options: Dict<any>): ClaimState[] {
+export function dependencySort(file_dicts: Dict<Claim>, state_base: State, options: Dict<any>): Claim[] {
     // This holds all versions numbers of a given branch we will merge
-    let cl_by_br: Dict<ClaimState[]> = {};
+    let cl_by_br: Dict<Claim[]> = {};
 
     // To be able to see if we're given claims that are already included
     let branches: Dict<number> = state_base.modules;
@@ -1203,7 +1203,7 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
     }
 
     // Collect full linear ordering here
-    let deps_ordered: ClaimState[] = [];
+    let deps_ordered: Claim[] = [];
 
     // It could be we should detect when dependencies are "unhealthy" like: 
     // customer_2 depends on cart_2
@@ -1278,7 +1278,8 @@ export function getInitialState(tables?: Dict<TableProps>): State {
 }
 
 // Merge dependency ordered claims 
-export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, options: Dict<any>): TableInfoOrErrors {
+export function mergeClaims(claims: Claim[], merge_base: State | null, options: Dict<any>):
+    State | string[] {
     let errors: string[] = [];
     if (!merge_base || !merge_base.___tables) merge_base = getInitialState();
     let merge = merge_base.___tables;
@@ -1289,109 +1290,132 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
             continue;
         }
         merge_base.modules[claim.id.branch] = claim.id.version;
-        let cl_tables: Dict<any> = claim.___tables;
+        let cl_tables = claim.___tables;
         for (let t in cl_tables) {
             let cols = cl_tables[t];
-            let is_dict = isDict(cols);
-            if (is_dict && !firstKey(cols)) continue;
+            let m_tbl = merge[t];
             let is_ref = false;
-            if (isDict(merge[t])) {
-                if (merge[t].___owner != claim.id.branch) {
+            if (isTableProps(m_tbl)) {
+                if (m_tbl.___owner != claim.id.branch) {
                     is_ref = true;
                 }
             }
-            else merge[t] = { ___owner: claim.id.branch };
-            if (is_dict) {
-                let m_tbl = merge[t];
+
+            if (isDict(cols)) {
+                if (!firstKey(cols)) continue;
+                if (!isTableProps(m_tbl))
+                    merge[t] = m_tbl = { ___owner: claim.id.branch };
                 for (let c_name in cols) {
                     let col = cols[c_name];
-                    if (!m_tbl[c_name]) {
-                        // A new column - accept the various properties 
-                        // A known type ? 
-                        if (getTypeGroup(col.data_type)) {
-                            // !! we could check for  a <*ref> flag (requiring an existing column) 
-                            // See if we accept all suggested column keywords 
-                            let unknowns = notInLut(col, db_column_words);
-                            if (!unknowns) {
-                                // Accept column declaration in its fullness
-                                m_tbl[c_name] = { ...col }
-                                if (claim.id.branch != m_tbl.___owner)
-                                    m_tbl[c_name].___owner = claim.id.branch;
+                    let m_col = m_tbl[c_name];
+                    if (isDict(col)) {
+                        if (!m_col || isString(m_col)) {
+                            // A new column - accept the various properties 
+                            // A known type ? 
+                            if (getTypeGroup(col.data_type)) {
+                                // !! we could check for  a <*ref> flag (requiring an existing column) 
+                                // See if we accept all suggested column keywords 
+                                let unknowns = notInLut(col, db_column_words);
+                                if (!unknowns) {
+                                    // Accept column declaration in its fullness
+                                    let col_props: ColumnProps = { ...col };
+                                    m_tbl[c_name] = col_props;
+                                    if (claim.id.branch != m_tbl.___owner) {
+                                        col_props.___owner = claim.id.branch;
+                                    }
+                                }
+                                else errors.push(`${t}:${c_name} - Unknown column keywords: ${JSON.stringify(unknowns)}`);
                             }
-                            else errors.push(`${t}:${c_name} - Unknown column keywords: ${JSON.stringify(unknowns)}`);
+                            else errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
                         }
-                        else errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
-                    }
-                    else {
                         // A ref to a previously declared column. Either a requirement 
                         // on a column in another branch/module, or a reference to one 
                         // 'of our own making' - i.e. we can modify it. 
-                        let m_col = m_tbl[c_name];
-                        if (m_col.___owner == claim.id.branch ||
-                            (!m_col.___owner && m_tbl.___owner == claim.id.branch)) {
+                        else if (m_col.___owner == claim.id.branch ||
+                            (!m_col.___owner && !is_ref)) {
                             // Modifying what we declared ourselves 
                             if (isDict(col)) {
                                 let es = mergeOwnColumnClaim(m_col, col, options);
                                 if (es) errors = [...errors, ...es];
                             }
-                            else if (col == "*NOT") {
-                                // Check for references !
-                                if (!firstKey(m_col.___refs))
-                                    m_tbl[c_name] = "*NOT";
-                                else
-                                    errors.push(`${t}:${c_name} - Cannot drop column, is referenced: ${JSON.stringify(m_col.___refs)}`);
-                            }
-                            else errors.push(`${t}:${c_name} - Could not parse column: ${JSON.stringify(col)}`);
-                        } else {
-                            // Make claims on a column of another branch/module
-                            if (isDict(col)) {
-                                for (let p in col) {
-                                    if (p == "data_type") {
-                                        // Accept same or more narrow datatype 
-                                        if (!typeContainsLoose(m_col[p], col[p] as string))
-                                            errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
-                                        else {
-                                            // Make a ref in the merge tree
-                                            m_col.___refs ||= {};
-                                            m_col.___refs[claim.id.branch] = claim.id.version;
-                                        }
-                                    } else {
-                                        // !! Decide whether to support detailed column dependencies or not
-                                        if (!db_column_words[p])
-                                            errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
-                                        else if (!propEqual(col[p] as any, m_col[p]))
-                                            errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
+                        }
+                        else {
+                            for (let p in col) {
+                                if (p == "data_type") {
+                                    // Accept same or more narrow datatype 
+                                    if (!typeContainsLoose(m_col[p], col[p] as string))
+                                        errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
+                                    else {
+                                        // Make a ref in the merge tree
+                                        m_col.___refs ||= {};
+                                        m_col.___refs[claim.id.branch] = claim.id.version;
                                     }
+                                } else {
+                                    // !! Decide whether to support detailed column dependencies or not
+                                    if (!db_column_words[p])
+                                        errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
+                                    else if (!propEqual(col[p] as any, m_col[p]))
+                                        errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
                                 }
                             }
-                            else if (col == "*UNREF") {
-                                if (m_col.___refs?.[claim.id.branch])
-                                    delete m_col.___refs[claim.id.branch];
-                                else
-                                    errors.push(`${t}:${c_name} - *UNREF - column is not referenced`);
+                        }
+                    }
+                    else {
+                        if (col == "*NOT") {
+                            if (isString(m_col)) {
+                                // "*NOT" is not owned by any module 
+                                if (m_col != "*NOT")
+                                    errors.push(`${t}:${c_name} - *NOT - unexpected state: ${m_col}`);
+                                continue;
                             }
-                            else errors.push(`${t}:${c_name} - Unknown directive: ${col}`);
+                            // Check we can really drop the column 
+                            // One can also mark an undeclared column as *NOT 
+                            let col_owner = m_col?.___owner || m_tbl?.___owner;
+                            let err_len = errors.length;
+                            if( col_owner ){
+                                if ( col_owner != claim.id.branch)
+                                    errors.push(`${t}:${c_name} - Cannot drop column in other module: ${col_owner}, ${claim.id.branch}}`);
+                                else if (firstKey(m_col.___refs))
+                                    errors.push(`${t}:${c_name} - Cannot drop column, it is referenced: ${JSON.stringify(m_col.___refs)}`);
+                            }
+                            if( errors.length==err_len) {
+                                m_tbl[c_name] = "*NOT";
+                            }
+                        }
+                        else if (col == "*UNREF") {
+                            let did_unref = false;
+                            if (isDict(m_col)) {
+                                if (m_col.___refs?.[claim.id.branch]) {
+                                    did_unref = true;
+                                    delete m_col.___refs[claim.id.branch];
+                                }
+                            }
+                            if (!did_unref)
+                                errors.push(`${t}:${c_name} - *UNREF - column is not referenced`);
+                        }
+                        else {
+                            errors.push(`${t}:${c_name} - Unknown directive: ${col}`);
                         }
                     }
                 }
             }
             else {
                 if (cols == "*NOT") {
+                    if (m_tbl == "*NOT") continue;
                     if (!is_ref) {
                         // A directive to drop the table 
                         // Do we have refs to its columns ? 
                         let has_refs = false;
-                        for (let col in merge[t]) {
-                            let c: Dict<any> = merge[t][col];
+                        for (let col in m_tbl || {}) {
+                            let c = m_tbl[col];
                             if (isDict(c) && firstKey(c.___refs as any)) {
                                 has_refs = true;
                                 break;
                             }
                         }
                         if (!has_refs) {
-                            // See that it is just not being declared !! also drop from merge if so !!
-                            if (Object.keys(merge[t]).length > 1)
-                                merge[t] = "*NOT";
+                            // The table doesn't have to exist to go into *NOT state
+                            merge[t] = "*NOT";
                         }
                         else errors.push(`merge: Cannot drop table with references: ${t}`);
                     }
