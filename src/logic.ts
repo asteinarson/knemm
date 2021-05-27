@@ -781,8 +781,9 @@ function matchDiffColumn(col_name: string, cand_col: ColumnProps, tgt_col: Colum
                         }
                     }
                     else if (fk == "*NOT" || fk === null) {
-                        if (fk_c != "*NOT" && fk_c !== null)
+                        if (fk_c && fk_c != "*NOT" ){
                             r.foreign_key = "*NOT";
+                        }
                     }
                     else errors.push(`${col_name} - Foreign key - unable to parse: ${tv}`);
                     break;
