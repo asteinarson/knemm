@@ -26,18 +26,18 @@ export type TableProps = {
 
 export type Tables = Dict<TableProps|"*NOT">;
 
-export type ClaimState_O = {
-    id?: ClaimId,
-    source?: ClaimStateSource,
-    file?: string,
-    directory?: string,
-    connection?: any,    // Actually Knex
-    format: FormatTypeWUnk,
-    depends?: Dict<number>,
-    modules?: Dict<number>,
-    ___tables: Tables,
-    ___dependee?: Dict<number>
-};
+// export type ClaimState_O = {
+//     id?: ClaimId,
+//     source?: ClaimStateSource,
+//     file?: string,
+//     directory?: string,
+//     connection?: any,    // Actually Knex
+//     format: FormatTypeWUnk,
+//     depends?: Dict<number>,
+//     modules?: Dict<number>,
+//     ___tables: Tables,
+//     ___dependee?: Dict<number>
+// };
 
 export interface ClaimState {
     source?: ClaimStateSource,
