@@ -506,7 +506,7 @@ export function toState(dir_file: string, quiet?: boolean): State {
     r.source = "*state";
     r.file = m_yaml;
     r.format = "internal";
-    r.modules = {};
+    r.modules ||= {};
     return r as State;
 }
 
