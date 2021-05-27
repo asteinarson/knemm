@@ -14,7 +14,7 @@ export type ClaimStateSource = "*file" | "*state" | "*db";
 //export type TableDirectives = "*NOT";
 //export type ColumnDirectives = "*NOT";
 
-export type TopClaim = {
+export type ClaimState = {
     id?: ClaimId,
     source: ClaimStateSource,
     file?: string,

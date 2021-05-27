@@ -6,7 +6,7 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import {BTDict3, ClaimId} from "./types";
+import {BTDict3, ClaimId, ClaimState, TableProps, ColumnProps, ForeignKey } from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
