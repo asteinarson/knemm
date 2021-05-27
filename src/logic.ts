@@ -6,7 +6,7 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import {BTDict3, ClaimId, ClaimState, TableProps, ColumnProps, ForeignKey } from "./types";
+import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState } from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
@@ -39,10 +39,11 @@ export function getStateDir(options: any) {
     return state_dir;
 }
 
-export function storeState(state: Dict<any>, new_claims?: Dict<Dict<any>>, state_loc?: string, options?: Dict<any>) {
+export function storeState(state: ClaimState | Dict<TableProps>, new_claims?: Dict<Claim>, state_loc?: string, options?: Dict<any>) {
     if (options?.dry) return true;
     // Have somewhere to store state ? 
-    let dir = state_loc || state.file;
+    let dir = state_loc;
+    if (!dir && isClaimState(state)) dir = state.file;
     if (!dir) return errorRv("storeState - No storage path/location provided ");
 
     let state_file: string;
@@ -56,7 +57,7 @@ export function storeState(state: Dict<any>, new_claims?: Dict<Dict<any>>, state
         return errorRv("storeState - Dir does not exist: " + dir);
 
     // Normalize the state
-    if (!state.___tables)
+    if (!isClaimState(state))
         state = getInitialState(state);
     else
         reformatTopLevel(state);
@@ -98,7 +99,7 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
         return errorRv(`rebuildState - Directory ${state_dir} not found`);
 
     // Build a list of modules with last versions 
-    let file_dicts: Dict<Dict<any>> = {};
+    let file_dicts: Dict<ClaimState> = {};
     for (const f of readdirSync(state_dir)) {
         if (excludeFromState(f)) continue;
         if (f.match(re_yj)) {
@@ -128,9 +129,9 @@ export function rebuildState(state_dir: string, options: Dict<any>): boolean {
 }
 
 export function sortMergeStoreState(
-    file_dicts: Dict<Dict<any>>,
+    file_dicts: Dict<ClaimState>,
     state_dir: string,
-    state_base: Dict<any>,
+    state_base: ClaimState,
     options: Dict<any>)
     : Dict<any> | string[] {
     let dicts = dependencySort(file_dicts, state_base, options);
@@ -485,7 +486,7 @@ export async function connectState(state_dir: string, db_spec: string | Dict<any
     return true;
 }
 
-export function toState(dir_file: string, quiet?: boolean): Dict<any> {
+export function toState(dir_file: string, quiet?: boolean): ClaimState {
     if (!existsSync(dir_file))
         return quiet ? undefined : errorRv(`toState - State dir/file does not exist: ${dir_file}`);
     let m_yaml: string;
@@ -505,7 +506,7 @@ export function toState(dir_file: string, quiet?: boolean): Dict<any> {
     r.source = "*state";
     r.file = m_yaml;
     r.format = "internal";
-    return r;
+    return r as ClaimState;
 }
 
 export type FormatType = "internal" | "hr-compact";
@@ -514,7 +515,7 @@ export function reformatTables(tables: Dict<any>, format?: FormatType): Dict<any
     return format == "hr-compact" ? formatHrCompact(tables) : formatInternal(tables);
 }
 
-export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
+export function reformatTopLevel(claim: ClaimState, format?: FormatType) {
     if (claim.___tables) {
         if (!format) format = "internal";
         if (claim.format != format) {
@@ -527,17 +528,17 @@ export function reformatTopLevel(claim: Dict<any>, format?: FormatType) {
 }
 
 export function normalizeClaim(
-    claim: Dict<any>,
+    claim: Claim | Dict<TableProps>,
     file: string,
     format?: FormatType,
-    allow_loose?: boolean) {
+    allow_loose?: boolean): Claim {
 
     // Is it a claim with top level props, or just the tables? 
-    let r: Dict<any>;
-    if (claim.___tables)
+    let r: Claim;
+    if (isClaimState(claim))
         r = claim;
     else
-        r = { ___tables: claim }
+        r = { ___tables: claim, format: "?" }
 
     r.source = "*file";
     r.file = file;
@@ -573,7 +574,7 @@ export function normalizeClaim(
         else if (isString(deps)) {
             let id = claimIdFromName(deps);
             if (!id) return errorRv(`normalizeClaim: Could not parse dependency: ${deps}`);
-            r.deps = { [id.branch]: id.version }
+            r.depends = { [id.branch]: id.version }
         }
         else return errorRv(`normalizeClaim: Unknown format for dependency: ${deps}`);
     }
@@ -583,7 +584,7 @@ export function normalizeClaim(
     return r;
 }
 
-export function fileToClaim(file: string, quiet?: boolean, format?: FormatType, options?: Dict<any>): Dict<any> {
+export function fileToClaim(file: string, quiet?: boolean, format?: FormatType, options?: Dict<any>) {
     // Then it should be a file 
     let rf = slurpFile(file, quiet);
     if (isDict(rf))
@@ -680,7 +681,7 @@ function propEqual(v1: PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. Or an array of errors, if not possible. 
-function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate: Dict<any>, r_delta:Dict<any>): TableInfoOrErrors {
+function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate: Dict<any>, r_delta: Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
 
@@ -697,7 +698,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
             switch (tk) {
                 case "___refs":
                 case "___owner":
-                        break;
+                    break;
                 case "data_type":
                     if (!typeContainsLoose(cv, tv)) {
                         // The candidate type does not hold, see if we can expand it 
@@ -714,7 +715,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             r.is_nullable = true;
                     }
                     else {
-                        if( candidate[col_name] ){
+                        if (candidate[col_name]) {
                             // Only an issue if column existed
                             // If the column is a primary key, it is automatically not nullable
                             if (!tgt_col.is_primary_key)
@@ -729,7 +730,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                         if (cv)
                             r.is_unique = false;
                     }
-                    else if(candidate[col_name]) 
+                    else if (candidate[col_name])
                         errors.push(`${col_name} - Cannot safely go to unique `);
                     else r.is_unique = true;
                     break;
@@ -760,7 +761,7 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                             if (tv.table && tv.column) {
                                 // Check for the existence of this table and column
                                 let fk_ref_col = candidate[tv.table as any]?.[tv.column as any];
-                                if( !fk_ref_col ) 
+                                if (!fk_ref_col)
                                     fk_ref_col = r_delta[tv.table as any]?.[tv.column as any];
                                 if (fk_ref_col) {
                                     // And that the type matches
@@ -786,10 +787,10 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                 case "numeric_precision":
                 case "numeric_scale":
                 case "max_length":
-                        // Forward if we have a data type change
+                    // Forward if we have a data type change
                     // !! Also forward if the value itself changes - a bit tricky
-                    if( tgt_col.data_type ) {
-                        if( tgt_col.data_type!=cand_col?.data_type )
+                    if (tgt_col.data_type) {
+                        if (tgt_col.data_type != cand_col?.data_type)
                             r[tk] = tv;
                     }
                     break;
@@ -818,7 +819,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
         if (typeof tgt_table == "object") {
             // Iterate columns 
             for (let kc in tgt_table) {
-                if( kc=="___owner" ) continue;
+                if (kc == "___owner") continue;
                 let tgt_col = tgt_table[kc];
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
@@ -845,7 +846,7 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
         } else {
             if (tgt_table == "*NOT") {
                 // We only need to generate this if the table exists in the candidate
-                if ( cand_table && cand_table != "*NOT")
+                if (cand_table && cand_table != "*NOT")
                     r[kt] = "*NOT";
             }
         }
@@ -986,8 +987,8 @@ function getPaths(options: Dict<any>, file?: string) {
 }
 
 // Iterate available paths, look for additional potential deps 
-function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, above?: Dict<number>) {
-    let cl_opt: Dict<Dict<any>[]> = {};
+function findOptionalClaims(cl_by_br: Dict<Claim[]>, options: Dict<any>, above?: Dict<number>) {
+    let cl_opt: Dict<Claim[]> = {};
     if (options.deps == false) return cl_opt;
 
     // Look for any dependencies in provided paths. 
@@ -1004,7 +1005,7 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
         }
         for (let f of files) {
             let id: ClaimId;
-            let claim: Dict<any>;
+            let claim: Claim;
             if (!options.looseNames) {
                 id = claimIdFromName(f);
                 if (id) {
@@ -1048,15 +1049,15 @@ function findOptionalClaims(cl_by_br: Dict<Dict<any>[]>, options: Dict<any>, abo
 }
 
 // Sort input trees according to dependency specification 
-export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any>, options: Dict<any>): Dict<any>[] {
+export function dependencySort(file_dicts: Dict<Claim>, state_base: State, options: Dict<any>): ClaimState[] {
     // This holds all versions numbers of a given branch we will merge
-    let cl_by_br: Dict<Dict<any>[]> = {};
+    let cl_by_br: Dict<ClaimState[]> = {};
 
     // To be able to see if we're given claims that are already included
     let branches: Dict<number> = state_base.modules;
     let ver_by_br: Dict<number> = {};
 
-    let checkIncludeClaim = (claim: Dict<any>, type?: "in_range") => {
+    let checkIncludeClaim = (claim: Claim, type?: "in_range") => {
         let { branch: name, version: ver } = claim.id;
         cl_by_br[name] ||= [];
 
@@ -1119,7 +1120,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     let claim_keys = Object.keys(file_dicts);
 
     // Helper include function, to update local state
-    let checkIncludeDep = (d: Dict<any>, type?: "in_range") => {
+    let checkIncludeDep = (d: Claim, type?: "in_range") => {
         if (!checkIncludeClaim(d, type)) return;
         // Then also scan the new one for dependencies 
         file_dicts[d.file] = d;
@@ -1184,7 +1185,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
         ix: number; // This is position in <sorted_versions> not the version itself 
         version_last: number;
         sorted_versions: number[];
-        claims: Record<number, Dict<any>>;
+        claims: Record<number, Claim>;
     }
 
     // Prepare the branches 
@@ -1202,7 +1203,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     }
 
     // Collect full linear ordering here
-    let deps_ordered: Dict<any>[] = [];
+    let deps_ordered: ClaimState[] = [];
 
     // It could be we should detect when dependencies are "unhealthy" like: 
     // customer_2 depends on cart_2
@@ -1231,7 +1232,7 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
                             err_cnt++;
                         }
                         else if (branches[d_branch] > d_ver) {
-                            console.warn(`runBranchTo - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${claim.id.branch}:${claim.id.ver}>)`);
+                            console.warn(`runBranchTo - dependent claim gap to: <${d_branch}:${d_ver}> (from: <${claim.id.branch}:${claim.id.version}>)`);
                         }
                     }
                 }
@@ -1268,8 +1269,12 @@ export function dependencySort(file_dicts: Dict<Dict<any>>, state_base: Dict<any
     return deps_ordered;
 }
 
-export function getInitialState(tables?: Dict<any>) {
-    return { modules: {}, format: "internal", ___tables: tables || {} };
+export function getInitialState(tables?: Dict<TableProps>): State {
+    return {
+        modules: {},
+        format: "internal",
+        ___tables: tables || {}
+    };
 }
 
 // Merge dependency ordered claims 
@@ -1325,21 +1330,21 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                         if (m_col.___owner == claim.id.branch ||
                             (!m_col.___owner && m_tbl.___owner == claim.id.branch)) {
                             // Modifying what we declared ourselves 
-                            if( isDict(col) ){
+                            if (isDict(col)) {
                                 let es = mergeOwnColumnClaim(m_col, col, options);
                                 if (es) errors = [...errors, ...es];
                             }
-                            else if( col=="*NOT" ){
+                            else if (col == "*NOT") {
                                 // Check for references !
-                                if( !firstKey(m_col.___refs) )
-                                    m_tbl[c_name] = "*NOT";                                
-                                else 
+                                if (!firstKey(m_col.___refs))
+                                    m_tbl[c_name] = "*NOT";
+                                else
                                     errors.push(`${t}:${c_name} - Cannot drop column, is referenced: ${JSON.stringify(m_col.___refs)}`);
                             }
                             else errors.push(`${t}:${c_name} - Could not parse column: ${JSON.stringify(col)}`);
                         } else {
                             // Make claims on a column of another branch/module
-                            if( isDict(col) ){
+                            if (isDict(col)) {
                                 for (let p in col) {
                                     if (p == "data_type") {
                                         // Accept same or more narrow datatype 
@@ -1359,10 +1364,10 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                     }
                                 }
                             }
-                            else if(col=="*UNREF"){
-                                if( m_col.___refs?.[claim.id.branch] )
+                            else if (col == "*UNREF") {
+                                if (m_col.___refs?.[claim.id.branch])
                                     delete m_col.___refs[claim.id.branch];
-                                else 
+                                else
                                     errors.push(`${t}:${c_name} - *UNREF - column is not referenced`);
                             }
                             else errors.push(`${t}:${c_name} - Unknown directive: ${col}`);
@@ -1376,9 +1381,9 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                         // A directive to drop the table 
                         // Do we have refs to its columns ? 
                         let has_refs = false;
-                        for( let col in merge[t] ){
-                            let c:Dict<any> = merge[t][col];
-                            if( isDict(c) && firstKey(c.___refs as any) ){
+                        for (let col in merge[t]) {
+                            let c: Dict<any> = merge[t][col];
+                            if (isDict(c) && firstKey(c.___refs as any)) {
                                 has_refs = true;
                                 break;
                             }

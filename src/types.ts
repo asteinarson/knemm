@@ -1,5 +1,5 @@
 
-import { Dict, BaseTypes } from './utils';
+import { Dict, BaseTypes, isDict } from './utils';
 
 export type ClaimId = {
     branch: string,
@@ -14,16 +14,42 @@ export type ClaimStateSource = "*file" | "*state" | "*db";
 //export type TableDirectives = "*NOT";
 //export type ColumnDirectives = "*NOT";
 
-export type ClaimState = {
+export type ClaimState_O = {
     id?: ClaimId,
-    source: ClaimStateSource,
+    source?: ClaimStateSource,
     file?: string,
     directory?: string,
     connection?: any,    // Actually Knex
     format: FormatTypeWUnk,
+    depends?: Dict<number>,
     modules?: Dict<number>,
     ___tables: Dict<TableProps>,
+    ___dependee?: Dict<number>
 };
+
+export interface ClaimState {
+    source?: ClaimStateSource,
+    file?: string,
+    format: FormatTypeWUnk,
+    ___tables: Dict<TableProps>,
+};
+
+export interface Claim extends ClaimState {
+    id?: ClaimId,
+    depends?: Dict<number>,
+    ___dependee?: Dict<number>
+}; 
+
+export interface State extends ClaimState {
+    modules?: Dict<number>,
+    directory?: string,
+    connection?: any,    // Actually Knex
+}; 
+
+
+export function isClaimState(o: any): o is ClaimState {
+    return !!(isDict(o) && o.___tables);
+}
 
 export type TableProps = Dict<ColumnProps | "*NOT" | "*UNREF"> | "*NOT";
 
