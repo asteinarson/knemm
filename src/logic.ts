@@ -881,7 +881,7 @@ export type SyncResult = {
     r: string[];
 };
 
-export async function syncDbWith(state: Dict<any>, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | SyncResult> {
+export async function syncDbWith(state: State, db_conn: Dict<any> | string, options: Dict<any>): Promise<true | SyncResult> {
     let SyncError = (msg: string | string[]) => {
         let rv: SyncResult = { type: "errors", r: isArray(msg) ? msg : [msg] };
         return rv;
