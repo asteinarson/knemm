@@ -696,7 +696,8 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
         if (!propEqual(tv, cv)) {
             switch (tk) {
                 case "___refs":
-                    break;
+                case "___owner":
+                        break;
                 case "data_type":
                     if (!typeContainsLoose(cv, tv)) {
                         // The candidate type does not hold, see if we can expand it 
