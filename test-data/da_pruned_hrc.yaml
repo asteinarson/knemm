@@ -1,8 +1,8 @@
 account_type:
-  id: int pk auto
+  id: int pk auto_inc
   type: text
 company:
-  id: int pk auto
+  id: int pk auto_inc
   user_created: uuid nullable
   date_created: timestamp_tz nullable
   user_updated: uuid nullable
@@ -10,13 +10,13 @@ company:
   name: varchar
   url: varchar default(NULL)
 serie:
-  id: int pk auto
+  id: int pk auto_inc
   date_created: timestamp_tz nullable
   next: int default(1)
   entity_type: varchar nullable
   letter: varchar default(A)
 account:
-  id: int pk auto
+  id: int pk auto_inc
   status: varchar default(draft)
   user_created: uuid nullable
   date_created: timestamp_tz nullable
@@ -29,7 +29,7 @@ account:
   balance_start: real
   balance: real nullable
 verification_row:
-  id: int pk auto
+  id: int pk auto_inc
   user_updated: uuid nullable
   date_updated: timestamp_tz nullable
   credit: real
@@ -37,10 +37,10 @@ verification_row:
   verification_id: int nullable
   account_id: int nullable
 party_type:
-  id: int pk auto
+  id: int pk auto_inc
   name: varchar
 party:
-  id: int pk auto
+  id: int pk auto_inc
   user_created: uuid nullable
   date_created: timestamp_tz nullable
   user_updated: uuid nullable
@@ -54,7 +54,7 @@ tlog:
   date: timestamp nullable
   msg: text nullable
 config:
-  id: int pk auto
+  id: int pk auto_inc
   status: varchar default(draft)
   date_created: timestamp_tz nullable
   date_updated: timestamp_tz nullable
@@ -62,7 +62,7 @@ config:
   value: text nullable
   comment: text nullable
 verification:
-  id: int pk auto
+  id: int pk auto_inc
   user_created: uuid nullable
   date_created: timestamp_tz nullable
   user_updated: uuid nullable
