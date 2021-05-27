@@ -1294,9 +1294,6 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
             if (isDict(merge[t])) {
                 if (merge[t].___owner != claim.id.branch) {
                     is_ref = true;
-                    merge[t].___refs ||= {};
-                    merge[t].___refs[claim.id.branch] ||= [];
-                    merge[t].___refs[claim.id.branch].push(claim.id.version);
                 }
             }
             else merge[t] = { ___owner: claim.id.branch };
@@ -1348,8 +1345,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                     else {
                                         // Make a ref in the merge tree
                                         m_col.___refs ||= {};
-                                        m_col.___refs[claim.id.branch] ||= [];
-                                        m_col.___refs[claim.id.branch].push(claim.id.version);
+                                        m_col.___refs[claim.id.branch] = claim.id.version;
                                     }
                                 } else {
                                     if (!db_column_words[p])
@@ -1364,20 +1360,25 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
             }
             else {
                 if (cols == "*NOT") {
-                    if (is_ref) {
-                        // We drop the refs to the table 
-                        delete merge[t].___refs[claim.id.branch];
-                        // !! Delete references to child props ?
-                    }
-                    else {
+                    if (!is_ref) {
                         // A directive to drop the table 
-                        if (!firstKey(merge[t].___refs)) {
+                        // Do we have refs to its columns ? 
+                        let has_refs = false;
+                        for( let col in merge[t] ){
+                            let c:Dict<any> = merge[t][col];
+                            if( isDict(c) && firstKey(c.___refs as any) ){
+                                has_refs = true;
+                                break;
+                            }
+                        }
+                        if (!has_refs) {
                             // See that it is just not being declared !! also drop from merge if so !!
                             if (Object.keys(merge[t]).length > 1)
                                 merge[t] = "*NOT";
                         }
-                        else errors.push(`merge: Cannot drop table with references: ${merge[t].___refs}`);
+                        else errors.push(`merge: Cannot drop table with references: ${t}`);
                     }
+                    else errors.push(`merge: only owner module can do *NOT (table ${t} in branch ${claim.id.branch})`);
                 }
                 else errors.push(`merge: unknown value (${cols}) for table ${t} in branch ${claim.id.branch}`);
             }
@@ -1448,7 +1449,7 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         break;
                 }
                 if (ref_error && !reason)
-                    reason = `${k} is referenced by: (${m_col[k].___refs})`;
+                    reason = `${k} is referenced by: (${JSON.stringify(m_col[k].___refs)})`;
                 if (!reason)
                     r[k] = claim[k];
                 else {
