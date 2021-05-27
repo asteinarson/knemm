@@ -34,7 +34,7 @@ export type BTDict3 = Dict<BTDict2> | BaseTypes;
 export type ForeignKey = {
     table: string,
     column: string,
-    constraint?: string,
+    constraint_name?: string,
 };
 export type ColumnProps = {
     ___refs?: Dict<number>,

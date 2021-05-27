@@ -6,7 +6,7 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import {ClaimId} from "./types";
+import {BTDict3, ClaimId} from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
@@ -663,7 +663,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     return r;
 }
 
-type PropType = string | number | Dict<string | number | Dict<string | number>>;
+type PropType = BTDict3;
 function propEqual(v1: PropType, v2: PropType) {
     if (typeof v1 == "string" || typeof v1 == "number" || typeof v1 == "boolean") return v1 == v2;
     if (!v1) return v1 == v2;
@@ -1351,6 +1351,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                             m_col.___refs[claim.id.branch] = claim.id.version;
                                         }
                                     } else {
+                                        // !! Decide whether to support detailed column dependencies or not
                                         if (!db_column_words[p])
                                             errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
                                         else if (!propEqual(col[p] as any, m_col[p]))
