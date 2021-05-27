@@ -88,7 +88,8 @@ const state_excludes: Dict<1> = {
 }
 
 function excludeFromState(file: string) {
-    return state_excludes[file];
+    if( state_excludes[file] ) return true;
+    if( file.slice(0,7)=="___xti." && file.slice(-5)==".yaml" ) return true;
 }
 
 const re_yj = /\.(json|yaml|JSON|YAML)$/;
