@@ -1289,7 +1289,6 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
             let cols = cl_tables[t];
             let is_dict = isDict(cols);
             if (is_dict && !firstKey(cols)) continue;
-            // If the table is created by other branch, make <*refs> structure to track that
             let is_ref = false;
             if (isDict(merge[t])) {
                 if (merge[t].___owner != claim.id.branch) {
@@ -1331,29 +1330,41 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                                 if (es) errors = [...errors, ...es];
                             }
                             else if( col=="*NOT" ){
-                                // !! Also check for references !
-                                m_tbl[c_name] = "*NOT";                                
+                                // Check for references !
+                                if( !firstKey(m_col.___refs) )
+                                    m_tbl[c_name] = "*NOT";                                
+                                else 
+                                    errors.push(`${t}:${c_name} - Cannot drop column, is referenced: ${JSON.stringify(m_col.___refs)}`);
                             }
                             else errors.push(`${t}:${c_name} - Could not parse column: ${JSON.stringify(col)}`);
                         } else {
                             // Make claims on a column of another branch/module
-                            for (let p in col) {
-                                if (p == "data_type") {
-                                    // Accept same or more narrow datatype 
-                                    if (!typeContainsLoose(m_col[p], col[p]))
-                                        errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
-                                    else {
-                                        // Make a ref in the merge tree
-                                        m_col.___refs ||= {};
-                                        m_col.___refs[claim.id.branch] = claim.id.version;
+                            if( isDict(col) ){
+                                for (let p in col) {
+                                    if (p == "data_type") {
+                                        // Accept same or more narrow datatype 
+                                        if (!typeContainsLoose(m_col[p], col[p] as string))
+                                            errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
+                                        else {
+                                            // Make a ref in the merge tree
+                                            m_col.___refs ||= {};
+                                            m_col.___refs[claim.id.branch] = claim.id.version;
+                                        }
+                                    } else {
+                                        if (!db_column_words[p])
+                                            errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
+                                        else if (!propEqual(col[p] as any, m_col[p]))
+                                            errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
                                     }
-                                } else {
-                                    if (!db_column_words[p])
-                                        errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
-                                    else if (!propEqual(col[p], m_col[p]))
-                                        errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
                                 }
                             }
+                            else if(col=="*UNREF"){
+                                if( m_col.___refs?.[claim.id.branch] )
+                                    delete m_col.___refs[claim.id.branch];
+                                else 
+                                    errors.push(`${t}:${c_name} - *UNREF - column is not referenced`);
+                            }
+                            else errors.push(`${t}:${c_name} - Unknown directive: ${col}`);
                         }
                     }
                 }

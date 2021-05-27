@@ -10,7 +10,7 @@ export type FormatType = "internal" | "hr-compact";
 export type FormatTypeWUnk = FormatType | "?";
 export type ClaimStateSource = "*file" | "*state" | "*db";
 
-export type PropDirective = "*NOT" | "*UNREF";
+//export type PropDirective = "*NOT" | "*UNREF";
 //export type TableDirectives = "*NOT";
 //export type ColumnDirectives = "*NOT";
 
@@ -22,10 +22,10 @@ export type TopClaim = {
     connection?: any,    // Actually Knex
     format: FormatTypeWUnk,
     modules?: Dict<number>,
-    ___tables: Dict<TableProps | string>,
+    ___tables: Dict<TableProps>,
 };
 
-export type TableProps = Dict<ColumnProps | PropDirective> | PropDirective;
+export type TableProps = Dict<ColumnProps | "*NOT" | "*UNREF"> | "*NOT";
 
 export type BTDict1 = Dict<BaseTypes> | BaseTypes;
 export type BTDict2 = Dict<BTDict1> | BaseTypes;
