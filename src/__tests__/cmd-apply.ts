@@ -76,9 +76,12 @@ test("cmd apply test - 1 - Single claim, multiple data types", async () => {
                     expect(schema.person).toBeTruthy();
                     // Must transform claim_ast to internal before testing 
                     reformatTopLevel(claim_ast);
-                    for (let col in claim_ast.___tables.person) {
-                        let v = (claim_ast.___tables.person as any)[col];
-                        expect(schema.person[col]?.data_type).toBe(v.data_type);
+                    let tables = claim_ast.___tables;
+                    if( isDict(tables) ){
+                        for (let col in tables) {
+                            let v = (claim_ast.___tables.person as any)[col];
+                            expect(schema.person[col]?.data_type).toBe(v.data_type);
+                        }
                     }
                 }
             }

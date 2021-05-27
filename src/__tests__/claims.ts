@@ -4,7 +4,9 @@ test("claims dummy test", () => {
     expect(1).toBe(1);
 });
 
-export let claim_p1 = {
+import {Claim, State} from "../types";
+
+export let claim_p1: Claim = {
     format: "internal",
     id: {
         branch: "p",
@@ -25,7 +27,7 @@ export let claim_p1 = {
     }
 };
 
-export let claim_p2 = {
+export let claim_p2: Claim = {
     format: "internal",
     id: {
         branch: "p",
@@ -45,8 +47,9 @@ export let claim_p2 = {
     }
 };
 
-export let state_p2 = {
+export let state_p2: State = {
     format: "internal",
+    modules: {},
     ___tables: {
         person: {
             id: {
@@ -61,7 +64,7 @@ export let state_p2 = {
     }
 };
 
-export let claim_use_p1 = {
+export let claim_use_p1: Claim = {
     format: "internal",
     id: {
         branch: "up",
@@ -80,7 +83,7 @@ export let claim_use_p1 = {
 };
 
 
-export let claim_use_p2 = {
+export let claim_use_p2: Claim = {
     format: "internal",
     id: {
         branch: "up",
@@ -98,7 +101,7 @@ export let claim_use_p2 = {
     }
 };
 
-export let claim_apply_simple_types = {
+export let claim_apply_simple_types: Claim = {
     format: "?",    // Enforce translate to internal
     id: {
         branch: "apply-st",
@@ -121,7 +124,7 @@ export let claim_apply_simple_types = {
 };
 
 
-export let claim_author_1 = {
+export let claim_author_1: Claim = {
     format: "internal",
     id: {
         branch: "author",
@@ -147,7 +150,7 @@ export let claim_author_1 = {
     }
 };
 
-export let claim_author_2 = {
+export let claim_author_2: Claim = {
     format: "internal",
     id: {
         branch: "author",
@@ -169,7 +172,7 @@ export let claim_author_2 = {
     }
 };
 
-export let claim_author_3 = {
+export let claim_author_3: Claim = {
     format: "internal",
     id: {
         branch: "author",
@@ -191,7 +194,7 @@ export let claim_author_3 = {
 };
 
 
-export let claim_customer_1 = {
+export let claim_customer_1: Claim = {
     format: "internal",
     id: {
         branch: "customer",
@@ -221,7 +224,7 @@ export let claim_customer_1 = {
     }
 };
 
-export let claim_customer_2 = {
+export let claim_customer_2: Claim = {
     format: "internal",
     id: {
         branch: "customer",
@@ -247,7 +250,7 @@ export let claim_customer_2 = {
     }
 };
 
-export let claim_book_1 = {
+export let claim_book_1: Claim = {
     format: "internal",
     id: {
         branch: "book",
@@ -277,7 +280,7 @@ export let claim_book_1 = {
     }
 };
 
-export let claim_book_2 = {
+export let claim_book_2: Claim = {
     format: "internal",
     id: {
         branch: "book",
@@ -292,7 +295,7 @@ export let claim_book_2 = {
     }
 };
 
-export let claim_book_3_fail = {
+export let claim_book_3_fail: Claim = {
     format: "internal",
     id: {
         branch: "book",
@@ -310,7 +313,7 @@ export let claim_book_3_fail = {
     }
 };
 
-export let claim_book_3 = {
+export let claim_book_3: Claim = {
     format: "internal",
     id: {
         branch: "book",
@@ -323,7 +326,7 @@ export let claim_book_3 = {
     }
 };
 
-export let claim_book_4 = {
+export let claim_book_4: Claim = {
     format: "internal",
     id: {
         branch: "book",
