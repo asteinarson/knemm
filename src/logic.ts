@@ -6,6 +6,8 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
+import {ClaimId} from "./types";
+
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
 import { existsSync, readdirSync, mkdirSync, rmSync, copyFileSync, writeFileSync } from 'fs';
@@ -928,8 +930,6 @@ const re_name_num_oext = /([^/^_^.]*)_(([\d]+)(\.[\d]+)?)(\.[a-zA-Z_-]+)?$/;
 const re_name_oext = /([^/^_^.]*)(\.[a-zA-Z_-]+)?$/;
 const re_ext = /^(.*)\.([a-zA-Z_-]+)$/;
 
-type ClaimId = { branch: string, version: number };
-
 function claimIdFromName(name: string, allow_loose?: boolean): ClaimId {
     // Special case for STDIN
     if (name == "-") return { branch: "STDIN", version: 1 };
@@ -1370,7 +1370,7 @@ export function mergeClaims(claims: Dict<any>[], merge_base: Dict<any> | null, o
                     }
                     else {
                         // A directive to drop the table 
-                        if (!merge[t].___refs || !firstKey(merge[t].___refs)) {
+                        if (!firstKey(merge[t].___refs)) {
                             // See that it is just not being declared !! also drop from merge if so !!
                             if (Object.keys(merge[t]).length > 1)
                                 merge[t] = "*NOT";
