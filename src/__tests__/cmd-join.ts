@@ -14,6 +14,7 @@ jestLogCaptureStart();
 import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
+import { Tables } from '../types';
 
 test("cmd join test - 1", async () => {
     claimsToFile([claim_p1]);
@@ -25,9 +26,9 @@ test("cmd join test - 1", async () => {
     expect(typeof o).toBe("object");
 
     if (isDict(o)) {
-        let d1 = matchDiff(claim_p1.___tables, o);
+        let d1 = matchDiff(claim_p1.___tables, o as any as Tables);
         expect(firstKey(d1)).toBeFalsy();
-        let d2 = matchDiff(o, claim_p1.___tables);
+        let d2 = matchDiff(o as any as Tables, claim_p1.___tables);
         expect(firstKey(d2)).toBeFalsy();
     }
     else expect("o_is_dict").toBe(false);

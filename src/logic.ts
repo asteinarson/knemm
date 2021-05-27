@@ -6,7 +6,7 @@ import {
 
 import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps } from "./types";
+import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables } from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
@@ -133,7 +133,7 @@ export function sortMergeStoreState(
     state_dir: string,
     state_base: State,
     options: Dict<any>)
-    : Dict<any> | string[] {
+    : State | string[] {
     let dicts = dependencySort(file_dicts, state_base, options);
     if (!dicts) return ["sortMergeStoreState - Failed dependencySort"];
     if (!dicts.length) return state_base;
@@ -685,12 +685,6 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
     let r: Dict<any> = {};
     let errors: string[] = [];
 
-    // if (!firstKey(cand_col)) {
-    //     // The column does not exist in the candidate, so duplicate all properties 
-    //     // into the diff 
-    //     return { ...tgt_col };
-    // }
-
     for (let tk in tgt_col) {
         // If property is different, we need to do something 
         let tv = tgt_col[tk], cv = cand_col[tk];
@@ -809,14 +803,15 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
 // Generate the DB diff that is needed to go from 'candidate' to 'target'. 
 // In a sense, the output is a transition, not a state. (The two inputs are
 // states).
-export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrErrors {
+export function matchDiff(candidate: Tables, target: Tables): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
     // Iterate tables 
     for (let kt in target) {
         let tgt_table = target[kt];
         let cand_table = tryGet(kt, candidate, {});
-        if (typeof tgt_table == "object") {
+        if (isDict(tgt_table) ) {
+            if( cand_table=="*NOT" ) cand_table = {};
             // Iterate columns 
             for (let kc in tgt_table) {
                 if (kc == "___owner") continue;
@@ -824,6 +819,8 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
                 if (isDict(tgt_col)) {
+                    // We can safely replace *NOT here 
+                    if( isString(cand_col) ) cand_col = {};
                     let dc = matchDiffColumn(kc, cand_col, tgt_col, candidate, r);
                     if (isDict(dc)) {
                         if (firstKey(dc))
@@ -834,8 +831,10 @@ export function matchDiff(candidate: Dict<any>, target: Dict<any>): TableInfoOrE
                 else {
                     if (tgt_col == "*NOT") {
                         // We only need to generate this if the table exists in the candidate
-                        if (firstKey(cand_col) && cand_col != "*NOT")
+                        if (isDict(cand_col) && firstKey(cand_col) ){
+                            // !! Check for refs
                             diff_col = "*NOT";
+                        }
                     }
                 }
                 if (diff_col) {
