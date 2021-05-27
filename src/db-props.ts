@@ -4,7 +4,7 @@ import { Dict, tryGet } from './utils';
 // short form boolean flags 
 export let db_column_flags: Dict<string> = {
     is_primary_key: "pk",
-    has_auto_increment: "auto",
+    has_auto_increment: "auto_inc",
     is_unique: "unique",
 };
 
