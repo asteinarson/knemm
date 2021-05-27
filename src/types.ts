@@ -22,10 +22,10 @@ export type TopClaim = {
     connection?: any,    // Actually Knex
     format: FormatTypeWUnk,
     modules?: Dict<number>,
-    ___tables: Dict<TableProps>,
+    ___tables: Dict<TableProps | string>,
 };
 
-export type TableProps = Dict<ColumnProps | PropDirective>;
+export type TableProps = Dict<ColumnProps | PropDirective> | PropDirective;
 
 export type BTDict1 = Dict<BaseTypes> | BaseTypes;
 export type BTDict2 = Dict<BTDict1> | BaseTypes;
@@ -34,10 +34,10 @@ export type BTDict3 = Dict<BTDict2> | BaseTypes;
 export type ForeignKey = {
     table: string,
     column: string,
-    constraint?:string,
+    constraint?: string,
 };
 export type ColumnProps = {
-    ___refs?: Dict<string>,
+    ___refs?: Dict<number>,
     ___owner?: string,
     data_type?: string,
     ref_type?: string,
