@@ -681,7 +681,7 @@ function propEqual(v1: PropType, v2: PropType) {
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
 // the target specification. Or an array of errors, if not possible. 
-function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<any>, candidate: Dict<any>, r_delta: Dict<any>): TableInfoOrErrors {
+function matchDiffColumn(col_name: string, cand_col: ColumnProps, tgt_col: ColumnProps, candidate: Tables, r_delta: Dict<any>): TableInfoOrErrors {
     let r: Dict<any> = {};
     let errors: string[] = [];
 
@@ -694,13 +694,19 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                 case "___owner":
                     break;
                 case "data_type":
-                    if (!typeContainsLoose(cv, tv)) {
-                        // The candidate type does not hold, see if we can expand it 
-                        if (!cv || typeContainsLoose(tv, cv))
-                            r.data_type = tv;
-                        else
-                            errors.push(`${col_name} - Types are not compatible: ${cv}, ${tv} `);
+                    if (isString(cv) && isString(tv)) {
+                        if (!typeContainsLoose(cv, tv)) {
+                            // The candidate type does not hold, see if we can expand it 
+                            if (typeContainsLoose(tv, cv))
+                                r.data_type = tv;
+                            else
+                                errors.push(`${col_name} - Types are not compatible: ${cv}, ${tv} `);
+                        }
                     }
+                    else if( !cv && isString(tv) && getTypeGroup(tv) )
+                        r.data_type = tv;
+                    else
+                        errors.push(`${col_name} - data_type - cannot parse: ${cv}, ${tv} `);
                     break;
                 case "is_nullable":
                     if (tv) {
@@ -749,14 +755,16 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                     r.default = tv;
                     break;
                 case "foreign_key":
+                    let fk = tgt_col.foreign_key;
+                    let fk_c = cand_col.foreign_key;
                     // Accept if candidate does not specify another foreign key 
-                    if (isDict(tv)) {
-                        if (!cv) {
-                            if (tv.table && tv.column) {
+                    if (fk && fk != "*NOT") {
+                        if (!fk_c || fk_c == "*NOT") {
+                            if (fk.table && fk.column) {
                                 // Check for the existence of this table and column
-                                let fk_ref_col = candidate[tv.table as any]?.[tv.column as any];
+                                let fk_ref_col = (candidate[fk.table] as any)?.[fk.column];
                                 if (!fk_ref_col)
-                                    fk_ref_col = r_delta[tv.table as any]?.[tv.column as any];
+                                    fk_ref_col = r_delta[fk.table]?.[fk.column];
                                 if (fk_ref_col) {
                                     // And that the type matches
                                     if (fk_ref_col.data_type == tgt_col.data_type)
@@ -765,15 +773,15 @@ function matchDiffColumn(col_name: string, cand_col: Dict<any>, tgt_col: Dict<an
                                 }
                                 else errors.push(`${col_name} - Foreign key referenced table/column is missing: ${JSON.stringify(tv)}`);
                             }
-                            else errors.push(`${col_name} - Foreign key lacks table/column: ${JSON.stringify(tv)}`);
+                            else errors.push(`${col_name} - Foreign key lacks table/column: ${JSON.stringify(fk)}`);;
                         }
                         else {
-                            if (tv.table != cv.table || tv.column != cv.column)
-                                errors.push(`${col_name} - Foreign key info mismatch: ${cv.table}:${cv.column} => ${tv.table}:${tv.column}`);
+                            if (fk.table != fk_c.table || fk.column != fk_c.column)
+                                errors.push(`${col_name} - Foreign key info mismatch: ${fk.table}:${fk.column} => ${fk_c.table}:${fk_c.column}`);
                         }
                     }
-                    else if (tv == "*NOT" || tv === null) {
-                        if (cv)
+                    else if (fk == "*NOT" || fk === null) {
+                        if (fk_c != "*NOT" && fk_c !== null)
                             r.foreign_key = "*NOT";
                     }
                     else errors.push(`${col_name} - Foreign key - unable to parse: ${tv}`);
@@ -810,8 +818,8 @@ export function matchDiff(candidate: Tables, target: Tables): TableInfoOrErrors 
     for (let kt in target) {
         let tgt_table = target[kt];
         let cand_table = tryGet(kt, candidate, {});
-        if (isDict(tgt_table) ) {
-            if( cand_table=="*NOT" ) cand_table = {};
+        if (isDict(tgt_table)) {
+            if (cand_table == "*NOT") cand_table = {};
             // Iterate columns 
             for (let kc in tgt_table) {
                 if (kc == "___owner") continue;
@@ -820,7 +828,7 @@ export function matchDiff(candidate: Tables, target: Tables): TableInfoOrErrors 
                 let diff_col: Dict<any> | string;
                 if (isDict(tgt_col)) {
                     // We can safely replace *NOT here 
-                    if( isString(cand_col) ) cand_col = {};
+                    if (isString(cand_col)) cand_col = {};
                     let dc = matchDiffColumn(kc, cand_col, tgt_col, candidate, r);
                     if (isDict(dc)) {
                         if (firstKey(dc))
@@ -831,7 +839,7 @@ export function matchDiff(candidate: Tables, target: Tables): TableInfoOrErrors 
                 else {
                     if (tgt_col == "*NOT") {
                         // We only need to generate this if the table exists in the candidate
-                        if (isDict(cand_col) && firstKey(cand_col) ){
+                        if (isDict(cand_col) && firstKey(cand_col)) {
                             // !! Check for refs
                             diff_col = "*NOT";
                         }
@@ -1371,13 +1379,13 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             // One can also mark an undeclared column as *NOT 
                             let col_owner = m_col?.___owner || m_tbl?.___owner;
                             let err_len = errors.length;
-                            if( col_owner ){
-                                if ( col_owner != claim.id.branch)
+                            if (col_owner) {
+                                if (col_owner != claim.id.branch)
                                     errors.push(`${t}:${c_name} - Cannot drop column in other module: ${col_owner}, ${claim.id.branch}}`);
                                 else if (firstKey(m_col.___refs))
                                     errors.push(`${t}:${c_name} - Cannot drop column, it is referenced: ${JSON.stringify(m_col.___refs)}`);
                             }
-                            if( errors.length==err_len) {
+                            if (errors.length == err_len) {
                                 m_tbl[c_name] = "*NOT";
                             }
                         }
