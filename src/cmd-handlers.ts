@@ -4,7 +4,7 @@ import {
     sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
 } from './logic';
 
-import { Claim, State, TableProps, isClaim } from "./types";
+import { Claim, State, TableProps, isClaim, isClaimState } from "./types";
 
 import { dump as yamlDump } from 'js-yaml';
 import { append, Dict, errorRv, firstKey, isDict, isArray, isString, toLut } from "./utils";
@@ -99,8 +99,8 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                 }
                 if (!state_base) state_base = getInitialState();
                 let state = sortMergeStoreState(file_dicts, state_dir, state_base, options);
-                if (isDict(state)) state = state_base.___tables;
-                rc = logResult(state, options, 101);
+                let r = isClaimState(state) ? state_base.___tables : state;
+                rc = logResult(r, options, 101);
                 break;
             }
 

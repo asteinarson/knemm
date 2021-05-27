@@ -24,6 +24,8 @@ export type TableProps = {
     [k: string]: ColumnProps | string
 };
 
+export type Tables = Dict<TableProps|"*NOT">;
+
 export type ClaimState_O = {
     id?: ClaimId,
     source?: ClaimStateSource,
@@ -33,7 +35,7 @@ export type ClaimState_O = {
     format: FormatTypeWUnk,
     depends?: Dict<number>,
     modules?: Dict<number>,
-    ___tables: Dict<TableProps|"*NOT">,
+    ___tables: Tables,
     ___dependee?: Dict<number>
 };
 
@@ -41,7 +43,7 @@ export interface ClaimState {
     source?: ClaimStateSource,
     file?: string,
     format: FormatTypeWUnk,
-    ___tables: Dict<TableProps|"*NOT">,
+    ___tables: Tables,
 };
 
 export interface Claim extends ClaimState {
