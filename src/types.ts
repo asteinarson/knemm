@@ -87,7 +87,7 @@ export type ColumnProps = {
     has_auto_increment?: boolean,
     default?: BaseTypes,
     comment?: string,
-    foreign_key?: ForeignKey,
+    foreign_key?: ForeignKey | "*NOT",
     max_length?: number,
     numeric_precision?: number,
     numeric_scale?: number,
