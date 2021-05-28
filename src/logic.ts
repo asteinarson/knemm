@@ -1328,6 +1328,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             if (getTypeGroup(col.data_type)) {
                                 // !! we could check for  a <*ref> flag (requiring an existing column) 
                                 // See if we accept all suggested column keywords 
+                                // ! There should be a stronger syntax check here ! 
                                 let unknowns = notInLut(col, db_column_words);
                                 if (!unknowns) {
                                     // Accept column declaration in its fullness
@@ -1343,7 +1344,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         }
                         // A ref to a previously declared column. Either a requirement 
                         // on a column in another branch/module, or a reference to one 
-                        // 'of our own making' - i.e. we can modify it. 
+                        // 'of our own making'- i.e. we can modify it. 
                         else if ((!m_col.___owner && !is_ref) ||
                             m_col.___owner == claim.id.branch) {
                             // Modifying what we declared ourselves 
@@ -1354,7 +1355,13 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         }
                         else {
                             // So this is a ref to an existing column, by another module
+                            // ! Plan for a more robust approach:
+                            // Under the __refs[branch] section, store all the requirements 
+                            // of this particular module. Thenm that can be used when deciding 
+                            // what the module itself can / cannot modify.
                             for (let p in col) {
+                                // Move to 'ref_data_type' (or 'ref_type') instead, as 'data_type' 
+                                // is a column declaration
                                 if (p == "data_type") {
                                     // Accept same or more narrow datatype 
                                     if (!typeContainsLoose(m_col[p], col[p] as string))
