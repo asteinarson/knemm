@@ -88,8 +88,8 @@ const state_excludes: Dict<1> = {
 }
 
 function excludeFromState(file: string) {
-    if( state_excludes[file] ) return true;
-    if( file.slice(0,7)=="___xti." && file.slice(-5)==".yaml" ) return true;
+    if (state_excludes[file]) return true;
+    if (file.slice(0, 7) == "___xti." && file.slice(-5) == ".yaml") return true;
 }
 
 const re_yj = /\.(json|yaml|JSON|YAML)$/;
@@ -704,7 +704,7 @@ function matchDiffColumn(col_name: string, cand_col: ColumnProps, tgt_col: Colum
                                 errors.push(`${col_name} - Types are not compatible: ${cv}, ${tv} `);
                         }
                     }
-                    else if( !cv && isString(tv) && getTypeGroup(tv) )
+                    else if (!cv && isString(tv) && getTypeGroup(tv))
                         r.data_type = tv;
                     else
                         errors.push(`${col_name} - data_type - cannot parse: ${cv}, ${tv} `);
@@ -782,7 +782,7 @@ function matchDiffColumn(col_name: string, cand_col: ColumnProps, tgt_col: Colum
                         }
                     }
                     else if (fk == "*NOT" || fk === null) {
-                        if (fk_c && fk_c != "*NOT" ){
+                        if (fk_c && fk_c != "*NOT") {
                             r.foreign_key = "*NOT";
                         }
                     }
@@ -1089,7 +1089,7 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
         return true;
     }
 
-    // Iterate claims we were explicitly give
+    // Iterate claims we were explicitly given
     let err_cnt = 0;
     for (let f in file_dicts) {
         let id = getClaimId(f, file_dicts[f].id, options.looseNames);
@@ -1182,6 +1182,9 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
         };
     }
 
+    // !! TODO Weak dependencies are such that they are only enforced if the dependent 
+    // module is actually pulled in already. A weak dep is not pulled in, by the the
+    // weak dep declaration. 
     // Now that we did all strong deps, we can decide if any weak deps should be added
     /*if (claim.weak_depends) {
         // Weak depends are only looked for (and run) if that module has been previously 
@@ -1314,6 +1317,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                 if (!firstKey(cols)) continue;
                 if (!isTableProps(m_tbl))
                     merge[t] = m_tbl = { ___owner: claim.id.branch };
+
                 for (let c_name in cols) {
                     let col = cols[c_name];
                     let m_col = m_tbl[c_name];
@@ -1340,8 +1344,8 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         // A ref to a previously declared column. Either a requirement 
                         // on a column in another branch/module, or a reference to one 
                         // 'of our own making' - i.e. we can modify it. 
-                        else if (m_col.___owner == claim.id.branch ||
-                            (!m_col.___owner && !is_ref)) {
+                        else if ((!m_col.___owner && !is_ref) ||
+                            m_col.___owner == claim.id.branch) {
                             // Modifying what we declared ourselves 
                             if (isDict(col)) {
                                 let es = mergeOwnColumnClaim(m_col, col, options);
@@ -1349,6 +1353,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             }
                         }
                         else {
+                            // So this is a ref to an existing column, by another module
                             for (let p in col) {
                                 if (p == "data_type") {
                                     // Accept same or more narrow datatype 
@@ -1438,7 +1443,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
     return errors.length ? errors : merge_base;
 }
 
-// Merge revised claim into column declared earlier, by the same module
+// Merge revised claim into column declared earlier, by the same module.
 // The general rule is that we accept widening of data type, precision,
 // but not that which would likely cause loss of data. 
 // TODO: Provide a path to narrow and add constraints, by application 
