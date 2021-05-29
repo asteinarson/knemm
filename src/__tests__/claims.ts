@@ -76,7 +76,7 @@ export let claim_use_p1: Claim = {
     ___tables: {
         person: {
             name: {
-                data_type: "text",
+                ref_data_type: "text",
             },
         },
     }
@@ -95,7 +95,7 @@ export let claim_use_p2: Claim = {
     ___tables: {
         person: {
             name: {
-                data_type: "text",
+                ref_data_type: "text",
             },
         },
     }
