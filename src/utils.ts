@@ -149,17 +149,24 @@ export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof a
     return acc;
 }
 
-export function findValueOf(key: string, o: Dict<any> | any[]): any {
+export function findValueOf(key: string, o: Dict<any> | any[], path_record?:string[]): any {
+
+    // Helper to record the path of the found value 
+    let found = (k:string, r:any) => {
+        if( path_record ) path_record.push(k);
+        return r;
+    }
+
     // For what I see, TypeScript should allow this without the if/else
     // Each outer loop is identical and typesafe, so writing them as one
     // loop should also be. 
     if (!isArray(o)) {
         for (let k in o) {
             let v = o[k];
-            if (k == key) return v;
+            if (k == key) return found(k,v);
             if (firstKey(v)) {
                 let r = findValueOf(key, v);
-                if (r != undefined) return r;
+                if (r != undefined) return found(k,r);
             }
         }
     }
@@ -169,7 +176,7 @@ export function findValueOf(key: string, o: Dict<any> | any[]): any {
             let v = o[k];
             if (firstKey(v)) {
                 let r = findValueOf(key, v);
-                if (r != undefined) return r;
+                if (r != undefined) return found(k,r);
             }
         }
     }
