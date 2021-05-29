@@ -209,8 +209,8 @@ test("findValueOf test", () => {
     let path:string[] = [];
     let v = findValueOf("c",o,path);
     expect(path.length).toBe(2);
-    expect(path[1]).toBe("c");
-    expect(path[0]).toBe("n1");
+    expect(path[0]).toBe("c");
+    expect(path[1]).toBe("n1");
 });
 
 test("objectPrune", () => {
