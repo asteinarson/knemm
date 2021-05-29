@@ -26,19 +26,6 @@ export type TableProps = {
 
 export type Tables = Dict<TableProps|"*NOT">;
 
-// export type ClaimState_O = {
-//     id?: ClaimId,
-//     source?: ClaimStateSource,
-//     file?: string,
-//     directory?: string,
-//     connection?: any,    // Actually Knex
-//     format: FormatTypeWUnk,
-//     depends?: Dict<number>,
-//     modules?: Dict<number>,
-//     ___tables: Tables,
-//     ___dependee?: Dict<number>
-// };
-
 export interface ClaimState {
     source?: ClaimStateSource,
     file?: string,
@@ -78,21 +65,30 @@ export type ForeignKey = {
     column: string,
     constraint_name?: string,
 };
-export type ColumnProps = {
-    ___refs?: Dict<number>,
-    ___owner?: string,
+
+export interface BaseColumnProps {
     data_type?: string,
-    ref_type?: string,
     is_nullable?: boolean,
     is_unique?: boolean,
     is_primary_key?: boolean,
     has_auto_increment?: boolean,
     default?: BaseTypes,
     comment?: string,
-    foreign_key?: ForeignKey | "*NOT",
     max_length?: number,
     numeric_precision?: number,
     numeric_scale?: number,
-    [k: string]: BTDict3,
+    [k: string]: any, //BTDict3,
 };
 
+export interface RefColumnProps extends BaseColumnProps {
+    ___version: number,
+    foreign_key?: ForeignKey,
+}
+
+export interface ColumnProps extends BaseColumnProps {
+    ___refs?: Dict<RefColumnProps>,
+    ___owner?: string,
+    ref_data_type?: string,
+    is_ref?: boolean,
+    foreign_key?: ForeignKey | "*NOT",
+};
