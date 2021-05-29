@@ -1329,6 +1329,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                 // !! we could check for  a <*ref> flag (requiring an existing column) 
                                 // See if we accept all suggested column keywords 
                                 // ! There should be a stronger syntax check here ! 
+                                // ! Or in normalizeClaim
                                 let unknowns = notInLut(col, db_column_words);
                                 if (!unknowns) {
                                     // Accept column declaration in its fullness
