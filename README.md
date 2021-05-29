@@ -77,7 +77,7 @@ The first YAML source above will be processed (merged) by the command `join`:
 ```shell
 $ knemm join Person_1.yaml 
 person:
-  id: int pk auto
+  id: int pk auto_inc
   email: varchar(255) unique
   first_name: varchar(64)
 ```
@@ -125,7 +125,7 @@ Then we can merge the two claims:
 ```shell
 $ knemm join Person_1.yaml Person_2.yaml 
 person:
-  id: int pk auto
+  id: int pk auto_inc
   email: varchar(255) unique
   first_name: varchar(64)
   second_name: varchar(64)
@@ -154,7 +154,7 @@ Then we can merge the two claims:
 ```shell
 $ knemm join Person_3.yaml 
 person:
-  id: int pk auto
+  id: int pk auto_inc
   email: text unique
   first_name: varchar(64)
   second_name: varchar(64)
@@ -205,7 +205,7 @@ Person_1.yaml  Person_2.yaml  Person_4.yaml Person_7.yaml
 In the latter case, one can omit the ID from the internal YAML - and optionally leave out the whole YAML/JSON top level, and end up with the content of `Person_1.yaml` being: 
 ```yaml
 person:
-    id: int pk auto
+    id: int pk auto_inc
     email: varchar(255) unique
     first_name: varchar(64)
 ```
@@ -247,7 +247,7 @@ We exit PSQL. Then let's see that as a state:
 ```bash
 $ knemm join me?my_pass@pg:PersonTest
 person:
-  id: int pk auto
+  id: int pk auto_inc
   email: text
 ```
 
