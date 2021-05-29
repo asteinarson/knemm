@@ -1,10 +1,10 @@
 import {
     invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv,
     notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt,
-    objectMap, append, objectPrune, deepCopy
+    objectMap, append, objectPrune, deepCopy, findValueOf
 } from './utils';
 
-import { db_column_words, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
+import { db_column_words, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
 import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps } from "./types";
 
@@ -1373,8 +1373,8 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                         for (let p in col) {
                                             if (p == "is_ref") continue;
                                             // See if unref the property
-                                            if (col[p] == "*UNREF"){
-                                                if( p=="ref_data_type" ) p = "data_type";
+                                            if (col[p] == "*UNREF") {
+                                                if (p == "ref_data_type") p = "data_type";
                                                 delete ref_col[p];
                                                 continue;
                                             }
@@ -1386,7 +1386,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                                 if (!typeContainsLoose(m_col[p], col[p] as string))
                                                     errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
                                                 else
-                                                    ref_col.data_type = col[p];
+                                                    ref_col.data_type = col.ref_data_type;
                                             } else {
                                                 if (!db_column_words[p])
                                                     errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
@@ -1494,10 +1494,17 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
         if (db_column_words[k]) {
             // All other column props
             if (!propEqual(m_col[k], claim[k])) {
-                let is_reffed = isDictWithKeys(m_col[k]?.___refs);
-                let ref_error = false;
-                let range_error = false;
                 let reason: string;
+                // If it is a referred property we cannot change it 
+                if (m_col.___refs && db_ref_lockable[k]) {
+                    let path: string[] = [];
+                    let ref_val = findValueOf(k, m_col.___refs, path);
+                    if (ref_val !== undefined) {
+                        reason = `The value of ${k} is locked by a reference from: ${dArrAt(path, -1)} with value: ${ref_val}`;
+                        errors.push(reason);
+                        continue;
+                    }
+                }
                 switch (k) {
                     case "data_type":
                         // We can widen the data type 
@@ -1526,24 +1533,16 @@ function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<a
                         break;
                     case "is_primary_key":
                     case "has_auto_increment":
-                        if (claim[k]) reason = `Cannot safely add/remove constraint ${k} now`;
-                        break;
                     case "is_unique":
-                        // We allow to go back to nullable - DB is fine w that 
-                        if (is_reffed) ref_error = true;
-                        else if (claim[k]) reason = "Cannot add constraint UNIQUE now";
+                        if (claim[k]) reason = `Cannot safely add constraint ${k} now`;
                         break;
                     case "is_nullable":
                         // We allow to go back to nullable - DB is fine w that 
-                        if (is_reffed) ref_error = true;
-                        else if (!claim[k]) reason = "Cannot add constraint NOT NULLABLE now";
+                        if (!claim[k]) reason = "Cannot add constraint NOT NULLABLE now";
                         break;
                     default:
-                        ref_error = is_reffed;
                         break;
                 }
-                if (ref_error && !reason)
-                    reason = `${k} is referenced by: (${JSON.stringify(m_col[k].___refs)})`;
                 if (!reason)
                     r[k] = claim[k];
                 else {

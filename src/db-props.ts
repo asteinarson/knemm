@@ -36,6 +36,14 @@ export let db_column_words: Dict<string|number> = {
     foreign_key: 1,
 };
 
+// These properties can be held (locked) by a reference
+export let db_ref_lockable:Dict<any> = {
+    ...db_column_flags,
+    is_nullable:1,
+    foreign_key:1,
+    db_with_args
+};
+
 // The valid (and different) base numeric types 
 const numerics_w_smallint: Dict<number> = {
     smallint: 1, int: 1, bigint: 1,
