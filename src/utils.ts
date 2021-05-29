@@ -52,16 +52,20 @@ export function tryGet<T>(k: string, dict: Dict<T>, fallback_value?: T) {
 export function preferGet<T>(k: string, dict1: Dict<T>, dict2: Dict<T>, fallback_value?: T) {
     if (isDict(dict1)) {
         let r = dict1?.[k];
-        if( r !== undefined ) return r;
+        if (r !== undefined) return r;
     }
-    return tryGet(k,dict2,fallback_value);
+    return tryGet(k, dict2, fallback_value);
 }
 
-export function firstKey(o: object): any {
+export function firstKey(o: object, exclude_keys?: string | Dict<any>): any {
     if (typeof o == "object") {
+        if (isString(exclude_keys))
+            exclude_keys = { [exclude_keys]: 1 };
         for (let k in o) {
-            if (o.hasOwnProperty(k))
-                return k;
+            if (o.hasOwnProperty(k)) {
+                if (!exclude_keys || !exclude_keys[k])
+                    return k;
+            }
         }
     }
 }
@@ -135,8 +139,8 @@ export function isArrayWithElems(a: any): a is [] {
     //return a?.constructor == Array;
 }
 
-export function append<T>(acc: Dict<T> , to_add: typeof acc): Dict<T>;
-export function append<T>(acc: Array<T> , to_add: typeof acc): Array<T>;
+export function append<T>(acc: Dict<T>, to_add: typeof acc): Dict<T>;
+export function append<T>(acc: Array<T>, to_add: typeof acc): Array<T>;
 export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof acc {
     if (isArray(acc)) {
         for (let e of to_add as T[])
@@ -149,11 +153,11 @@ export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof a
     return acc;
 }
 
-export function findValueOf(key: string, o: Dict<any> | any[], path_record?:string[]): any {
+export function findValueOf(key: string, o: Dict<any> | any[], path_record?: string[]): any {
 
     // Helper to record the path of the found value 
-    let found = (k:string, r:any) => {
-        if( path_record ) path_record.push(k);
+    let found = (k: string, r: any) => {
+        if (path_record) path_record.push(k);
         return r;
     }
 
@@ -163,10 +167,10 @@ export function findValueOf(key: string, o: Dict<any> | any[], path_record?:stri
     if (!isArray(o)) {
         for (let k in o) {
             let v = o[k];
-            if (k == key) return found(k,v);
+            if (k == key) return found(k, v);
             if (firstKey(v)) {
                 let r = findValueOf(key, v);
-                if (r != undefined) return found(k,r);
+                if (r != undefined) return found(k, r);
             }
         }
     }
@@ -176,7 +180,7 @@ export function findValueOf(key: string, o: Dict<any> | any[], path_record?:stri
             let v = o[k];
             if (firstKey(v)) {
                 let r = findValueOf(key, v);
-                if (r != undefined) return found(k,r);
+                if (r != undefined) return found(k, r);
             }
         }
     }

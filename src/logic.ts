@@ -1369,7 +1369,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                         // Under the ___refs[branch] section, store all the requirements 
                                         // of this particular module. Then that can be used when deciding 
                                         // what the module itself can / cannot modify.
-                                        let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || { ___version: claim.id.version };
+                                        let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || { };
                                         for (let p in col) {
                                             if (p == "is_ref") continue;
                                             // See if unref the property
@@ -1399,8 +1399,9 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                             }
                                         }
                                         // Anything in the ref ? 
-                                        if (firstKey(ref_col)) {
+                                        if (firstKey(ref_col,"___version")) {
                                             m_col.___refs ||= {};
+                                            ref_col.___version =  claim.id.version;
                                             m_col.___refs[claim.id.branch] = ref_col;
                                         }
                                         else if (m_col.___refs?.[claim.id.branch]) {

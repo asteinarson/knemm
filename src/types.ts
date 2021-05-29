@@ -81,7 +81,7 @@ export interface BaseColumnProps {
 };
 
 export interface RefColumnProps extends BaseColumnProps {
-    ___version: number,
+    ___version?: number,
     foreign_key?: ForeignKey,
 }
 
