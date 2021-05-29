@@ -60,6 +60,12 @@ test("firstKey test", () => {
     expect(firstKey(["abc"])).toBe('0');
     expect(firstKey({})).toBe(undefined);
     expect(firstKey(null)).toBe(undefined);
+
+    // Test exclude functionality 
+    let excludes = { town: 1, age: 1 };
+    let fk = firstKey(src, excludes);
+    expect(fk).toBe("tested");
+    expect(firstKey(excludes,"town")).toBe("age");
 });
 
 test("inLut test", () => {
@@ -194,17 +200,23 @@ test("objectMap test", () => {
 });
 
 test("findValueOf test", () => {
-    let o = { a: 14, n1: { c: 13, a: 11 }, arr:[9,{pi_100:314}] };
+    let o = { a: 14, n1: { c: 13, a: 11 }, arr: [9, { pi_100: 314 }] };
     expect(findValueOf("a", o)).toBe(14);
     expect(findValueOf("x", o)).toBe(undefined);
     expect(findValueOf("c", o)).toBe(13);
     expect(findValueOf("pi_100", o)).toBe(314);
+
+    let path:string[] = [];
+    let v = findValueOf("c",o,path);
+    expect(path.length).toBe(2);
+    expect(path[1]).toBe("c");
+    expect(path[0]).toBe("n1");
 });
 
 test("objectPrune", () => {
-    let o1 = { a: 14, n1: { c: 13, a: 11 }, arr:[9,{pi_100:314}] };
+    let o1 = { a: 14, n1: { c: 13, a: 11 }, arr: [9, { pi_100: 314 }] };
     let o2 = deepCopy(o1);
     expect(o1).toStrictEqual(o2);
-    (o2 as any).a = 15; 
+    (o2 as any).a = 15;
     expect(o1).not.toStrictEqual(o2);
 });

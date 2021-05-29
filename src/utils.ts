@@ -169,7 +169,7 @@ export function findValueOf(key: string, o: Dict<any> | any[], path_record?: str
             let v = o[k];
             if (k == key) return found(k, v);
             if (firstKey(v)) {
-                let r = findValueOf(key, v);
+                let r = findValueOf(key, v, path_record);
                 if (r != undefined) return found(k, r);
             }
         }
@@ -179,7 +179,7 @@ export function findValueOf(key: string, o: Dict<any> | any[], path_record?: str
         for (let k in o) {
             let v = o[k];
             if (firstKey(v)) {
-                let r = findValueOf(key, v);
+                let r = findValueOf(key, v, path_record);
                 if (r != undefined) return found(k, r);
             }
         }
