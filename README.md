@@ -22,6 +22,9 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
   - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
 
+### Documentation 
+This file is an overview, an introduction. For more per topic documentation - [go here](doc/index.md).
+
 # Installing 
 ### Via NPM
 Install with: 
