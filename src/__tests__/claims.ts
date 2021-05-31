@@ -146,6 +146,22 @@ export let claim_use_p3: Claim = {
     }
 };
 
+export let claim_use_p3_2: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 4
+    },
+    ___tables: {
+        person: {
+            yob: {
+                // Exact ref 
+                ref_data_type: "bigint",
+                is_nullable: true,
+            },
+        },
+    }
+};
 
 
 
