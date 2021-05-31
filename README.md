@@ -23,10 +23,10 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 - [Branches / modules](#branches--modules)
 
 ### Documentation 
-This file is an overview, an introduction. For per topic documentation - [go here](doc/index.md).
+This file is an overview, an introduction. For per topic documentation - [go here](docs/index.md).
 
 # Installing 
-### Via NPM
+### Via NPM 
 Install with: 
 ```bash
 $ npm i --global knemm
