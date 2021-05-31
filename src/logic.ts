@@ -1167,7 +1167,8 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
             if (dep_claim) {
                 // Insert the dependee link (opposite direction of dependency link)
                 dep_claim.___dependee ||= {};
-                dep_claim.___dependee[o_id.branch] = o_id.version;
+                dep_claim.___dependee[o_id.branch] ||= [];
+                dep_claim.___dependee[o_id.branch].push(o_id.version);
             }
             else {
                 // Is it a dependency already in the state ? 
@@ -1255,8 +1256,10 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
                     for (let dee_branch in claim.___dependee) {
                         // This will be a direct return, if we were called as a dependence 
                         let bc_dee = branch_claims[dee_branch];
-                        if (bc_dee)
-                            sortBranchUpTo(bc_dee, claim.___dependee[dee_branch]);
+                        if (bc_dee){
+                            for( let dep_ver of claim.___dependee[dee_branch])
+                                sortBranchUpTo(bc_dee, dep_ver);
+                        }
                         else {
                             console.error(`runBranchTo - dependee not found: ${dee_branch}`);
                             err_cnt++;
