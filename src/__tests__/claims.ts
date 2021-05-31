@@ -5,6 +5,7 @@ test("claims dummy test", () => {
 });
 
 import {Claim, State} from "../types";
+import { deepCopy } from "../utils";
 
 export let claim_p1: Claim = {
     format: "internal",
@@ -146,7 +147,7 @@ export let claim_use_p3: Claim = {
     }
 };
 
-export let claim_use_p3_2: Claim = {
+export let claim_use_p3_err: Claim = {
     format: "internal",
     id: {
         branch: "up",
@@ -181,23 +182,25 @@ export let claim_p4: Claim = {
     }
 };
 
-
-// export let claim_use_p3_3: Claim = {
-//     format: "internal",
-//     id: {
-//         branch: "up",
-//         version: 4
-//     },
-//     ___tables: {
-//         person: {
-//             yob: {
-//                 // Wrong ref, both type and property
-//                 ref_data_type: "bigint",
-//                 is_nullable: true,
-//             },
-//         },
-//     }
-// };
+export let claim_use_p3_ok: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 4
+    },
+    depends: {
+        p: 3
+    },
+    ___tables: {
+        person: {
+            age: "*UNREF",
+            yob: {
+                is_ref: true,
+                is_nullable: "*UNREF" as any as boolean,
+            },
+        },
+    }
+};
 
 
 
