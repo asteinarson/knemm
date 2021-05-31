@@ -161,6 +161,11 @@ describe("describe - extend state 2", () => {
             { internal: true });
         expect(r).toBe(0);
 
+        // This should succeed, as we have unreffed 'age' column and 'is_nullable' (in p4)
+        r = await handleOneArgCmd("join",
+            [fileOf(claim_p4), fileOf(claim_use_p3_ok)],
+            { internal: true });
+        expect(r).toBe(0);
 
     });
 });
