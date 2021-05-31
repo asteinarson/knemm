@@ -11,7 +11,7 @@ import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureS
 
 jestLogCaptureStart();
 
-import { claim_p1, claim_p2, claim_use_p1, claim_use_p2 } from './claims';
+import { claim_p1, claim_p2, claim_p3, claim_use_p1, claim_use_p2, claim_use_p3 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 import { Tables } from '../types';
@@ -125,3 +125,20 @@ describe("describe - extend state", () => {
         expect(isDict(s)).toBe(true);
     });
 });
+
+claimsToFile([claim_p3, claim_use_p3]);
+describe("describe - extend state 2", () => {
+    test("cmd join - extend state 2", async () => {
+        let state_dir = pJoin(tmpdir(), "state1");
+        let m_yaml = pJoin(state_dir, "___merge.yaml");
+        expect(existsSync(m_yaml)).toBeTruthy();
+
+        // This should succeed - both datatypes match
+        let r = await handleOneArgCmd("join",
+            [fileOf(claim_p3), fileOf(claim_use_p3)],
+            { internal: true });
+
+        expect(r).toBe(0);
+    });
+});
+

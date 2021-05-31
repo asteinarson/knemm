@@ -101,6 +101,55 @@ export let claim_use_p2: Claim = {
     }
 };
 
+export let claim_p3: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 3
+    },
+    ___tables: {
+        person: {
+            age: {
+                // Change type of our column 
+                data_type: "bigint",
+            },
+            yob: {
+                // A new column 
+                data_type: "int",
+                is_nullable: false,
+            },
+        },
+    }
+};
+
+export let claim_use_p3: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 3
+    },
+    depends: {
+        p: 3
+    },
+    ___tables: {
+        person: {
+            age: {
+                // Smaller, but OK ref
+                ref_data_type: "int",
+            },
+            yob: {
+                // Exact ref 
+                ref_data_type: "int",
+                is_nullable: false,
+            },
+        },
+    }
+};
+
+
+
+
+
 export let claim_apply_simple_types: Claim = {
     format: "?",    // Enforce translate to internal
     id: {
