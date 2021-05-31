@@ -138,7 +138,7 @@ export let claim_use_p3: Claim = {
                 ref_data_type: "int",
             },
             yob: {
-                // Exact ref 
+                // Exact ref, both type and property
                 ref_data_type: "int",
                 is_nullable: false,
             },
@@ -155,7 +155,7 @@ export let claim_use_p3_2: Claim = {
     ___tables: {
         person: {
             yob: {
-                // Exact ref 
+                // Wrong ref, both type and property
                 ref_data_type: "bigint",
                 is_nullable: true,
             },
@@ -163,6 +163,41 @@ export let claim_use_p3_2: Claim = {
     }
 };
 
+export let claim_p4: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 4
+    },
+    ___tables: {
+        person: {
+            // Try remove column, is reffed, should fail 
+            age: "*NOT",
+            yob: {
+                // Is reffed property, change should fail 
+                is_nullable: true,
+            },
+        },
+    }
+};
+
+
+// export let claim_use_p3_3: Claim = {
+//     format: "internal",
+//     id: {
+//         branch: "up",
+//         version: 4
+//     },
+//     ___tables: {
+//         person: {
+//             yob: {
+//                 // Wrong ref, both type and property
+//                 ref_data_type: "bigint",
+//                 is_nullable: true,
+//             },
+//         },
+//     }
+// };
 
 
 

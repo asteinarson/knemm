@@ -11,7 +11,7 @@ import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureS
 
 jestLogCaptureStart();
 
-import { claim_p1, claim_p2, claim_p3, claim_use_p1, claim_use_p2, claim_use_p3, claim_use_p3_2 } from './claims';
+import { claim_p1, claim_p2, claim_p3, claim_p4, claim_use_p1, claim_use_p2, claim_use_p3, claim_use_p3_2 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 import { Tables } from '../types';
@@ -126,9 +126,12 @@ describe("describe - extend state", () => {
     });
 });
 
-claimsToFile([claim_p3, claim_use_p3, claim_use_p3_2]);
+claimsToFile([claim_p3, claim_use_p3, claim_use_p3_2, claim_p4]);
 describe("describe - extend state 2", () => {
     test("cmd join - extend state 2", async () => {
+        // We got the wrong one of this state otherwise
+        claimsToFile([claim_use_p2]);
+
         let state_dir = pJoin(tmpdir(), "state1");
         let m_yaml = pJoin(state_dir, "___merge.yaml");
         expect(existsSync(m_yaml)).toBeTruthy();
@@ -145,6 +148,11 @@ describe("describe - extend state 2", () => {
             { internal: true });
         expect(r).not.toBe(0);
 
+        // This should fail - type is wrong and is_nullable too
+        r = await handleOneArgCmd("join",
+            [fileOf(claim_p4), fileOf(claim_use_p3)],
+            { internal: true });
+        expect(r).not.toBe(0);
     });
 });
 

@@ -1384,7 +1384,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                             if (p == "ref_data_type") {
                                                 // Accept same or more narrow datatype 
                                                 if (!typeContainsLoose(m_col.data_type, col.ref_data_type))
-                                                    errors.push(`${t}:${c_name} - reference type <${col[p]}> does not fit in declared type <${m_col[p]}>`);
+                                                    errors.push(`${t}:${c_name} - reference type <${col.ref_data_type}> does not fit in declared type <${m_col.data_type}>`);
                                                 else
                                                     ref_col.data_type = col.ref_data_type;
                                             } else {
