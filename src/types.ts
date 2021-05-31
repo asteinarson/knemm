@@ -36,7 +36,7 @@ export interface ClaimState {
 export interface Claim extends ClaimState {
     id: ClaimId,
     depends?: Dict<number>,
-    ___dependee?: Dict<number[]>
+    ___dependee?: Dict<number>
 };
 
 export interface State extends ClaimState {

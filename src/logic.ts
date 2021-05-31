@@ -1166,9 +1166,12 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
             }
             if (dep_claim) {
                 // Insert the dependee link (opposite direction of dependency link)
+                // It can be that several claims in this branch refers to the same claim in another branch. 
+                // Then store the highest number of those
                 dep_claim.___dependee ||= {};
-                dep_claim.___dependee[o_id.branch] ||= [];
-                dep_claim.___dependee[o_id.branch].push(o_id.version);
+                let o_id_prv_version = dep_claim.___dependee[o_id.branch];
+                if (o_id_prv_version == undefined || o_id.version > o_id_prv_version)
+                    dep_claim.___dependee[o_id.branch] = o_id.version;
             }
             else {
                 // Is it a dependency already in the state ? 
@@ -1256,9 +1259,8 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
                     for (let dee_branch in claim.___dependee) {
                         // This will be a direct return, if we were called as a dependence 
                         let bc_dee = branch_claims[dee_branch];
-                        if (bc_dee){
-                            for( let dep_ver of claim.___dependee[dee_branch])
-                                sortBranchUpTo(bc_dee, dep_ver);
+                        if (bc_dee) {
+                            sortBranchUpTo(bc_dee, claim.___dependee[dee_branch]);
                         }
                         else {
                             console.error(`runBranchTo - dependee not found: ${dee_branch}`);
@@ -1372,7 +1374,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                         // Under the ___refs[branch] section, store all the requirements 
                                         // of this particular module. Then that can be used when deciding 
                                         // what the module itself can / cannot modify.
-                                        let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || { };
+                                        let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || {};
                                         for (let p in col) {
                                             if (p == "is_ref") continue;
                                             // See if unref the property
@@ -1402,9 +1404,9 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                             }
                                         }
                                         // Anything in the ref ? 
-                                        if (firstKey(ref_col,"___version")) {
+                                        if (firstKey(ref_col, "___version")) {
                                             m_col.___refs ||= {};
-                                            ref_col.___version =  claim.id.version;
+                                            ref_col.___version = claim.id.version;
                                             m_col.___refs[claim.id.branch] = ref_col;
                                         }
                                         else if (m_col.___refs?.[claim.id.branch]) {
