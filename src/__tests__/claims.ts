@@ -5,6 +5,7 @@ test("claims dummy test", () => {
 });
 
 import {Claim, State} from "../types";
+import { deepCopy } from "../utils";
 
 export let claim_p1: Claim = {
     format: "internal",
@@ -100,6 +101,108 @@ export let claim_use_p2: Claim = {
         },
     }
 };
+
+export let claim_p3: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 3
+    },
+    ___tables: {
+        person: {
+            age: {
+                // Change type of our column 
+                data_type: "bigint",
+            },
+            yob: {
+                // A new column 
+                data_type: "int",
+                is_nullable: false,
+            },
+        },
+    }
+};
+
+export let claim_use_p3: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 3
+    },
+    depends: {
+        p: 3
+    },
+    ___tables: {
+        person: {
+            age: {
+                // Smaller, but OK ref
+                ref_data_type: "int",
+            },
+            yob: {
+                // Exact ref, both type and property
+                ref_data_type: "int",
+                is_nullable: false,
+            },
+        },
+    }
+};
+
+export let claim_use_p3_err: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 4
+    },
+    ___tables: {
+        person: {
+            yob: {
+                // Wrong ref, both type and property
+                ref_data_type: "bigint",
+                is_nullable: true,
+            },
+        },
+    }
+};
+
+export let claim_p4: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 4
+    },
+    ___tables: {
+        person: {
+            // Try remove column, is reffed, should fail 
+            age: "*NOT",
+            yob: {
+                // Is reffed property, change should fail 
+                is_nullable: true,
+            },
+        },
+    }
+};
+
+export let claim_use_p3_ok: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 4
+    },
+    depends: {
+        p: 3
+    },
+    ___tables: {
+        person: {
+            age: "*UNREF",
+            yob: {
+                is_ref: true,
+                is_nullable: "*UNREF" as any as boolean,
+            },
+        },
+    }
+};
+
+
 
 export let claim_apply_simple_types: Claim = {
     format: "?",    // Enforce translate to internal
