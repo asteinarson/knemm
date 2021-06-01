@@ -195,7 +195,6 @@ export let claim_use_p3_ok: Claim = {
         person: {
             age: "*UNREF",
             yob: {
-                is_ref: true,
                 is_nullable: "*UNREF" as any as boolean,
             },
         },
