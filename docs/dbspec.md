@@ -1,4 +1,4 @@
-# Database connection specifier
+# Database connection specifier <!-- omit in toc -->
 To be able to specify connection details for a specific database from the CLI, a simple syntax was 
 developed. This example tests if a database `my_db` exists on the PostgresQL client:  
 ```bash 
@@ -8,6 +8,18 @@ no
 The dbspec string format is used in all `knedb` commands and also in any of the `knemm` commands 
 that interface a database. 
 
+## [Back to docs](./index.md) <!-- omit in toc -->
+
+## Contents <!-- omit in toc --> 
+- [Lookup order](#lookup-order)
+- [Syntax of the DB spec string](#syntax-of-the-db-spec-string)
+  - [User and password specification:](#user-and-password-specification)
+  - [Escaping characters in other fields](#escaping-characters-in-other-fields)
+- [Format of connection specifier files](#format-of-connection-specifier-files)
+- [Environment fallback variables](#environment-fallback-variables)
+  - [Default values for some parameters:](#default-values-for-some-parameters)
+
+## Lookup order
 For most clients, more information than the database name is needed. It can either be specified directly 
 in the DB specifier string, or if not there, two fallback levels are used, to look for default values. 
 The whole lookup process, for connection data becomes: 
@@ -39,3 +51,39 @@ A password can be added via `?`:
 Currently escaping is not implemented in the fields of the dbspec string. It means a password cannot 
 contain any of these characters: 
   * `? @ % : =`
+
+## Format of connection specifier files
+This is example of a connection file, `my_db.json` 
+```json 
+{
+    "host": "localhost",
+    "host": "client",
+    "user": "arst",
+    "password": "the_password",
+    "database": "all_products"
+}
+```
+This is an example for connecting to a SQLite DB: 
+```json 
+{
+    "client": "sqlite3",
+    "connection": {
+        "filename": "./all_products.sql3"
+    },
+    "useNullAsDefault": true
+}
+```
+
+## Environment fallback variables
+These DB connection related environment variables can be specified, either in the CLI, or in an `.env` file: 
+ * DBHOST | HOST
+ * DBUSER | USER
+ * DBPASSWORD | PASSWORD 
+ * DATABASE | DEFAULT_DATABASE
+ * DBCLIENT | DEFAULT_DBCLIENT
+
+### Default values for some parameters: 
+ * The default value for `DBHOST` is **localhost** 
+ * The default value for `DBCLIENT` is **pg** 
+
+## [Back to docs](./index.md) <!-- omit in toc -->

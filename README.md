@@ -4,6 +4,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 
 **STATUS:** `knemm` is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Features and details are very much still stabilizing. Feedback and contribution is welcome.  
 
+## Contents <!-- omit in toc --> 
 - [Installing](#installing)
     - [Via NPM](#via-npm)
     - [Via git repo](#via-git-repo)
