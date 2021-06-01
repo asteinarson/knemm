@@ -1311,10 +1311,10 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
         for (let t in cl_tables) {
             let cols = cl_tables[t];
             let m_tbl = merge[t];
-            let is_ref = false;
+            let is_table_ref = false;
             if (isTableProps(m_tbl)) {
                 if (m_tbl.___owner != claim.id.branch) {
-                    is_ref = true;
+                    is_table_ref = true;
                 }
             }
 
@@ -1330,7 +1330,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         if (!m_col || isString(m_col)) {
                             // A new column - accept the various properties 
                             // Check that not an invalid ref 
-                            if (col.ref_data_type || col.is_ref) {
+                            if (col.ref_data_type || !col.data_type) {
                                 errors.push(`${t}:${c_name} - Declaring a reference but column does not exist`);
                             }
                             // A known type ? 
@@ -1343,7 +1343,9 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                 if (!unknowns) {
                                     // Accept column declaration in its fullness
                                     let col_props: ColumnProps = { ...col };
-                                    if (claim.id.branch != m_tbl.___owner) {
+                                    if (is_table_ref) {
+                                        // ! Should an explicit dependency be made, to module 
+                                        // declaring the table ?
                                         col_props.___owner = claim.id.branch;
                                     }
                                     m_tbl[c_name] = col_props;
@@ -1356,10 +1358,10 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             // A ref to a previously declared column. Either a requirement 
                             // on a column in another branch/module, or a reference to one 
                             // 'of our own making'- i.e. we can modify it. 
-                            if ((!m_col.___owner && !is_ref) ||
+                            if ((!m_col.___owner && !is_table_ref) ||
                                 m_col.___owner == claim.id.branch) {
                                 // Modifying what we declared ourselves 
-                                if (!col.ref_data_type && !col.is_ref) {
+                                if (!col.ref_data_type) {
                                     let es = mergeOwnColumnClaim(m_col, col, options);
                                     if (es) errors = [...errors, ...es];
                                 }
@@ -1367,58 +1369,54 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             }
                             else {
                                 // So this is a ref to an existing column, by another module
-                                if (col.is_ref || col.ref_data_type) {
-                                    let col_owner = m_col?.___owner || m_tbl?.___owner;
-                                    if( !claim.depends[col_owner ])
-                                        errors.push(`${t}:${c_name} - Column is a reference to module <${col_owner}>, but that module is not in <depends> section`);    
-                                    else if (col.data_type)
-                                        errors.push(`${t}:${c_name} - Column is a reference, should not use 'data_type'`);
-                                    else {
-                                        // Under the ___refs[branch] section, store all the requirements 
-                                        // of this particular module. Then that can be used when deciding 
-                                        // what the module itself can / cannot modify.
-                                        let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || {};
-                                        for (let p in col) {
-                                            if (p == "is_ref") continue;
-                                            // See if unref the property
-                                            if (col[p] == "*UNREF") {
-                                                if (p == "ref_data_type") p = "data_type";
-                                                delete ref_col[p];
-                                                continue;
-                                            }
+                                let col_owner = m_col?.___owner || m_tbl?.___owner;
+                                if (!claim.depends[col_owner])
+                                    errors.push(`${t}:${c_name} - Column is a reference to module <${col_owner}>, but that module is not in <depends> section`);
+                                else if (col.data_type)
+                                    errors.push(`${t}:${c_name} - Column is a reference, it should not use 'data_type'`);
+                                else {
+                                    // Under the ___refs[branch] section, store all the requirements 
+                                    // of this particular module. Then that can be used when deciding 
+                                    // what the module itself can / cannot modify.
+                                    let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || {};
+                                    for (let p in col) {
+                                        // See if unref the property
+                                        if (col[p] == "*UNREF") {
+                                            if (p == "ref_data_type") p = "data_type";
+                                            delete ref_col[p];
+                                            continue;
+                                        }
 
-                                            // Move to 'ref_data_type' instead, as 'data_type' 
-                                            // is a column declaration
-                                            if (p == "ref_data_type") {
-                                                // Accept same or more narrow datatype 
-                                                if (!typeContainsLoose(m_col.data_type, col.ref_data_type))
-                                                    errors.push(`${t}:${c_name} - reference type <${col.ref_data_type}> does not fit in declared type <${m_col.data_type}>`);
-                                                else
-                                                    ref_col.data_type = col.ref_data_type;
-                                            } else {
-                                                if (!db_column_words[p])
-                                                    errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
-                                                else if (!propEqual(col[p] as any, m_col[p]))
-                                                    errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
-                                                else {
-                                                    // Store the reffed property 
-                                                    ref_col[p] = col[p];
-                                                }
+                                        // Move to 'ref_data_type' instead, as 'data_type' 
+                                        // is a column declaration
+                                        if (p == "ref_data_type") {
+                                            // Accept same or more narrow datatype 
+                                            if (!typeContainsLoose(m_col.data_type, col.ref_data_type))
+                                                errors.push(`${t}:${c_name} - reference type <${col.ref_data_type}> does not fit in declared type <${m_col.data_type}>`);
+                                            else
+                                                ref_col.data_type = col.ref_data_type;
+                                        } else {
+                                            if (!db_column_words[p])
+                                                errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
+                                            else if (!propEqual(col[p] as any, m_col[p]))
+                                                errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
+                                            else {
+                                                // Store the reffed property 
+                                                ref_col[p] = col[p];
                                             }
-                                        }
-                                        // Anything in the ref ? 
-                                        if (firstKey(ref_col, "___version")) {
-                                            m_col.___refs ||= {};
-                                            ref_col.___version = claim.id.version;
-                                            m_col.___refs[claim.id.branch] = ref_col;
-                                        }
-                                        else if (m_col.___refs?.[claim.id.branch]) {
-                                            // Nothing left in ref, delete it 
-                                            delete m_col.___refs[claim.id.branch];
                                         }
                                     }
+                                    // Anything in the ref ? 
+                                    if (firstKey(ref_col, "___version")) {
+                                        m_col.___refs ||= {};
+                                        ref_col.___version = claim.id.version;
+                                        m_col.___refs[claim.id.branch] = ref_col;
+                                    }
+                                    else if (m_col.___refs?.[claim.id.branch]) {
+                                        // Nothing left in ref, delete it 
+                                        delete m_col.___refs[claim.id.branch];
+                                    }
                                 }
-                                else errors.push(`${t}:${c_name} - Claim column refers to another branch, but ref is not declared (is_ref / ref_data_type)`);
                             }
                         }
                     }
@@ -1464,7 +1462,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             else {
                 if (cols == "*NOT") {
                     if (m_tbl == "*NOT") continue;
-                    if (!is_ref) {
+                    if (!is_table_ref) {
                         // A directive to drop the table 
                         // Do we have refs to its columns ? 
                         let has_refs = false;
