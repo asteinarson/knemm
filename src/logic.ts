@@ -1368,7 +1368,10 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             else {
                                 // So this is a ref to an existing column, by another module
                                 if (col.is_ref || col.ref_data_type) {
-                                    if (col.data_type)
+                                    let col_owner = m_col?.___owner || m_tbl?.___owner;
+                                    if( !claim.depends[col_owner ])
+                                        errors.push(`${t}:${c_name} - Column is a reference to module <${col_owner}>, but that module is not in <depends> section`);    
+                                    else if (col.data_type)
                                         errors.push(`${t}:${c_name} - Column is a reference, should not use 'data_type'`);
                                     else {
                                         // Under the ___refs[branch] section, store all the requirements 
