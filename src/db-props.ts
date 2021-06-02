@@ -1,5 +1,5 @@
 
-import { Dict, tryGet } from './utils';
+import { append, Dict, tryGet } from './utils';
 
 // short form boolean flags 
 export let db_column_flags: Dict<string> = {
@@ -10,57 +10,59 @@ export let db_column_flags: Dict<string> = {
 
 // These are tucked as args on the data_type 
 export let db_type_args: Dict<number> = {
-    max_length: 1, 
-    numeric_precision: 1, 
+    max_length: 1,
+    numeric_precision: 1,
     numeric_scale: 1,
 };
 
 // These are tucked as args on the data_type 
 export let db_types_with_args: Dict<1> = {
-    varchar: 1, 
-    decimal: 1, 
+    varchar: 1,
+    decimal: 1,
 };
 
 // These are other props with (string?) args 
 export let db_with_args: Dict<string> = {
-    comment: "comment", 
-    default: "default", 
+    comment: "comment",
+    default: "default",
 };
 
-export let db_column_words: Dict<string|number> = {
+export let db_column_words: Dict<string | number> = {
     data_type: 1,
     ...db_column_flags,
     ...db_type_args,
-    ...db_with_args, 
+    ...db_with_args,
     is_nullable: 1,
     foreign_key: 1,
 };
 
 // These properties can be held (locked) by a reference
-export let db_ref_lockable:Dict<any> = {
+export let db_ref_lockable: Dict<any> = {
     ...db_column_flags,
-    is_nullable:1,
-    foreign_key:1,
+    is_nullable: 1,
+    foreign_key: 1,
     db_with_args
 };
 
 // The valid (and different) base numeric types 
-const numerics_w_smallint: Dict<number> = {
+const numerics_w_smallint: Dict<1> = {
     smallint: 1, int: 1, bigint: 1,
     smallint_u: 1, int_u: 1, bigint_u: 1,
     float: 1, double: 1,
-    decimal: 1, 
+    decimal: 1,
 };
-const numerics: Dict<number> = {
+const numerics: Dict<1> = {
     int: 1, bigint: 1,
     int_u: 1, bigint_u: 1,
     float: 1, double: 1,
-    decimal: 1, 
+    decimal: 1,
 };
 
-const strings: Dict<number> = { text: 1, varchar: 1 };
+const strings: Dict<1> = { text: 1, varchar: 1 };
 
-const datetimes: Dict<number> = { date: 1, time: 1, datetime: 1, timestamp: 1, timestamp_tz: 1 };
+const datetimes: Dict<1> = { date: 1, time: 1, datetime: 1, timestamp: 1, timestamp_tz: 1 };
+
+const other_types: Dict<1> = { boolean: 1, json: 1, jsonb: 1, uuid: 1 };
 
 export function isNumeric(t: string) {
     return numerics[t];
@@ -69,6 +71,8 @@ export function isNumeric(t: string) {
 export function isString(t: string) {
     return strings[t];
 }
+
+export let all_data_types: Dict<1> = append({}, datetimes, strings, numerics, other_types);
 
 export function getTypeGroup(type: string): "numeric" | "datetime" | "text" | "json" | "boolean" | "uuid" {
     type = tryGet(type, type_synonyms, type);
