@@ -88,7 +88,7 @@ person:
   email: varchar(255) unique
   first_name: varchar(64)
 ```
-The command read the single input claim (in **internal** format), merged it into an empty state and printed it back in **hrc** format. Can we convert it back to internal form?  
+The command reads the single input claim (in **internal** format), merged it into an empty state and printed it back in **hrc** format. Can we convert it back to internal form?  
 ```shell
 $ knemm join Person_1.yaml | knemm join -i - 
 person:
@@ -137,7 +137,7 @@ person:
   first_name: varchar(64)
   second_name: varchar(64)
 ```
-Actually we don't have to specify each claim it should use. It suffices that we specifies *the highest versioned claim on each branch*: 
+Actually we don't have to specify each claim it should use. It suffices that we specify *the highest versioned claim on each branch*: 
 ```shell
 $ knemm join Person_2.yaml 
 person:
@@ -181,10 +181,12 @@ A bit more formally, often in migration, this is the model:
   * Before: **A** === **DB state** 
   * After: **B** === **DB state** 
 
+(With **A** being the outcome of the previous migration step, **B** the target of the current state).
+
 With `knemm` it is relaxed/simplified to: 
   * After: **B** <= **DB state** 
 
-(With **A** being the outcome of the previous migration step, **B** the target of the current state).
+With `knemm` we say that after applying the claim, the database satisifies that claim. 
 
 ## Claim ID:s 
 
