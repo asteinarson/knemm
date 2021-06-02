@@ -294,7 +294,7 @@ To demonstrate **module** functionality, we do this with a `person_group` module
 ```yaml
 id: PersonGroup_1
 depends: 
-  Person: 1   # We don't need anything from Person_2 or Person_3
+  Person: 2   # We don't need anything from Person_3
 ___tables:
     # This is a new table of ours 
     group: 
@@ -304,7 +304,7 @@ ___tables:
     person:
       id: ref(int) pk     # We say we need 'int' at least, and they need to be primary keys
       first_name: ref(varchar)  # We say the name should be some string. We can accept any length.
-      second_name: ref(varchar)  # Same
+      second_name: ref(varchar) # Same
       email: unique       # Here 'email' is a typeless ref. We say we want it unique, that's all. 
       group_id: int foreign_key(group,id)  # A new column, a foreign key, to the table declared in above.
 ```
