@@ -22,6 +22,10 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
   - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
   - [An example with modules](#an-example-with-modules)
+    - [Person](#person)
+    - [CatalogProduct](#catalogproduct)
+    - [GroupPrice](#groupprice)
+    - [QuoteOrder](#quoteorder)
 
 # Installing 
 ### Via NPM
@@ -289,7 +293,7 @@ We want to do a simple model of an e-commerce backend. It will consist of these 
   * `group_price`
   * `quote_order`
   
-The `person` module does not need to know anything of e-commerce, it just is a table of simple person data - in our case for a customer. From the point of view of e-commerce, the only requirement is that has an unique **id** column and an **email** field. 
+The `person` module does not need to know anything of e-commerce, it just is a table of simple person data - in our case for a customer. From the point of view of e-commerce, the only requirement is that has an unique **id** field, a **name** column and an **email** field. 
 
 The `catalog_product` module in turn does not depend on the concept of persons or sales. In theory it could just be a simple database of products in categories. It doesn't "know" it is being used for sales. 
 
@@ -297,4 +301,107 @@ The `group_price` allows for tagging persons with various groups. In this case f
 
 The `quote_order` module binds it all together. This module depends on the two previous ones and binds it all together. 
 
+### Person
+For `person` we can simply reuse our claims from above (_Person_1.yaml, Person_2.yaml, Person_3.yaml_). 
+
+### CatalogProduct
+For `catalog_product` we create the claim `CatalogProduct_1.yaml`:
+
+```yaml
+id: CatalogProduct_1 
+___tables:
+    category:
+      id: int pk auto_inc
+      name: varchar(255)
+      parent_id: fk(category,id)  # The parent category ID
+    product:
+      id: int pk auto_inc
+      sku: varchar(255) unique not_null
+      name: varchar(255)
+      price: double not_null
+      category_id: fk(category,id)  # In what category the product is shown 
+```
+
+### GroupPrice
+For `group_price` we want to create customer (`person`) groups, with labels. And we want to store 
+the group ID on the person itself. On closer thought, this is quite a generic concept, and that part
+could be implemented directly in the `Person` module. We make the 4th claim there: 
+
+```yaml
+id: Person_4
+___tables:
+    group:
+      id: int pk auto_inc
+      name: varchar(255)
+    person_group:
+      person_id: fk(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
+      group_id: fk(group,id)  
+```
+
+For the group price, we do need our own module, since that functionality build on both the `Person`
+and the `CatalogProduct` modules: 
+
+```yaml
+id: GroupPrice_1 
+depends: 
+  Person: 4
+  CatalogProduct: 1 
+___tables:
+    # This is a table ref (making claims on a dependency):
+    product: # Below two columns are our explicit dependencies for products 
+      id: ref(int) pk            # We need the ID to be unique integers 
+      sku: ref(varchar) unique   # varchar (with no length) is the simplest string datatype. 
+      price: ref(float)          # float is enough for us, it allows for double or decimal as well
+    # This is also a table ref: 
+    group: # Below two columns are our explicit dependencies for the group functionality 
+      id: ref(int) pk  
+      name: ref(varchar)
+    # This is a table being declared in this module
+    group_price:
+      group_id: int fk(group,id)
+      product_id: int fk(product,id)
+      price: double not null 
+```
+
+### QuoteOrder 
+An order is an object tied to a customer (`person`) with order rows, each with a product, with a quantity field, and a `row_price` field. 
+Quotes (or carts) are very similar to orders, only that they have not yet been placed. 
+Here is an implementation: 
+
+```yaml
+id: QuoteOrder_1 
+depends: 
+  Person: 4
+  CatalogProduct: 1 
+  GroupPrice: 1
+___tables:
+    # Similar references as in the example above:
+    person: 
+      id: ref(int) pk 
+    product: 
+      id: ref(int) pk 
+      sku: ref(varchar) unique
+      price: ref(float)       
+    group: # Below two columns are our explicit dependencies for the group functionality 
+      id: ref(int) pk  
+      name: ref(varchar)
+    # From perspective of this module, below columns are refs 
+    group_price:
+      group_id: ref(int)
+      product_id: ref(int)
+      price: ref(double) notnull 
+    # These are tables being declared in this module 
+    quote:
+      id: int pk auto_inc  
+      person_id: int fk(person,id)
+      total_price: double 
+      is_order: boolean   # This field separates placed orders from quotes 
+      is_paid: boolean    # Payed or not ? 
+      is_shipped: boolean    # Shipped or not ? 
+    quote_item:
+      quote_id: int fk(quote,id)  # The quote this row belongs to 
+      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a fk
+      qty: int notnull
+      row_price: double 
+```
 
