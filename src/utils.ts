@@ -139,18 +139,21 @@ export function isArrayWithElems(a: any): a is [] {
     //return a?.constructor == Array;
 }
 
-export function append<T>(acc: Dict<T>, to_add: typeof acc): Dict<T>;
-export function append<T>(acc: Array<T>, to_add: typeof acc): Array<T>;
-export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc): typeof acc {
+export function append<T>(acc: Dict<T>, to_add: typeof acc, ...args: (typeof acc)[]): Dict<T>;
+export function append<T>(acc: Array<T>, to_add: typeof acc, ...args: (typeof acc)[]): Array<T>;
+export function append<T>(acc: Dict<T> | Array<T>, to_add: typeof acc, ...args: (typeof acc)[]): typeof acc {
     if (isArray(acc)) {
         for (let e of to_add as T[])
             acc.push(e);
+        if (!args.length) return acc;
+        return append(acc, args.pop() as T[], ...args as T[][]);
     }
     else {
         for (let k in to_add)
             acc[k] = (to_add as Dict<T>)[k];
+        if (!args.length) return acc;
+        return append(acc, args.pop() as Dict<T>, ...args as Dict<T>[]);
     }
-    return acc;
 }
 
 export function findValueOf(key: string, o: Dict<any> | any[], path_record?: string[]): any {
