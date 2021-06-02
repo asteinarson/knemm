@@ -417,6 +417,7 @@ ___tables:
     quote:
       id: int pk auto_inc  
       person_id: int foreign_key(person,id)
+      email: text
       total_price: double 
       is_order: boolean   # This field separates placed orders from quotes 
       is_paid: boolean    # Payed or not ? 
