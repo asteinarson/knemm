@@ -22,6 +22,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
   - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
   - [An example - with modules](#an-example---with-modules)
+    - [Why the reference properties ?](#why-the-reference-properties-)
   - [An e-commerce example - with modules](#an-e-commerce-example---with-modules)
     - [Person](#person)
     - [CatalogProduct](#catalogproduct)
@@ -310,6 +311,16 @@ ___tables:
 ```
 We will implement this differently below, directly in the `person` module. Both approaches are valid, but since the functionality is quite generic, it fits well to implement it directly there.  
 
+### Why the reference properties ? 
+Above, we say the PersonGroup expects data types on columns in `Person` to be fulfilled (and some additional property). Why do we do this? After all the columns are declared in `Person_1` (or `Person_2`)?
+
+Well, if the module `Person` later decides to modify or drop some of the columns that `PersonGroup` depends 
+on, then we would not know of that - and fail at runtime. With explicitely saying exactly what one module 
+wants from another one, we get a way to clearly and directly know of this, when the claim causing the issue 
+is installed (upgraded) within the application. 
+
+Actually, as long as another module has a reference on a column in another module, that module can only 
+modify that column in minor ways - and it cannot drop it. 
 
 ## An e-commerce example - with modules
 A slightly more complex example is that of a simple e-commerce backend. It will consist of these loosely coupled modules:
@@ -322,7 +333,7 @@ The `person` module does not need to know anything of e-commerce, it just is a t
 
 The `catalog_product` module in turn does not depend on the concept of persons or sales. In theory it could just be a simple database of products in categories. It doesn't "know" it is being used for sales. 
 
-The `group_price` allows for tagging persons with various groups. In this case for enabling different product prices for customers of various purchasing habits (like private, retailer, contractor, ...). 
+The `group_price` allows for setting different product prices for customers of groups (like private, retailer, contractor, ...). 
 
 The `quote_order` module binds it all together. This module depends on (and builds on) all the previous ones. 
 
@@ -348,7 +359,7 @@ ___tables:
 ```
 
 ### GroupPrice
-For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (that requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4th claim there: 
+For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (that requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4:th claim there: 
 
 ```yaml
 id: Person_4
@@ -419,9 +430,9 @@ ___tables:
       person_id: int foreign_key(person,id)
       email: text
       total_price: double 
-      is_order: boolean   # This field separates placed orders from quotes 
-      is_paid: boolean    # Payed or not ? 
-      is_shipped: boolean    # Shipped or not ? 
+      is_order: boolean     # This field separates placed orders from quotes 
+      is_paid: boolean      # Payed or not ? 
+      is_shipped: boolean   # Shipped or not ? 
     quote_item:
       quote_id: int foreign_key(quote,id)  # The quote this row belongs to 
       product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
