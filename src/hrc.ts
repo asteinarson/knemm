@@ -81,7 +81,7 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
                         if (w_int) {
                             col[w_int] = true;
                         }
-                        else if (w == "notnull")
+                        else if (w == "not_null")
                             col.is_nullable = false;
                         else {
                             // See if keyword w args 
@@ -152,7 +152,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 // nullable - is true by default 
                 if (col.is_nullable != undefined) {
                     if (col.is_nullable == false)
-                        words.push("notnull");
+                        words.push("not_null");
                     done.is_nullable = 1;
                 }
 

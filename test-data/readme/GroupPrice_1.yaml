@@ -16,5 +16,5 @@ ___tables:
     group_price:
       group_id: int foreign_key(group,id)
       product_id: int foreign_key(product,id)
-      price: double not null 
+      price: double not_null 
       

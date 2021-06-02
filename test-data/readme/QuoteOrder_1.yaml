@@ -18,7 +18,7 @@ ___tables:
     group_price:
       group_id: ref(int)
       product_id: ref(int)
-      price: ref(double) notnull 
+      price: ref(double) not_null 
     # These are tables being declared in this module 
     quote:
       id: int pk auto_inc  
@@ -30,5 +30,5 @@ ___tables:
     quote_item:
       quote_id: int foreign_key(quote,id)  # The quote this row belongs to 
       product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
-      qty: int notnull
+      qty: int not_null
       row_price: double 

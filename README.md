@@ -305,7 +305,7 @@ ___tables:
       id: ref(int) pk     # We say we need 'int' at least, and they need to be primary keys
       name: ref(varchar)  # We say the name should be some string. We can accept any length.
       email: unique       # Here 'email' is a typeless ref. We say we want it unique, that's all. 
-      group_id: fk(group,id)  # A new column, a foreign key, to the table declared in above.
+      group_id: foreign_key(group,id)  # A new column, a foreign key, to the table declared in above.
 ```
 We will implement this differently below, directly in the `person` module. Both approaches are valid, but since the functionality is quite generic, it fits well to implement it directly there.  
 
@@ -337,13 +337,13 @@ ___tables:
     category:
       id: int pk auto_inc
       name: varchar(255)
-      parent_id: fk(category,id)  # The parent category ID
+      parent_id: foreign_key(category,id)  # The parent category ID
     product:
       id: int pk auto_inc
       sku: varchar(255) unique not_null
       name: varchar(255)
       price: double not_null
-      category_id: fk(category,id)  # In what category the product is shown 
+      category_id: foreign_key(category,id)  # In what category the product is shown 
 ```
 
 ### GroupPrice
@@ -356,8 +356,8 @@ ___tables:
       id: int pk auto_inc
       name: varchar(255)
     person_group:
-      person_id: fk(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
-      group_id: fk(group,id)  
+      person_id: foreign_key(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
+      group_id: foreign_key(group,id)  
 ```
 
 For the group price, we do need our own module, since that functionality build on both the `Person`
@@ -380,9 +380,9 @@ ___tables:
       name: ref(varchar)
     # This is a table being declared in this module
     group_price:
-      group_id: int fk(group,id)
-      product_id: int fk(product,id)
-      price: double not null 
+      group_id: int foreign_key(group,id)
+      product_id: int foreign_key(product,id)
+      price: double not_null 
 ```
 
 ### QuoteOrder 
@@ -411,19 +411,19 @@ ___tables:
     group_price:
       group_id: ref(int)
       product_id: ref(int)
-      price: ref(double) notnull 
+      price: ref(double) not_null 
     # These are tables being declared in this module 
     quote:
       id: int pk auto_inc  
-      person_id: int fk(person,id)
+      person_id: int foreign_key(person,id)
       total_price: double 
       is_order: boolean   # This field separates placed orders from quotes 
       is_paid: boolean    # Payed or not ? 
       is_shipped: boolean    # Shipped or not ? 
     quote_item:
-      quote_id: int fk(quote,id)  # The quote this row belongs to 
-      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a fk
-      qty: int notnull
+      quote_id: int foreign_key(quote,id)  # The quote this row belongs to 
+      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
+      qty: int not_null
       row_price: double 
 ```
 
