@@ -55,12 +55,12 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
                 if (words && words.length) {
                     // Have a type first ? 
                     let ix_first = 0;
-                    if( all_data_types[words[0]] ){
+                    let type = words[0];
+                    let md = type.match(re_get_args);
+                    if( md ) type = md[1];
+                    if( all_data_types[type] ){
                         ix_first = 1;
-                        let type = words[0];
-                        let md = type.match(re_get_args);
                         if (md) {
-                            type = md[1];
                             if (isNumeric(type)) {
                                 col.numeric_precision = Number(md[2]);
                                 if (md[4]) col.numeric_scale = Number(md[4]);
