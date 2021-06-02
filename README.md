@@ -276,7 +276,7 @@ In PSQL we never created the columns _first_name_, _second_name_, and `knemm` de
 It can be noted that a given DB can either lag behind the merge state, it can be in sync with it, or even ahead of it. None of these are **wrong**. They are just states and differences.
 
 # Branches / modules
-**Branch** and **module** mean the same thing, it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
+**Branch** and **module** mean the same thing. In terms of syntax it is simply the name put there in the claim ID. From the apps point of view, **module** is the better name, as what it allows for is to have several concurrent flows of migrations - representing loosely coupled software modules. 
 
 One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
 
@@ -294,7 +294,7 @@ To demonstrate **module** functionality, we do this with a `person_group` module
 ```yaml
 id: PersonGroup_1
 depends: 
-  Person: 1   # We don't need anything from claim 2 or 3
+  Person: 1   # We don't need anything from Person_2 or Person_3
 ___tables:
     # This is a new table of ours 
     group: 
@@ -311,7 +311,7 @@ We will implement this differently below, directly in the `person` module. Both 
 
 
 ## An e-commerce example - with modules
-We want to do a simple model of an e-commerce backend. It will consist of these loosely coupled modules:
+A slightly more complex example is that of a simple e-commerce backend. It will consist of these loosely coupled modules:
   * `person`
   * `catalog_product`
   * `group_price`
