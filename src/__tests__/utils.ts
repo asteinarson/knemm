@@ -65,7 +65,7 @@ test("firstKey test", () => {
     let excludes = { town: 1, age: 1 };
     let fk = firstKey(src, excludes);
     expect(fk).toBe("tested");
-    expect(firstKey(excludes,"town")).toBe("age");
+    expect(firstKey(excludes, "town")).toBe("age");
 });
 
 test("inLut test", () => {
@@ -174,15 +174,34 @@ test("append test", () => {
     expect(append({ b: 5 }, { a: 1, c: 13 })).toMatchObject({ a: 1, b: 5, c: 13 });
 
     let o1 = { b: 5 };
-    append(o1, { a: 1, c: 13 });
+    let o2 = { a: 1, c: 13 };
+    append(o1, o2);
     expect(o1).toMatchObject({ a: 1, b: 5, c: 13 });
 
     expect(append([], ["a", 17])).toStrictEqual(["a", 17]);
     expect(append(["b"], ["a", 15])).toStrictEqual(["b", "a", 15]);
 
     let a1 = [3, "c"];
-    append(a1, ["d", 17]);
+    let a2 = ["d", 17]
+    append(a1, a2);
     expect(a1).toMatchObject([3, "c", "d", 17]);
+
+    // append several 
+    let a3 = [7, 8];
+    let r = append([], [7, 8], [2, 12], [19]);
+    expect(r.length).toBe(5);
+    // See that all elements are found in r 
+    let r_test = [2, 7, 8, 12, 19].reduce((p: number[], v) => {
+        if (r.indexOf(v) == -1) p.push(v);
+        return p
+    }, []);
+    expect(r_test).toStrictEqual([]);
+
+    // Object approach, several 
+    o1 = { b: 5 };
+    let o3 = { x: 18, p: 7 }
+    append(o1, o2, o3, { pi: 3.14 });
+    expect(o1).toStrictEqual({ b: 5, x: 18, p: 7, a: 1, c: 13, pi: 3.14 });
 });
 
 test("dArrAtt test", () => {
@@ -206,8 +225,8 @@ test("findValueOf test", () => {
     expect(findValueOf("c", o)).toBe(13);
     expect(findValueOf("pi_100", o)).toBe(314);
 
-    let path:string[] = [];
-    let v = findValueOf("c",o,path);
+    let path: string[] = [];
+    let v = findValueOf("c", o, path);
     expect(path.length).toBe(2);
     expect(path[0]).toBe("c");
     expect(path[1]).toBe("n1");
