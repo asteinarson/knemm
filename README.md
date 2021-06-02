@@ -21,6 +21,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
     - [Database to state - an example](#database-to-state---an-example)
   - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
+  - [An example with modules](#an-example-with-modules)
 
 # Installing 
 ### Via NPM
@@ -274,13 +275,26 @@ It can be noted that a given DB can either lag behind the merge state, it can be
 
 One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
 
-Knemm will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
+`Knemm` will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
 
 So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
 
-The two **'m'**:s in *Knemm* stands for just that - *multi-migrations*. That is, several connected flows of DB migrations, connected with dependency points and explicit schema expectations. 
+The two **'m'**:s in *Knemm* stands for - *multi-migrations*. That is, several connected flows of DB migrations, connected with dependency points and explicit schema expectations. 
 
 
+## An example with modules
+We want to do a simple model of an e-commerce backend. It will consist of these loosely coupled modules:
+  * `person`
+  * `catalog_product`
+  * `group_price`
+  * `quote_order`
+  
+The `person` module does not need to know anything of e-commerce, it just is a table of simple person data - in our case for a customer. From the point of view of e-commerce, the only requirement is that has an unique **id** column and an **email** field. 
 
+The `catalog_product` module in turn does not depend on the concept of persons or sales. In theory it could just be a simple database of products in categories. It doesn't "know" it is being used for sales. 
+
+The `group_price` allows for tagging persons with various groups. In this case for enabling different product prices for customers of various purchasing habits (like private, retailer, contractor, ...). 
+
+The `quote_order` module binds it all together. This module depends on the two previous ones and binds it all together. 
 
 
