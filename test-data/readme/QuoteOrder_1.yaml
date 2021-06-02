@@ -22,13 +22,13 @@ ___tables:
     # These are tables being declared in this module 
     quote:
       id: int pk auto_inc  
-      person_id: int fk(person,id)
+      person_id: int foreign_key(person,id)
       total_price: double 
       is_order: boolean   # This field separates placed orders from quotes 
       is_paid: boolean    # Payed or not ? 
       is_shipped: boolean    # Shipped or not ? 
     quote_item:
-      quote_id: int fk(quote,id)  # The quote this row belongs to 
-      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a fk
+      quote_id: int foreign_key(quote,id)  # The quote this row belongs to 
+      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
       qty: int notnull
       row_price: double 

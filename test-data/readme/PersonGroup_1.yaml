@@ -11,5 +11,5 @@ ___tables:
       id: ref(int) pk     # We say we need 'int' at least, and they need to be primary keys
       name: ref(varchar)  # We say the name should be some string. We can accept any length.
       email: unique       # Here 'email' is a typeless ref. We say we want it unique, that's all. 
-      group_id: fk(group,id)  # A new column, a foreign key, to the table declared in above.
+      group_id: foreign_key(group,id)  # A new column, a foreign key, to the table declared in above.
       

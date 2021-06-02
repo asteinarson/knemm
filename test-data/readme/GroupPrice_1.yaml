@@ -14,7 +14,7 @@ ___tables:
       name: ref(varchar)
     # This is a table being declared in this module
     group_price:
-      group_id: int fk(group,id)
-      product_id: int fk(product,id)
+      group_id: int foreign_key(group,id)
+      product_id: int foreign_key(product,id)
       price: double not null 
       

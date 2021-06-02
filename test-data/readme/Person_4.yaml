@@ -4,6 +4,6 @@ ___tables:
       id: int pk auto_inc
       name: varchar(255)
     person_group:
-      person_id: fk(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
-      group_id: fk(group,id)  
+      person_id: foreign_key(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
+      group_id: foreign_key(group,id)  
       
