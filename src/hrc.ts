@@ -31,7 +31,7 @@ function string_arg_decode(s: string) {
 
 
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
-import { db_column_flags, db_type_args, db_with_args, isNumeric, isString } from './db-props';
+import { all_data_types, db_column_flags, db_type_args, db_with_args, isNumeric, isString } from './db-props';
 
 
 // Expand any nested data flattened to a string  
@@ -53,24 +53,28 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
             if (s) {
                 let words = s.split(" ");
                 if (words && words.length) {
-                    // Do the type and its args 
-                    let type = words[0];
-                    let md = type.match(re_get_args);
-                    if (md) {
-                        type = md[1];
-                        if (isNumeric(type)) {
-                            col.numeric_precision = Number(md[2]);
-                            if (md[4]) col.numeric_scale = Number(md[4]);
+                    // Have a type first ? 
+                    let ix_first = 0;
+                    if( all_data_types[words[0]] ){
+                        ix_first = 1;
+                        let type = words[0];
+                        let md = type.match(re_get_args);
+                        if (md) {
+                            type = md[1];
+                            if (isNumeric(type)) {
+                                col.numeric_precision = Number(md[2]);
+                                if (md[4]) col.numeric_scale = Number(md[4]);
+                            }
+                            else if (isString(type))
+                                col.max_length = Number(md[2]);
+                            else
+                                console.warn(`formatInternal(${col_name}) - unknown type args: ${md[0]}`);
                         }
-                        else if (isString(type))
-                            col.max_length = Number(md[2]);
-                        else
-                            console.warn(`formatInternal(${col_name}) - unknown type args: ${md[0]}`);
+                        col.data_type = type;
                     }
-                    col.data_type = type;
 
                     // Iterate remaining words 
-                    for (let ix = 1; ix < words.length; ix++) {
+                    for (let ix = ix_first; ix < words.length; ix++) {
                         let w = words[ix];
                         // Boolean flag ?
                         let w_int = db_column_flags_rev[w];
