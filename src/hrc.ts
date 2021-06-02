@@ -196,7 +196,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 // See if we have any unhandled columns - and warn 
                 //let unhandled = Object.keys(col).filter(prop => !done[prop]);
                 let unhandled = notInLut(col, done);
-                if (firstKey(unhandled)) {
+                if (firstKey(unhandled,"___owner")) {
                     console.warn(`formatHrCompact(${col_name}) - unhandled: ${JSON.stringify(unhandled)}`);
                     // We make a subtree, but keep the default line in key "*" 
                     let small_node: Dict<string> = { };
