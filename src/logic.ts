@@ -1341,6 +1341,22 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                 // ! Or in normalizeClaim
                                 let unknowns = notInLut(col, db_column_words);
                                 if (!unknowns) {
+                                    // ! foreign_key checks 
+                                    let fk = col.foreign_key;
+                                    if( fk && !isString(fk) ){
+                                        let tgt:ColumnProps;
+                                        let err: string;
+                                        if( isDict(merge[fk.table]) )
+                                            tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
+                                        if( !tgt )
+                                             err = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
+                                        else if( tgt.data_type!=col.data_type )
+                                            err = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
+                                        if( err ){
+                                            errors.push(err);
+                                            continue;
+                                        }
+                                    }
                                     // Accept column declaration in its fullness
                                     let col_props: ColumnProps = { ...col };
                                     if (is_table_ref) {
