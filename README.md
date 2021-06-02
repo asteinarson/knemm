@@ -303,9 +303,10 @@ ___tables:
     # Here we combine making claims on the dependency module, with declaring an additional column 
     person:
       id: ref(int) pk     # We say we need 'int' at least, and they need to be primary keys
-      name: ref(varchar)  # We say the name should be some string. We can accept any length.
+      first_name: ref(varchar)  # We say the name should be some string. We can accept any length.
+      second_name: ref(varchar)  # Same
       email: unique       # Here 'email' is a typeless ref. We say we want it unique, that's all. 
-      group_id: foreign_key(group,id)  # A new column, a foreign key, to the table declared in above.
+      group_id: int foreign_key(group,id)  # A new column, a foreign key, to the table declared in above.
 ```
 We will implement this differently below, directly in the `person` module. Both approaches are valid, but since the functionality is quite generic, it fits well to implement it directly there.  
 
