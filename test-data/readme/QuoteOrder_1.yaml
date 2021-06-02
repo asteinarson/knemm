@@ -1,0 +1,34 @@
+id: QuoteOrder_1 
+depends: 
+  Person: 4
+  CatalogProduct: 1 
+  GroupPrice: 1
+___tables:
+    # Similar references as in the example above:
+    person: 
+      id: ref(int) pk 
+    product: 
+      id: ref(int) pk 
+      sku: ref(varchar) unique
+      price: ref(float)       
+    group: # Below two columns are our explicit dependencies for the group functionality 
+      id: ref(int) pk  
+      name: ref(varchar)
+    # From perspective of this module, below columns are refs 
+    group_price:
+      group_id: ref(int)
+      product_id: ref(int)
+      price: ref(double) notnull 
+    # These are tables being declared in this module 
+    quote:
+      id: int pk auto_inc  
+      person_id: int fk(person,id)
+      total_price: double 
+      is_order: boolean   # This field separates placed orders from quotes 
+      is_paid: boolean    # Payed or not ? 
+      is_shipped: boolean    # Shipped or not ? 
+    quote_item:
+      quote_id: int fk(quote,id)  # The quote this row belongs to 
+      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a fk
+      qty: int notnull
+      row_price: double 

@@ -1,0 +1,9 @@
+id: Person_4
+___tables:
+    group:
+      id: int pk auto_inc
+      name: varchar(255)
+    person_group:
+      person_id: fk(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
+      group_id: fk(group,id)  
+      

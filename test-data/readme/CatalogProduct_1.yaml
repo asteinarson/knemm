@@ -1,0 +1,13 @@
+id: CatalogProduct_1 
+___tables:
+    category:
+      id: int pk auto_inc
+      name: varchar(255)
+      parent_id: fk(category,id)  # The parent category ID
+    product:
+      id: int pk auto_inc
+      sku: varchar(255) unique not_null
+      name: varchar(255)
+      price: double not_null
+      category_id: fk(category,id)  # In what category the product is shown 
+      

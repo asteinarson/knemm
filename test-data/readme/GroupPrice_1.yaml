@@ -1,0 +1,20 @@
+id: GroupPrice_1 
+depends: 
+  Person: 4
+  CatalogProduct: 1 
+___tables:
+    # This is a table ref (making claims on a dependency):
+    product: # Below two columns are our explicit dependencies for products 
+      id: ref(int) pk            # We need the ID to be unique integers 
+      sku: ref(varchar) unique   # varchar (with no length) is the simplest string datatype. 
+      price: ref(float)          # float is enough for us, it allows for double or decimal as well
+    # This is also a table ref: 
+    group: # Below two columns are our explicit dependencies for the group functionality 
+      id: ref(int) pk  
+      name: ref(varchar)
+    # This is a table being declared in this module
+    group_price:
+      group_id: int fk(group,id)
+      product_id: int fk(product,id)
+      price: double not null 
+      

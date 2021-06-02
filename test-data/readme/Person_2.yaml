@@ -1,0 +1,2 @@
+person:
+  second_name: varchar(64)
