@@ -21,7 +21,8 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
     - [Database to state - an example](#database-to-state---an-example)
   - [States and Databases](#states-and-databases)
 - [Branches / modules](#branches--modules)
-  - [An example with modules](#an-example-with-modules)
+  - [An example - with modules](#an-example---with-modules)
+  - [An e-commerce example - with modules](#an-e-commerce-example---with-modules)
     - [Person](#person)
     - [CatalogProduct](#catalogproduct)
     - [GroupPrice](#groupprice)
@@ -285,8 +286,31 @@ So we have a declarative way of letting loosely coupled software modules depend 
 
 The two **'m'**:s in *Knemm* stands for - *multi-migrations*. That is, several connected flows of DB migrations, connected with dependency points and explicit schema expectations. 
 
+## An example - with modules
 
-## An example with modules
+Say we want to be able to classify persons in various groups (like `client`, `supplier`, `contractor`, ...). Obviously one group can have many persons, but say that for our example, a person can only be in one group. 
+To demonstrate **module** functionality, we do this with a `person_group` module, that depends on `person`: 
+
+```yaml
+id: PersonGroup_1
+depends: 
+  Person: 1   # We don't need anything from claim 2 or 3
+___tables:
+    # This is a new table of ours 
+    group: 
+      id: int pk auto_inc
+      name: varchar(255)
+    # Here we combine making claims on the dependency module, with declaring an additional column 
+    person:
+      id: ref(int) pk     # We say we need 'int' at least, and they need to be primary keys
+      name: ref(varchar)  # We say the name should be some string. We can accept any length.
+      email: unique       # Here 'email' is a typeless ref. We say we want it unique, that's all. 
+      group_id: fk(group,id)  # A new column, a foreign key, to the table declared in above.
+```
+We will implement this differently below, directly in the `person` module. Both approaches are valid, but since the functionality is quite generic, it fits well to implement it directly there.  
+
+
+## An e-commerce example - with modules
 We want to do a simple model of an e-commerce backend. It will consist of these loosely coupled modules:
   * `person`
   * `catalog_product`
@@ -299,7 +323,7 @@ The `catalog_product` module in turn does not depend on the concept of persons o
 
 The `group_price` allows for tagging persons with various groups. In this case for enabling different product prices for customers of various purchasing habits (like private, retailer, contractor, ...). 
 
-The `quote_order` module binds it all together. This module depends on the two previous ones and binds it all together. 
+The `quote_order` module binds it all together. This module depends on (and builds on) all the previous ones. 
 
 ### Person
 For `person` we can simply reuse our claims from above (_Person_1.yaml, Person_2.yaml, Person_3.yaml_). 
@@ -323,9 +347,7 @@ ___tables:
 ```
 
 ### GroupPrice
-For `group_price` we want to create customer (`person`) groups, with labels. And we want to store 
-the group ID on the person itself. On closer thought, this is quite a generic concept, and that part
-could be implemented directly in the `Person` module. We make the 4th claim there: 
+For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (that requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4th claim there: 
 
 ```yaml
 id: Person_4
