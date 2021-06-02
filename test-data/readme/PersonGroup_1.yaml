@@ -1,6 +1,6 @@
 id: PersonGroup_1
 depends: 
-  Person: 1   # We don't need anything from Person_2 or Person_3
+  Person: 2   # We don't need anything from Person_3
 ___tables:
     # This is a new table of ours 
     group: 
