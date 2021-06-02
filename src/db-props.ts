@@ -64,6 +64,8 @@ const datetimes: Dict<1> = { date: 1, time: 1, datetime: 1, timestamp: 1, timest
 
 const other_types: Dict<1> = { boolean: 1, json: 1, jsonb: 1, uuid: 1 };
 
+export let all_data_types: Dict<1> = append({}, datetimes, strings, numerics, other_types);
+
 export function isNumeric(t: string) {
     return numerics[t];
 }
@@ -72,7 +74,6 @@ export function isString(t: string) {
     return strings[t];
 }
 
-export let all_data_types: Dict<1> = append({}, datetimes, strings, numerics, other_types);
 
 export function getTypeGroup(type: string): "numeric" | "datetime" | "text" | "json" | "boolean" | "uuid" {
     type = tryGet(type, type_synonyms, type);
