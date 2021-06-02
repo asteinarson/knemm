@@ -25,6 +25,7 @@ export let db_types_with_args: Dict<1> = {
 export let db_with_args: Dict<string> = {
     comment: "comment",
     default: "default",
+    ref_data_type: "ref",
 };
 
 export let db_column_words: Dict<string | number> = {
