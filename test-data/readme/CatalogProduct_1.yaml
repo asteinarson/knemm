@@ -3,11 +3,11 @@ ___tables:
     category:
       id: int pk auto_inc
       name: varchar(255)
-      parent_id: foreign_key(category,id)  # The parent category ID
+      parent_id: int foreign_key(category,id)  # The parent category ID
     product:
       id: int pk auto_inc
       sku: varchar(255) unique not_null
       name: varchar(255)
       price: double not_null
-      category_id: foreign_key(category,id)  # In what category the product is shown 
+      category_id: int foreign_key(category,id)  # In what category the product is shown 
       

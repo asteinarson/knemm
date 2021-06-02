@@ -338,13 +338,13 @@ ___tables:
     category:
       id: int pk auto_inc
       name: varchar(255)
-      parent_id: foreign_key(category,id)  # The parent category ID
+      parent_id: int foreign_key(category,id)  # The parent category ID
     product:
       id: int pk auto_inc
       sku: varchar(255) unique not_null
       name: varchar(255)
       price: double not_null
-      category_id: foreign_key(category,id)  # In what category the product is shown 
+      category_id: int foreign_key(category,id)  # In what category the product is shown 
 ```
 
 ### GroupPrice
@@ -357,8 +357,8 @@ ___tables:
       id: int pk auto_inc
       name: varchar(255)
     person_group:
-      person_id: foreign_key(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
-      group_id: foreign_key(group,id)  
+      person_id: int foreign_key(person,id)  # In this way, the person can be in 0,1 or 2+ groups 
+      group_id: int foreign_key(group,id)  
 ```
 
 For the group price, we do need our own module, since that functionality build on both the `Person`
