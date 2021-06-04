@@ -7,6 +7,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 - [Installing](#installing)
     - [Via NPM](#via-npm)
     - [Via git repo](#via-git-repo)
+    - [Launchers in package.json](#launchers-in-packagejson)
 - [Claims](#claims)
     - [CLI Example](#cli-example)
   - [Claims on the same branch](#claims-on-the-same-branch)
@@ -33,7 +34,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 ### Via NPM
 Install with: 
 ```bash
-$ npm i --global knemm
+$ npm i --global knea mm
 ```
 Now there should be two new commands available: 
  - `knemm`: This is the main command to manage schema. 
@@ -43,6 +44,12 @@ Interfaces for PostgresQL (pg), MySQL and Sqlite3 are enabled by default in the 
 
 ### Via git repo
 Clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the TypeScript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
+
+### Launchers in package.json
+`knemm` is compiled as an ESM module. Because of Node internals, it needs an extra launch step 
+(via *bin* scripts in *package.json*). By default this goes via a Bash script. But it can also 
+be launched via a JS launcher, through another bin script: `knemm_jsl` (which would work also 
+under Windows).
 
 # Claims
 Knemm uses a declarative YAML (or JSON) syntax (termed a **claim**), specifying what tables should exist and what is expected of named columns. A claim gives a minimum requirement that a database (or a collection of other claims - a **state**) should satisfy. 
