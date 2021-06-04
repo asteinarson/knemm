@@ -13,10 +13,10 @@
     "test": "jest"
   },
   "bin": {
-    "knemm_sh": "./shell/knemm",
-    "knemm": "./lib/launch-knemm.js",
-    "knedb_sh": "./shell/knedb",
-    "knedb": "./lib/launch-knedb.js"
+    "knemm": "./shell/knemm",
+    "knemm_jsl": "./lib/launch-knemm.js",
+    "knedb": "./shell/knedb",
+    "knedb_jsl": "./lib/launch-knedb.js"
   },
   "keywords": ["database","sql","schema","declarative","management"],
   "author": "Arne Steinarson (https://github.com/asteinarson)",
