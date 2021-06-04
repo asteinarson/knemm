@@ -9,7 +9,7 @@ export function launch(cmd: string, args?: string[]) {
     let node_args = ["--experimental-specifier-resolution=node",
         path.join(esm_dirname, cmd),
         ...(args ? args : process.argv.slice(2))];
-    let r = spawn("node", args);
+    let r = spawn("node", node_args);
 
     r.stdout.on("data", data => { process.stdout.write(data.toString()); });
     r.stderr.on("data", data => { process.stderr.write(data.toString()); });
