@@ -1376,19 +1376,18 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                     for (let c in table) {
                         // Make a copy and try to fulfill each prop
                         let col = { ...table[c] };
-                        for (let p in col) {
-                            let m_col = m_tbl[c];
-                            if (m_col && !isString(m_col)) {
+                        let m_col = m_tbl[c];
+                        if (m_col && !isString(m_col)) {
+                            let col_owner = m_col?.___owner || m_tbl?.___owner;
+                            for (let p in col) {
                                 if (propFits(m_col, col, p))
                                     delete col[p];
                                 else
                                     errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: ${JSON.stringify(m_col)}`);
                             }
-                            else {
-                                errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: <nothing>`);
-                            }
+                            //if( firstKey(col) ) ...; 
                         }
-                        //if( firstKey(col) ) ...; 
+                        else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: <nothing>`);
                     }
                 }
             }
