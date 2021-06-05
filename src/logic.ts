@@ -4,7 +4,7 @@ import {
     objectMap, append, objectPrune, deepCopy, findValueOf, isNumber
 } from './utils';
 
-import { db_column_words, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
+import { db_column_flags, db_column_words, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
 import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps, BaseColumnProps } from "./types";
 
@@ -1380,10 +1380,12 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         if (m_col && !isString(m_col)) {
                             let col_owner = m_col?.___owner || m_tbl?.___owner;
                             for (let p in col) {
-                                if (propFits(m_col, col, p))
+                                if( !db_column_words[p] )
+                                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - unknown prop: <${t}:${c}:${p}>`);
+                                else if (propFits(m_col, col, p))
                                     delete col[p];
                                 else
-                                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: ${JSON.stringify(m_col)}`);
+                                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - wanted: ${JSON.stringify(col)}, got: ${JSON.stringify(m_col)}`);
                             }
                             //if( firstKey(col) ) ...; 
                         }

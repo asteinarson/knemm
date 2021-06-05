@@ -47,7 +47,7 @@ export interface State extends ClaimState {
 
 export interface Depends {
     //___version: number;
-    [table:string]: Dict<DependColumnProps> | "*NOT";
+    [table:string]: Dict<DependColumnProps>// | "*NOT";
 };
 
 export function isClaimState(o: any): o is ClaimState {
