@@ -1362,14 +1362,19 @@ export function verifyDeps(claims: Claim[], merge_base: State, options: Dict<any
                         // First look on claims passed here 
                         for( let v of cands ){
                             let cl_v = cl_by_br[module][v];
+                            let cols_cl = cl_v.___tables[t];
+                            if( !cols_cl || cols_cl=="*NOT" ){
+                                if( cols_cl=="*NOT" )
+                                    errors.push(``);
+                                continue;
+                            }
                             for( let p in col  ){
                                 let prop = col[p];
                                 // See if fulfilled by claim 
-                                let cols_c = cl_v.___tables[t];
                                 if( cols_c && cols_c!="*NOT" ){
-                                    let col_c = cols_c[c];
-                                    if( !isString(col_c) ){
-                                        if( propEqual(prop,col_c[p]) )
+                                    let col_cl = cols_cl[c];
+                                    if( !isString(col_cl) ){
+                                        
                                     }
                                 }
                             }
