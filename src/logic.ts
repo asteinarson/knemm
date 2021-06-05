@@ -1407,7 +1407,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                 }
                                 else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}> - column owner wrong: <${col_owner}>, wanted: <${module}>`);
                             }
-                            else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col_copy)}, got: <nothing>`);
+                            else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}> - want: ${JSON.stringify(col)}, got: <nothing>`);
                         }
                         else {
                             // *UNREF on the column 
