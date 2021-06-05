@@ -35,7 +35,7 @@ export interface ClaimState {
 
 export interface Claim extends ClaimState {
     id: ClaimId,
-    depends?: Dict<number>,
+    depends?: Dict<Depends>,
     ___dependee?: Dict<number>
 };
 
@@ -43,6 +43,11 @@ export interface State extends ClaimState {
     modules: Dict<number>,
     directory?: string,
     connection?: any,    // Actually Knex
+};
+
+export interface Depends {
+    //___version: number;
+    [table:string]: DependColumnProps;
 };
 
 export function isClaimState(o: any): o is ClaimState {
@@ -80,14 +85,16 @@ export interface BaseColumnProps {
     [k: string]: any, //BTDict3,
 };
 
-export interface RefColumnProps extends BaseColumnProps {
-    ___version?: number,
+export interface DependColumnProps extends BaseColumnProps {
     foreign_key?: ForeignKey,
+}
+
+export interface RefColumnProps extends DependColumnProps {
+    ___version?: number,
 }
 
 export interface ColumnProps extends BaseColumnProps {
     ___refs?: Dict<RefColumnProps>,
     ___owner?: string,
-    ref_data_type?: string,
     foreign_key?: ForeignKey | "*NOT",
 };

@@ -1294,6 +1294,20 @@ export function getInitialState(tables?: Dict<TableProps>): State {
     };
 }
 
+export function verifyDependencies( claims: Claim[], merge_base: State, options: Dict<any> ): string[] {
+    let errors: string[] = [];
+
+    // Sort claims into module version lookup 
+    let cl_by_br:Dict<Record<number,Claim>> = {};
+    claims.forEach( cl => {
+        cl_by_br[cl.id.branch] ||= {};
+        cl_by_br[cl.id.branch][cl.id.version] = cl;
+    } );
+
+
+    if( errors.length ) return errors;
+}
+
 // Merge dependency ordered claims 
 export function mergeClaims(claims: Claim[], merge_base: State | null, options: Dict<any>):
     State | string[] {
