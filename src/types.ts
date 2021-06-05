@@ -89,6 +89,5 @@ export interface ColumnProps extends BaseColumnProps {
     ___refs?: Dict<RefColumnProps>,
     ___owner?: string,
     ref_data_type?: string,
-    is_ref?: boolean,
     foreign_key?: ForeignKey | "*NOT",
 };
