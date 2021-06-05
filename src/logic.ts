@@ -681,37 +681,37 @@ function propEqual(v1: BTDict3, v2: BTDict3) {
 }
 
 // Helper functions for generic comparison of candidate and target properties 
-function fitsDataType( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string ){
-    return typeContainsLoose(cand.data_type,tgt.data_type);
+function fitsDataType(cand: BaseColumnProps, tgt: BaseColumnProps, prop: string) {
+    return typeContainsLoose(cand.data_type, tgt.data_type);
 }
 
-function fitsSmallerEqual( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string ){
+function fitsSmallerEqual(cand: BaseColumnProps, tgt: BaseColumnProps, prop: string) {
     let c_val = cand[prop];
     let t_val = tgt[prop];
-    if( t_val!=null ){
-        if( !c_val ) return;
+    if (t_val != null) {
+        if (!c_val) return;
         return t_val <= c_val;
     }
     //return c_val==null;
 }
 
-function fitsEqual( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string ){
-    return propEqual(cand[prop],tgt[prop]);
+function fitsEqual(cand: BaseColumnProps, tgt: BaseColumnProps, prop: string) {
+    return propEqual(cand[prop], tgt[prop]);
 }
 
-type PropCmpFn = (cand: BaseColumnProps, tgt: BaseColumnProps, prop:string) => boolean;
-let prop_fit_fn:Dict<PropCmpFn> = {
+type PropCmpFn = (cand: BaseColumnProps, tgt: BaseColumnProps, prop: string) => boolean;
+let prop_fit_fn: Dict<PropCmpFn> = {
     data_type: fitsDataType
 };
 // Insert those existing props which satisfy SmallerEqual 
-for( let prop in db_type_args )
+for (let prop in db_type_args)
     prop_fit_fn[prop] = fitsSmallerEqual;
 
 // Generic property fit test - depending on property
-function propFits( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string) {
+function propFits(cand: BaseColumnProps, tgt: BaseColumnProps, prop: string) {
     let fit_fn = prop_fit_fn[prop];
-    if( !fit_fn ) fit_fn = fitsEqual;
-    return fit_fn(cand,tgt,prop);
+    if (!fit_fn) fit_fn = fitsEqual;
+    return fit_fn(cand, tgt, prop);
 }
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
@@ -1328,67 +1328,6 @@ export function getInitialState(tables?: Dict<TableProps>): State {
     };
 }
 
-export function verifyDeps(claims: Claim[], merge_base: State, options: Dict<any>): string[] {
-    let errors: string[] = [];
-
-    // Sort claims into module version lookup 
-    let cl_by_br: Dict<Record<number, Claim>> = {};
-    claims.forEach(cl => {
-        cl_by_br[cl.id.branch] ||= {};
-        cl_by_br[cl.id.branch][cl.id.version] = cl;
-    });
-
-    // Go through explicit deps of each claim 
-    for (let cl of claims) {
-        if (cl.depends) {
-            for (let module in cl.depends) {
-                let tables = cl.depends[module];
-                // ___version is not easily expressed in TS as we want. 
-                if (!isNumber(tables.___version)) {
-                    errors.push(`verifyDeps - ${cl.id.branch}:${cl.id.version} - Ref to <${module}> lacks ___version`);
-                    continue;
-                }
-                let version = Number(tables.___version);
-                // Sort out the claims that can fulfill the deps. I.e. an array of decreasing version numbers
-                let cands = Object.keys(cl_by_br[module] || {})
-                    .map((s) => Number(s))
-                    .filter(v => { v <= version })
-                    .sort( (v1,v2) => v2-v1);
-                // !! This does not (yet) take "*NOT" into account 
-                for (let t in tables) {
-                    for( let c in tables[t] ){
-                        // Make a copy and try to fulfill each prop
-                        let col = { ...tables[t][c] };
-                        // First look on claims passed here 
-                        for( let v of cands ){
-                            let cl_v = cl_by_br[module][v];
-                            let cols_cl = cl_v.___tables[t];
-                            if( !cols_cl || cols_cl=="*NOT" ){
-                                if( cols_cl=="*NOT" )
-                                    errors.push(``);
-                                continue;
-                            }
-                            for( let p in col  ){
-                                let prop = col[p];
-                                // See if fulfilled by claim 
-                                if( cols_c && cols_c!="*NOT" ){
-                                    let col_cl = cols_cl[c];
-                                    if( !isString(col_cl) ){
-                                        
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-        }
-    }
-
-    if (errors.length) return errors;
-}
-
 // Merge dependency ordered claims 
 export function mergeClaims(claims: Claim[], merge_base: State | null, options: Dict<any>):
     State | string[] {
@@ -1401,6 +1340,61 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             errors.push(`Claim <${claim.id.branch}:${claim.id.version}> is not in internal format`);
             continue;
         }
+        let claim_id_s = `${claim.id.branch}:${claim.id.version}`;
+        // First check the dependencies - against the current state 
+        // Since the claims are sorted, this should always be OK.
+        for (let module in claim.depends || {}) {
+            let tables = claim.depends[module];
+            let e_cnt = errors.length;
+            // ___version is not easily expressed in TS as we want. 
+            if (!isNumber(tables.___version))
+                errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}> lacks ___version`);
+            else {
+                let version = Number(tables.___version);
+                let version_state = merge_base.modules[module];
+                if (!version_state)
+                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}> - which is not in state`);
+                else if (version > version_state)
+                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}:${version}> - but is already at <${version_state}>`);
+            }
+            if (errors.length > e_cnt) continue;
+            // Iterate the tables in this module we depend on
+            for (let t in tables) {
+                let table = tables[t];
+                let m_tbl = merge[t];
+                if (!m_tbl || m_tbl == "*NOT") {
+                    if (firstKey(table))
+                        errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to table <${t}> - does not exist in merge`);
+                    continue;
+                }
+                // For now, skip the possibility of a dendent claim to state negative properties
+                /*if ( table=="*NOT") {
+                    if( merge[t] )
+                    continue;
+                }
+                else*/ {
+                    for (let c in table) {
+                        // Make a copy and try to fulfill each prop
+                        let col = { ...table[c] };
+                        for (let p in col) {
+                            let m_col = m_tbl[c];
+                            if (m_col && !isString(m_col)) {
+                                if (propFits(m_col, col, p))
+                                    delete col[p];
+                                else
+                                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: ${JSON.stringify(m_col)}`);
+                            }
+                            else {
+                                errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: <nothing>`);
+                            }
+                        }
+                        //if( firstKey(col) ) ...; 
+                    }
+                }
+            }
+        }
+
+        // And do the merge 
         merge_base.modules[claim.id.branch] = claim.id.version;
         let cl_tables = claim.___tables;
         for (let t in cl_tables) {
