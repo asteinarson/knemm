@@ -20,7 +20,7 @@ export function isTableProps(o:any): o is TableProps {
 }
 
 export type TableProps = {
-    ___owner?: string,
+    ___branch?: string,
     [k: string]: ColumnProps | string
 };
 
@@ -47,7 +47,7 @@ export interface State extends ClaimState {
 
 export interface Depends {
     //___version: number;
-    [table:string]: Dict<DependColumnProps>// | "*NOT";
+    [table:string]: Dict<DependColumnProps|"*UNREF"> | "*UNREF";
 };
 
 export function isClaimState(o: any): o is ClaimState {
@@ -95,6 +95,6 @@ export interface RefColumnProps extends DependColumnProps {
 
 export interface ColumnProps extends BaseColumnProps {
     ___refs?: Dict<RefColumnProps>,
-    ___owner?: string,
+    ___branch?: string,
     foreign_key?: ForeignKey | "*NOT",
 };

@@ -726,7 +726,7 @@ function matchDiffColumn(col_name: string, cand_col: ColumnProps, tgt_col: Colum
         if (!propEqual(tv, cv)) {
             switch (tk) {
                 case "___refs":
-                case "___owner":
+                case "___branch":
                     break;
                 case "data_type":
                     if (isString(cv) && isString(tv)) {
@@ -858,7 +858,7 @@ export function matchDiff(candidate: Tables, target: Tables): TableInfoOrErrors 
             if (cand_table == "*NOT") cand_table = {};
             // Iterate columns 
             for (let kc in tgt_table) {
-                if (kc == "___owner") continue;
+                if (kc == "___branch") continue;
                 let tgt_col = tgt_table[kc];
                 let cand_col = tryGet(kc, cand_table, {});
                 let diff_col: Dict<any> | string;
@@ -1340,6 +1340,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             errors.push(`Claim <${claim.id.branch}:${claim.id.version}> is not in internal format`);
             continue;
         }
+
         let claim_id_s = `${claim.id.branch}:${claim.id.version}`;
         // First check the dependencies - against the current state 
         // Since the claims are sorted, this should always be OK.
@@ -1362,34 +1363,69 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             for (let t in tables) {
                 let table = tables[t];
                 let m_tbl = merge[t];
-                if (!m_tbl || m_tbl == "*NOT") {
-                    if (firstKey(table))
-                        errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to table <${t}> - does not exist in merge`);
-                    continue;
-                }
-                // For now, skip the possibility of a dendent claim to state negative properties
-                /*if ( table=="*NOT") {
-                    if( merge[t] )
-                    continue;
-                }
-                else*/ {
+                if (table != "*UNREF") {
+                    if (!m_tbl || m_tbl == "*NOT") {
+                        if (firstKey(table))
+                            errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to table <${t}> - does not exist in merge`);
+                        continue;
+                    }
                     for (let c in table) {
                         // Make a copy and try to fulfill each prop
-                        let col = { ...table[c] };
+                        let col = table[c];
                         let m_col = m_tbl[c];
-                        if (m_col && !isString(m_col)) {
-                            let col_owner = m_col?.___owner || m_tbl?.___owner;
-                            for (let p in col) {
-                                if( !db_column_words[p] )
-                                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - unknown prop: <${t}:${c}:${p}>`);
-                                else if (propFits(m_col, col, p))
-                                    delete col[p];
-                                else
-                                    errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - wanted: ${JSON.stringify(col)}, got: ${JSON.stringify(m_col)}`);
+                        if (col != "*UNREF") {
+                            if (m_col && !isString(m_col)) {
+                                let col_owner = m_col?.___branch || m_tbl?.___branch;
+                                // ! This test can be better in allowing references to nested owners 
+                                if (col_owner == module) {
+                                    // Under the ___refs[branch] section, store all the requirements 
+                                    // of this particular module. Then that can be used when deciding 
+                                    // what the module itself can / cannot modify.
+                                    // Make a copy of ref_col, as we manipulate and maybe discard
+                                    let ref_col = m_col.___refs[module] || {};
+                                    ref_col = { ...ref_col, ...col, ___version: claim.id.version };
+                                    let e_cnt = errors.length;
+                                    for (let p in col) {
+                                        if (col[p] != "*UNREF") {
+                                            if (!db_column_words[p])
+                                                errors.push(`mergeClaims - verify deps - ${claim_id_s} - unknown prop: <${t}:${c}:${p}>`);
+                                            else if (!propFits(m_col, col, p))
+                                                errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - wanted: ${JSON.stringify(col)}, got: ${JSON.stringify(m_col)}`);
+                                        }
+                                        else delete ref_col[p];
+                                    }
+                                    if (errors.length == e_cnt && firstKey(col)) {
+                                        if (firstKey(ref_col, "___version")) {
+                                            m_col.___refs ||= {};
+                                            m_col.___refs[claim.id.branch] = ref_col;
+                                        }
+                                        else {
+                                            // Nothing left in ref, delete it 
+                                            delete m_col.___refs[claim.id.branch];
+                                        }
+                                    }
+                                }
+                                else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}> - column owner wrong: <${col_owner}>, wanted: <${module}>`);
                             }
-                            //if( firstKey(col) ) ...; 
+                            else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col_copy)}, got: <nothing>`);
                         }
-                        else errors.push(`mergeClaims - verify deps - ${claim_id_s} - not fulfilled: <${t}:${c}:${p}> - want: ${JSON.stringify(col)}, got: <nothing>`);
+                        else {
+                            // *UNREF on the column 
+                            if (!isString(m_col) && m_col.___refs) {
+                                delete m_col.___refs[module];
+                            }
+                        }
+                    }
+                }
+                else {
+                    // *UNREF for whole table
+                    if (m_tbl != "*NOT") {
+                        for (let c in m_tbl) {
+                            let m_col = m_tbl[c];
+                            if (!isString(m_col) && m_col.___refs) {
+                                delete m_col.___refs[module];
+                            }
+                        }
                     }
                 }
             }
@@ -1403,7 +1439,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             let m_tbl = merge[t];
             let is_table_ref = false;
             if (isTableProps(m_tbl)) {
-                if (m_tbl.___owner != claim.id.branch) {
+                if (m_tbl.___branch != claim.id.branch) {
                     is_table_ref = true;
                 }
             }
@@ -1411,7 +1447,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             if (isDict(cols)) {
                 if (!firstKey(cols)) continue;
                 if (!isTableProps(m_tbl))
-                    merge[t] = m_tbl = { ___owner: claim.id.branch };
+                    merge[t] = m_tbl = { ___branch: claim.id.branch };
 
                 for (let c_name in cols) {
                     let col = cols[c_name];
@@ -1452,7 +1488,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                     if (is_table_ref) {
                                         // ! Should an explicit dependency be made, to module 
                                         // declaring the table ?
-                                        col_props.___owner = claim.id.branch;
+                                        col_props.___branch = claim.id.branch;
                                     }
                                     m_tbl[c_name] = col_props;
                                 }
@@ -1464,65 +1500,20 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             // A ref to a previously declared column. Either a requirement 
                             // on a column in another branch/module, or a reference to one 
                             // 'of our own making'- i.e. we can modify it. 
-                            if ((!m_col.___owner && !is_table_ref) ||
-                                m_col.___owner == claim.id.branch) {
+                            if ((!m_col.___branch && !is_table_ref) ||
+                                m_col.___branch == claim.id.branch) {
                                 // Modifying what we declared ourselves 
                                 if (!col.ref_data_type) {
                                     let es = mergeOwnColumnClaim(m_col, col, options);
-                                    if (es) errors = [...errors, ...es];
+                                    if (es) append(errors, es);
                                 }
                                 else errors.push(`${t}:${c_name} - Column is owned by the claim but ref is being declared`);
                             }
                             else {
                                 // So this is a ref to an existing column, by another module
-                                let col_owner = m_col?.___owner || m_tbl?.___owner;
-                                if (!claim.depends[col_owner])
-                                    errors.push(`${t}:${c_name} - Column is a reference to module <${col_owner}>, but that module is not in <depends> section`);
-                                else if (col.data_type)
-                                    errors.push(`${t}:${c_name} - Column is a reference, it should not use 'data_type'`);
-                                else {
-                                    // Under the ___refs[branch] section, store all the requirements 
-                                    // of this particular module. Then that can be used when deciding 
-                                    // what the module itself can / cannot modify.
-                                    let ref_col: RefColumnProps = m_col.___refs?.[claim.id.branch] || {};
-                                    for (let p in col) {
-                                        // See if unref the property
-                                        if (col[p] == "*UNREF") {
-                                            if (p == "ref_data_type") p = "data_type";
-                                            delete ref_col[p];
-                                            continue;
-                                        }
-
-                                        // Move to 'ref_data_type' instead, as 'data_type' 
-                                        // is a column declaration
-                                        if (p == "ref_data_type") {
-                                            // Accept same or more narrow datatype 
-                                            if (!typeContainsLoose(m_col.data_type, col.ref_data_type))
-                                                errors.push(`${t}:${c_name} - reference type <${col.ref_data_type}> does not fit in declared type <${m_col.data_type}>`);
-                                            else
-                                                ref_col.data_type = col.ref_data_type;
-                                        } else {
-                                            if (!db_column_words[p])
-                                                errors.push(`${t}:${c_name} - Unknown keyword: ${p}`);
-                                            else if (!propEqual(col[p] as any, m_col[p]))
-                                                errors.push(`${t}:${c_name} - Reference value of <${p}> differs from declared value: ${col[p]} vs ${m_col[p]}`);
-                                            else {
-                                                // Store the reffed property 
-                                                ref_col[p] = col[p];
-                                            }
-                                        }
-                                    }
-                                    // Anything in the ref ? 
-                                    if (firstKey(ref_col, "___version")) {
-                                        m_col.___refs ||= {};
-                                        ref_col.___version = claim.id.version;
-                                        m_col.___refs[claim.id.branch] = ref_col;
-                                    }
-                                    else if (m_col.___refs?.[claim.id.branch]) {
-                                        // Nothing left in ref, delete it 
-                                        delete m_col.___refs[claim.id.branch];
-                                    }
-                                }
+                                // We cannot do that here
+                                let col_owner = m_col?.___branch || m_tbl?.___branch;
+                                errors.push(`${t}:${c_name} - This column is owned by module: ${col_owner}`);
                             }
                         }
                     }
@@ -1536,7 +1527,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             }
                             // Check we can really drop the column 
                             // One can also mark an undeclared column as *NOT 
-                            let col_owner = m_col?.___owner || m_tbl?.___owner;
+                            let col_owner = m_col?.___branch || m_tbl?.___branch;
                             let err_len = errors.length;
                             if (col_owner) {
                                 if (col_owner != claim.id.branch)

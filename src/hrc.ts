@@ -127,7 +127,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
         let table: Dict<any> = tables[t];
         for (let col_name in table) {
             // !! We should maybe have a flag of what to skip here 
-            if( col_name=="___owner" || col_name=="___refs" ){
+            if( col_name=="___branch" || col_name=="___refs" ){
                 delete table[col_name];
                 continue;
             }
@@ -196,7 +196,7 @@ export function formatHrCompact(tables: Dict<any>): Dict<any> {
                 // See if we have any unhandled columns - and warn 
                 //let unhandled = Object.keys(col).filter(prop => !done[prop]);
                 let unhandled = notInLut(col, done);
-                if (firstKey(unhandled,"___owner")) {
+                if (firstKey(unhandled,"___branch")) {
                     console.warn(`formatHrCompact(${col_name}) - unhandled: ${JSON.stringify(unhandled)}`);
                     // We make a subtree, but keep the default line in key "*" 
                     let small_node: Dict<string> = { };
