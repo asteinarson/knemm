@@ -1,12 +1,12 @@
 import {
     invert as ldInvert, Dict, isArray, toLut, firstKey, tryGet, errorRv,
     notInLut, isDict, isArrayWithElems, isDictWithKeys, isString, dArrAt,
-    objectMap, append, objectPrune, deepCopy, findValueOf
+    objectMap, append, objectPrune, deepCopy, findValueOf, isNumber
 } from './utils';
 
 import { db_column_words, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps } from "./types";
+import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps, BaseColumnProps } from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
@@ -665,8 +665,8 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
     return r;
 }
 
-type PropType = BTDict3;
-function propEqual(v1: PropType, v2: PropType) {
+// This does an exact comparison of properties 
+function propEqual(v1: BTDict3, v2: BTDict3) {
     if (typeof v1 == "string" || typeof v1 == "number" || typeof v1 == "boolean") return v1 == v2;
     if (!v1) return v1 == v2;
     if (typeof v1 == "object") {
@@ -678,6 +678,40 @@ function propEqual(v1: PropType, v2: PropType) {
         }
         return true;
     }
+}
+
+// Helper functions for generic comparison of candidate and target properties 
+function fitsDataType( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string ){
+    return typeContainsLoose(cand.data_type,tgt.data_type);
+}
+
+function fitsSmallerEqual( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string ){
+    let c_val = cand[prop];
+    let t_val = tgt[prop];
+    if( t_val!=null ){
+        if( !c_val ) return;
+        return t_val <= c_val;
+    }
+    //return c_val==null;
+}
+
+function fitsEqual( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string ){
+    return propEqual(cand[prop],tgt[prop]);
+}
+
+type PropCmpFn = (cand: BaseColumnProps, tgt: BaseColumnProps, prop:string) => boolean;
+let prop_fit_fn:Dict<PropCmpFn> = {
+    data_type: fitsDataType
+};
+// Insert those existing props which satisfy SmallerEqual 
+for( let prop in db_type_args )
+    prop_fit_fn[prop] = fitsSmallerEqual;
+
+// Generic property fit test - depending on property
+function propFits( cand: BaseColumnProps, tgt: BaseColumnProps, prop:string) {
+    let fit_fn = prop_fit_fn[prop];
+    if( !fit_fn ) fit_fn = fitsEqual;
+    return fit_fn(cand,tgt,prop);
 }
 
 // This generates the smallest diff that can adapt the candidate to fulfill 
@@ -1294,18 +1328,60 @@ export function getInitialState(tables?: Dict<TableProps>): State {
     };
 }
 
-export function verifyDependencies( claims: Claim[], merge_base: State, options: Dict<any> ): string[] {
+export function verifyDeps(claims: Claim[], merge_base: State, options: Dict<any>): string[] {
     let errors: string[] = [];
 
     // Sort claims into module version lookup 
-    let cl_by_br:Dict<Record<number,Claim>> = {};
-    claims.forEach( cl => {
+    let cl_by_br: Dict<Record<number, Claim>> = {};
+    claims.forEach(cl => {
         cl_by_br[cl.id.branch] ||= {};
         cl_by_br[cl.id.branch][cl.id.version] = cl;
-    } );
+    });
 
+    // Go through explicit deps of each claim 
+    for (let cl of claims) {
+        if (cl.depends) {
+            for (let module in cl.depends) {
+                let tables = cl.depends[module];
+                // ___version is not easily expressed in TS as we want. 
+                if (!isNumber(tables.___version)) {
+                    errors.push(`verifyDeps - ${cl.id.branch}:${cl.id.version} - Ref to <${module}> lacks ___version`);
+                    continue;
+                }
+                let version = Number(tables.___version);
+                // Sort out the claims that can fulfill the deps. I.e. an array of decreasing version numbers
+                let cands = Object.keys(cl_by_br[module] || {})
+                    .map((s) => Number(s))
+                    .filter(v => { v <= version })
+                    .sort( (v1,v2) => v2-v1);
+                // !! This does not (yet) take "*NOT" into account 
+                for (let t in tables) {
+                    for( let c in tables[t] ){
+                        // Make a copy and try to fulfill each prop
+                        let col = { ...tables[t][c] };
+                        // First look on claims passed here 
+                        for( let v of cands ){
+                            let cl_v = cl_by_br[module][v];
+                            for( let p in col  ){
+                                let prop = col[p];
+                                // See if fulfilled by claim 
+                                let cols_c = cl_v.___tables[t];
+                                if( cols_c && cols_c!="*NOT" ){
+                                    let col_c = cols_c[c];
+                                    if( !isString(col_c) ){
+                                        if( propEqual(prop,col_c[p]) )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
-    if( errors.length ) return errors;
+            }
+        }
+    }
+
+    if (errors.length) return errors;
 }
 
 // Merge dependency ordered claims 
@@ -1357,16 +1433,16 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                 if (!unknowns) {
                                     // ! foreign_key checks 
                                     let fk = col.foreign_key;
-                                    if( fk && !isString(fk) ){
-                                        let tgt:ColumnProps;
+                                    if (fk && !isString(fk)) {
+                                        let tgt: ColumnProps;
                                         let err: string;
-                                        if( isDict(merge[fk.table]) )
+                                        if (isDict(merge[fk.table]))
                                             tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
-                                        if( !tgt )
-                                             err = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
-                                        else if( tgt.data_type!=col.data_type )
+                                        if (!tgt)
+                                            err = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
+                                        else if (tgt.data_type != col.data_type)
                                             err = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
-                                        if( err ){
+                                        if (err) {
                                             errors.push(err);
                                             continue;
                                         }
