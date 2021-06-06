@@ -158,14 +158,19 @@ export let claim_use_p3_err: Claim = {
         branch: "up",
         version: 4
     },
-    ___tables: {
-        person: {
-            yob: {
+    depends: {
+        p: {
+            ___version: 3,
+            person: {
+                yob: {
                 // Wrong ref, both type and property
-                ref_data_type: "bigint",
+                data_type: "bigint",
                 is_nullable: true,
+                },
             },
-        },
+        }
+    },
+    ___tables: {
     }
 };
 
