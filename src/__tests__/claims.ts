@@ -72,14 +72,16 @@ export let claim_use_p1: Claim = {
         version: 1
     },
     depends: {
-        p: 1
+        p: {
+            ___version: 1,
+            person: {
+                name: {
+                    data_type: "text"
+                }
+            }
+        }
     },
     ___tables: {
-        person: {
-            name: {
-                ref_data_type: "text",
-            },
-        },
     }
 };
 
@@ -91,14 +93,16 @@ export let claim_use_p2: Claim = {
         version: 1
     },
     depends: {
-        p: 2
+        p: {
+            ___version: 2,
+            person: {
+                name: {
+                    data_type: "text"
+                }
+            }
+        }
     },
     ___tables: {
-        person: {
-            name: {
-                ref_data_type: "text",
-            },
-        },
     }
 };
 
@@ -130,20 +134,21 @@ export let claim_use_p3: Claim = {
         version: 3
     },
     depends: {
-        p: 3
+        p: {
+            ___version: 3,
+            person: {
+                age: {
+                    data_type: "int"
+                },
+                yob: {
+                    // Exact ref, both type and property
+                    data_type: "int",
+                    is_nullable: false,
+                },
+            },
+        }
     },
     ___tables: {
-        person: {
-            age: {
-                // Smaller, but OK ref
-                ref_data_type: "int",
-            },
-            yob: {
-                // Exact ref, both type and property
-                ref_data_type: "int",
-                is_nullable: false,
-            },
-        },
     }
 };
 
@@ -189,15 +194,17 @@ export let claim_use_p3_ok: Claim = {
         version: 4
     },
     depends: {
-        p: 3
+        p: {
+            ___version: 3,
+            person: {
+                age: "*UNREF",
+                yob: {
+                    is_nullable: "*UNREF" as any,
+                },
+            },
+        }
     },
     ___tables: {
-        person: {
-            age: "*UNREF",
-            yob: {
-                is_nullable: "*UNREF" as any as boolean,
-            },
-        },
     }
 };
 
@@ -359,7 +366,14 @@ export let claim_book_1: Claim = {
         version: 1
     },
     depends: {
-        author: 2,
+        author: {
+            ___version: 2,
+            author: {
+                id: {
+                    data_type: "int",
+                }
+            }
+        },
     },
     ___tables: {
         book: {

@@ -1396,7 +1396,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             for (let t in tables) {
                 let table = tables[t];
                 let m_tbl = merge[t];
-                if (table != "*UNREF") {
+                if (isDict(table)) {
                     if (!m_tbl || m_tbl == "*NOT") {
                         if (firstKey(table))
                             errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to table <${t}> - does not exist in merge`);
