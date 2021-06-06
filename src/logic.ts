@@ -6,7 +6,7 @@ import {
 
 import { db_column_flags, db_column_words, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
-import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps, BaseColumnProps } from "./types";
+import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps, BaseColumnProps, versionOf } from "./types";
 
 import { fileNameOf, getStoreStdin, isDir, pathOf, slurpFile } from "./file-utils";
 import { connect, connectCheck, disconnect, getClientType, modifySchema, quoteIdentifier, slurpSchema } from './db-utils'
@@ -569,16 +569,15 @@ export function normalizeClaim(
     // Normalize the depends node - if any 
     let deps = r.depends;
     if (deps) {
-        if (isDict(deps)) {
-            for (let k in deps)
-                deps[k] = Number(deps[k]);
+        if (!isDict(deps)) 
+            return errorRv(`normalizeClaim: Unknown format for dependency: ${deps}`);
+
+        for( let module in deps ){
+            let dep = deps[module];
+            if( !dep.___version )
+                return errorRv(`normalizeClaim: No version for dependency: ${module}`);
+            dep.___version = Number(dep.___version) as any;
         }
-        else if (isString(deps)) {
-            let id = claimIdFromName(deps);
-            if (!id) return errorRv(`normalizeClaim: Could not parse dependency: ${deps}`);
-            r.depends = { [id.branch]: id.version }
-        }
-        else return errorRv(`normalizeClaim: Unknown format for dependency: ${deps}`);
     }
     else r.depends = {};
 
@@ -1190,7 +1189,7 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
         // And pull in branch dependencies 
         let o_id = safeClaimId(claim.id);
         for (let d_branch in claim.depends) {
-            let d_ver = claim.depends[d_branch];
+            let d_ver = versionOf( claim.depends[d_branch] );
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
             if (dep_claim)
                 checkIncludeDep(dep_claim);
@@ -1273,7 +1272,7 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
                 for (let d_branch in claim.depends) {
                     // And run the dependence up to specific version 
                     let bc_dep = branch_claims[d_branch];
-                    let d_ver = claim.depends[d_branch];
+                    let d_ver = versionOf(claim.depends[d_branch]);
                     if (bc_dep)
                         sortBranchUpTo(bc_dep, d_ver);
                     else {
@@ -1370,7 +1369,6 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         continue;
                     }
                     for (let c in table) {
-                        // Make a copy and try to fulfill each prop
                         let col = table[c];
                         let m_col = m_tbl[c];
                         if (col != "*UNREF") {

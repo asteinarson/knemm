@@ -46,9 +46,13 @@ export interface State extends ClaimState {
 };
 
 export interface Depends {
-    //___version: number;
+    //___version: number;   // Does not fit in union type below
     [table:string]: Dict<DependColumnProps|"*UNREF"> | "*UNREF";
 };
+
+export function versionOf(d: Depends){
+    return d.___version as any as number;
+}
 
 export function isClaimState(o: any): o is ClaimState {
     return !!(isDict(o) && o.___tables);
