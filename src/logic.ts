@@ -1329,6 +1329,23 @@ export function getInitialState(tables?: Dict<TableProps>): State {
     };
 }
 
+function getNestedDepModules(dep: ClaimId, state: State) {
+    if (!state.depends_acc)
+        return { [dep.branch]: dep.version };
+    let deps = [dep];
+    let r: Dict<number> = {};
+    for (let ix = 0; ix < deps.length; ix++) {
+        let id = deps[ix];
+        r[id.branch] = id.version;
+        let nest_deps = state.depends_acc[id.branch]?.[id.version];
+        if (nest_deps) {
+            for (let m in nest_deps)
+                deps.push({ branch: m, version: nest_deps[m] });
+        }
+    }
+    return r;
+}
+
 // Merge dependency ordered claims 
 export function mergeClaims(claims: Claim[], merge_base: State | null, options: Dict<any>):
     State | string[] {
@@ -1343,7 +1360,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
         }
 
         let depends_acc: Dict<number>;
-        if (firstKey(claim.depends)){
+        if (firstKey(claim.depends)) {
             merge_base.depends_acc ||= {};
             merge_base.depends_acc[claim.id.branch] ||= {};
             merge_base.depends_acc[claim.id.branch][claim.id.version] ||= {};
@@ -1371,6 +1388,10 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                     errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}:${version}> - but is already at <${version_state}>`);
             }
             if (errors.length > e_cnt) continue;
+
+            // Get LUT of modules we can refer to as deps 
+            let allowed_modules = {};
+
             // Iterate the tables in this module we depend on
             for (let t in tables) {
                 let table = tables[t];
