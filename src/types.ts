@@ -52,7 +52,8 @@ export interface Depends {
 };
 
 export function versionOf(d: Depends){
-    return d.___version as any as number;
+    if( d.___version )
+        return d.___version as any as number;
 }
 
 export function isClaimState(o: any): o is ClaimState {

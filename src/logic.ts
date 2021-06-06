@@ -1329,10 +1329,10 @@ export function getInitialState(tables?: Dict<TableProps>): State {
     };
 }
 
-function getNestedDepModules(dep: ClaimId, state: State) {
+function getNestedDeps(branch: string, version: number, state: State) {
     if (!state.depends_acc)
-        return { [dep.branch]: dep.version };
-    let deps = [dep];
+        return { [branch]: version };
+    let deps = [{ branch, version }];
     let r: Dict<number> = {};
     for (let ix = 0; ix < deps.length; ix++) {
         let id = deps[ix];
@@ -1375,12 +1375,12 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             depends_acc[module] = versionOf(claim.depends[module]);
 
             let tables = claim.depends[module];
+            let version = versionOf(tables);
             let e_cnt = errors.length;
             // ___version is not easily expressed in TS as we want. 
-            if (!isNumber(tables.___version))
+            if (version == undefined)
                 errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}> lacks ___version`);
             else {
-                let version = Number(tables.___version);
                 let version_state = merge_base.modules[module];
                 if (!version_state)
                     errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}> - which is not in state`);
@@ -1390,7 +1390,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             if (errors.length > e_cnt) continue;
 
             // Get LUT of modules we can refer to as deps 
-            let allowed_modules = {};
+            let nested_deps = getNestedDeps(module, version, merge_base);
 
             // Iterate the tables in this module we depend on
             for (let t in tables) {
@@ -1409,7 +1409,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             if (m_col && !isString(m_col)) {
                                 let col_owner = m_col?.___branch || m_tbl?.___branch;
                                 // ! This test can be better in allowing references to nested owners 
-                                if (col_owner == module) {
+                                if (nested_deps[col_owner]) {
                                     // Under the ___refs[branch] section, store all the requirements 
                                     // of this particular module. Then that can be used when deciding 
                                     // what the module itself can / cannot modify.
