@@ -41,6 +41,7 @@ export interface Claim extends ClaimState {
 
 export interface State extends ClaimState {
     modules: Dict<number>,
+    depends_acc?: Dict<Dict<Dict<number>>>,
     directory?: string,
     connection?: any,    // Actually Knex
 };

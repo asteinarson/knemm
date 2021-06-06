@@ -569,14 +569,16 @@ export function normalizeClaim(
     // Normalize the depends node - if any 
     let deps = r.depends;
     if (deps) {
-        if (!isDict(deps)) 
+        if (!isDict(deps))
             return errorRv(`normalizeClaim: Unknown format for dependency: ${deps}`);
 
-        for( let module in deps ){
+        for (let module in deps) {
             let dep = deps[module];
-            if( !dep.___version )
+            if (!dep.___version)
                 return errorRv(`normalizeClaim: No version for dependency: ${module}`);
-            dep.___version = Number(dep.___version) as any;
+            let ver = versionOf(dep);
+            if (!ver) return errorRv(`normalizeClaim: Cannot parse version for dependency: ${module} - ${dep.___version}`);
+            dep.___version = ver as any;
         }
     }
     else r.depends = {};
@@ -1189,7 +1191,7 @@ export function dependencySort(file_dicts: Dict<Claim>, state_base: State, optio
         // And pull in branch dependencies 
         let o_id = safeClaimId(claim.id);
         for (let d_branch in claim.depends) {
-            let d_ver = versionOf( claim.depends[d_branch] );
+            let d_ver = versionOf(claim.depends[d_branch]);
             let dep_claim = opt_dicts[d_branch]?.[d_ver];
             if (dep_claim)
                 checkIncludeDep(dep_claim);
@@ -1340,10 +1342,21 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             continue;
         }
 
+        let depends_acc: Dict<number>;
+        if (firstKey(claim.depends)){
+            merge_base.depends_acc ||= {};
+            merge_base.depends_acc[claim.id.branch] ||= {};
+            merge_base.depends_acc[claim.id.branch][claim.id.version] ||= {};
+            depends_acc = merge_base.depends_acc[claim.id.branch][claim.id.version];
+        }
+
         let claim_id_s = `${claim.id.branch}:${claim.id.version}`;
         // First check the dependencies - against the current state 
         // Since the claims are sorted, this should always be OK.
         for (let module in claim.depends || {}) {
+            // Accumulate nested dependencies in the state 
+            depends_acc[module] = versionOf(claim.depends[module]);
+
             let tables = claim.depends[module];
             let e_cnt = errors.length;
             // ___version is not easily expressed in TS as we want. 
