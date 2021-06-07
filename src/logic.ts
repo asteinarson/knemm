@@ -1368,6 +1368,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
         }
 
         let claim_id_s = `${claim.id.branch}:${claim.id.version}`;
+
         // First check the dependencies - against the current state 
         // Since the claims are sorted, this should always be OK.
         for (let module in claim.depends || {}) {
@@ -1488,8 +1489,8 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         let is_new_col = false;
                         // A new column ? 
                         if (!m_col || isString(m_col)) {
-                            if (!col.data_type) errors.push(``);
-                            else if (!getTypeGroup(col.data_type)) errors.push(`${t}:${c_name} - New column lacks data_type`);
+                            if (!col.data_type) errors.push(`${t}:${c_name} - New column lacks data_type`);
+                            else if (!getTypeGroup(col.data_type)) errors.push(`${t}:${c_name} - Lacking type group for: ${col.data_type}`);
                             if (errors.length == e_cnt) {
                                 m_col = {};
                                 is_new_col = true;
@@ -1624,71 +1625,10 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         }
 
                         // All properties went well ? 
-                        if (errors.length == e_cnt)
+                        if (errors.length == e_cnt){
+                            if( is_new_col && is_table_ref )
+                                m_col.___branch = claim.id.branch;
                             m_tbl[c_name] = m_col;
-
-                        {
-                            // A new column - accept the various properties 
-                            // Check that not an invalid ref 
-                            if (!col.data_type) {
-                                errors.push(`${t}:${c_name} - A new column needs to have a data_type: ${JSON.stringify(col)}`);
-                            }
-                            // A known type ? 
-                            else if (getTypeGroup(col.data_type)) {
-                                // !! we could check for  a <*ref> flag (requiring an existing column) 
-                                // See if we accept all suggested column keywords 
-                                // ! There should be a stronger syntax check here ! 
-                                // ! Or in normalizeClaim
-                                let unknowns = notInLut(col, db_column_words);
-                                if (!unknowns) {
-                                    // ! foreign_key checks 
-                                    let fk = col.foreign_key;
-                                    if (fk && !isString(fk)) {
-                                        let tgt: ColumnProps;
-                                        let err: string;
-                                        if (isDict(merge[fk.table]))
-                                            tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
-                                        if (!tgt)
-                                            err = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
-                                        else if (tgt.data_type != col.data_type)
-                                            err = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
-                                        if (err) {
-                                            errors.push(err);
-                                            continue;
-                                        }
-                                        // Make a ref in the target, so that column cannot be dropped
-                                        tgt.___refs ||= {};
-                                        tgt.___refs["fk-" + claim.id.branch] = { data_type: col.data_type };
-                                    }
-                                    // Accept column declaration in its fullness
-                                    let col_props: ColumnProps = { ...col };
-                                    if (is_table_ref) {
-                                        // ! Should an explicit dependency be made, to module 
-                                        // declaring the table ?
-                                        col_props.___branch = claim.id.branch;
-                                    }
-                                    m_tbl[c_name] = col_props;
-                                }
-                                else errors.push(`${t}:${c_name} - Unknown column keywords: ${JSON.stringify(unknowns)}`);
-                            }
-                            else errors.push(`${t}:${c_name} - Unknown column type: ${col.data_type}`);
-                        }
-                        else {
-                            // A ref to a previously declared column. Either a requirement 
-                            // on a column in another branch/module, or a reference to one 
-                            // 'of our own making'- i.e. we can modify it. 
-                            if ((!m_col.___branch && !is_table_ref) ||
-                                m_col.___branch == claim.id.branch) {
-                                // Modifying what we declared ourselves 
-                                let es = mergeOwnColumnClaim(m_col, col, options);
-                                if (es) append(errors, es);
-                            }
-                            else {
-                                // So this is a ref to an existing column, by another module
-                                // We cannot do that here
-                                let col_owner = m_col?.___branch || m_tbl?.___branch;
-                                errors.push(`${t}:${c_name} - This column is owned by module: ${col_owner}`);
-                            }
                         }
                     }
                     else {
@@ -1702,30 +1642,19 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             // Check we can really drop the column 
                             // One can also mark an undeclared column as *NOT 
                             let col_owner = m_col?.___branch || m_tbl?.___branch;
-                            let err_len = errors.length;
+                            let e_cnt = errors.length;
                             if (col_owner) {
                                 if (col_owner != claim.id.branch)
                                     errors.push(`${t}:${c_name} - Cannot drop column in other module: ${col_owner}, ${claim.id.branch}}`);
                                 else if (firstKey(m_col.___refs))
                                     errors.push(`${t}:${c_name} - Cannot drop column, it is referenced: ${JSON.stringify(m_col.___refs)}`);
                             }
-                            if (errors.length == err_len) {
+                            if (errors.length == e_cnt) {
                                 m_tbl[c_name] = "*NOT";
                             }
                         }
-                        else if (col == "*UNREF") {
-                            let did_unref = false;
-                            if (isDict(m_col)) {
-                                if (m_col.___refs?.[claim.id.branch]) {
-                                    did_unref = true;
-                                    delete m_col.___refs[claim.id.branch];
-                                }
-                            }
-                            if (!did_unref)
-                                errors.push(`${t}:${c_name} - *UNREF - column is not referenced`);
-                        }
                         else {
-                            errors.push(`${t}:${c_name} - Unknown directive: ${col}`);
+                            errors.push(`${t}:${c_name} - Unknown column directive: ${col}`);
                         }
                     }
                 }
@@ -1755,123 +1684,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                 else errors.push(`merge: unknown value (${cols}) for table ${t} in branch ${claim.id.branch}`);
             }
         }
-
     }
     return errors.length ? errors : merge_base;
-}
-
-// Merge revised claim into column declared earlier, by the same module.
-// The general rule is that we accept widening of data type, precision,
-// but not that which would likely cause loss of data. 
-// TODO: Provide a path to narrow and add constraints, by application 
-// specific migration/preparation methods.
-function mergeColumnClaim(m_col: ColumnProps, col: ColumnProps, options: Dict<any>, merge: Tables, claim: Claim): string[] {
-    let r: Dict<any> = {};
-    let errors: string[] = [];
-    let is_new_col = !firstKey(m_col);
-    for (let k in col) {
-        if (db_column_words[k]) {
-            if (!propEqual(m_col[k], col[k])) {
-                if (!m_col[k]) {
-                    // The property was not there before - so it cannot be reffed 
-                    if (db_always_declarable[k]) {
-                        r[k] = col[k];
-                        continue;
-                    }
-                    // For a new column, only a few props needs checking 
-                    if (is_new_col && !db_create_non_trivial[k]) {
-                        r[k] = col[k];
-                        continue;
-                    }
-                }
-
-                // If it is a referred property we cannot change it 
-                let reason: string;
-                if (m_col.___refs && db_ref_lockable[k]) {
-                    let path: string[] = [];
-                    let ref_val = findValueOf(k, m_col.___refs, path);
-                    if (ref_val !== undefined) {
-                        reason = `The value of ${k} is locked by a reference from: ${dArrAt(path, -1)} with value: ${ref_val}`;
-                        errors.push(reason);
-                        continue;
-                    }
-                }
-                switch (k) {
-                    case "data_type":
-                        // We can widen the data type 
-                        if (!typeContainsLoose(col.data_type, m_col.data_type)) {
-                            // ... but refuse to go to a more narrow type 
-                            reason = `Cannot safely go from type: ${m_col.data_type} to ${col.data_type}`;
-                        }
-                        else {
-                            // If new type has no arg, need to clean those away 
-                            if (!db_types_with_args[col.data_type]) {
-                                for (let ta in db_type_args)
-                                    delete m_col[ta];
-                            }
-                            else {
-                                // Even w type args, we may need to delete non used type args
-                            }
-                        }
-                        break;
-                    case "max_length":
-                    case "numeric_precision":
-                    case "numeric_scale":
-                        // For these, we can increase the value, as long as that 
-                        // is inline also with reference to this prop 
-                        if (col[k] < m_col[k])
-                            reason = `Unsafe target value: ${col[k]} should be more than: ${m_col[k]}`;
-                        break;
-                    case "is_primary_key":
-                    case "has_auto_increment":
-                    case "is_unique":
-                        if (col[k]) reason = `Cannot safely add constraint <${k}> now`;
-                        break;
-                    case "is_nullable":
-                        // We allow to go back to nullable - DB is fine w that 
-                        if (!col[k]) reason = "Cannot add constraint <NOT NULLABLE> now";
-                        break;
-                    case "foreign_key":
-                        let fk = col.foreign_key;
-                        if (fk != "*NOT") {
-                            let tgt: ColumnProps;
-                            let err: string;
-                            if (isDict(merge[fk.table]))
-                                tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
-                            if (!tgt)
-                                err = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
-                            else if (tgt.data_type != col.data_type)
-                                err = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
-                            if (err) {
-                                errors.push(err);
-                                continue;
-                            }
-                            // Make a ref in the target, so that column cannot be dropped
-                            tgt.___refs ||= {};
-                            tgt.___refs["fk-" + claim.id.branch] = { data_type: col.data_type };
-                        }
-                        else {
-
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                if (!reason)
-                    r[k] = col[k];
-                else {
-                    errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${col[k]} ` +
-                        `(${reason})`);
-                }
-            }
-        }
-        else errors.push(`mergeOwnColumnClaim - Unknown column keyword: ${k}`);
-    }
-
-    // Merge, even if we have errors 
-    for (let k in r)
-        m_col[k] = r[k];
-
-    if (errors.length) return errors;
 }
 
