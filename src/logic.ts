@@ -1516,7 +1516,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                         }
                                         // Make a ref in the target, so that column cannot be dropped
                                         tgt.___refs ||= {};
-                                        tgt.___refs["fk-"+claim.id.branch] = { data_type: col.data_type };
+                                        tgt.___refs["fk-" + claim.id.branch] = { data_type: col.data_type };
                                     }
                                     // Accept column declaration in its fullness
                                     let col_props: ColumnProps = { ...col };
@@ -1538,11 +1538,8 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             if ((!m_col.___branch && !is_table_ref) ||
                                 m_col.___branch == claim.id.branch) {
                                 // Modifying what we declared ourselves 
-                                if (!col.ref_data_type) {
-                                    let es = mergeOwnColumnClaim(m_col, col, options);
-                                    if (es) append(errors, es);
-                                }
-                                else errors.push(`${t}:${c_name} - Column is owned by the claim but ref is being declared`);
+                                let es = mergeOwnColumnClaim(m_col, col, options);
+                                if (es) append(errors, es);
                             }
                             else {
                                 // So this is a ref to an existing column, by another module
