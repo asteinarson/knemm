@@ -1623,7 +1623,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
 // but not that which would likely cause loss of data. 
 // TODO: Provide a path to narrow and add constraints, by application 
 // specific migration/preparation methods.
-function mergeOwnColumnClaim(m_col: Dict<any>, claim: Dict<any>, options: Dict<any>): string[] {
+function mergeOwnColumnClaim(m_col: ColumnProps, claim: ColumnProps, options: Dict<any>): string[] {
     let r: Dict<any> = {};
     let errors: string[] = [];
     for (let k in claim) {
