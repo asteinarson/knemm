@@ -1463,7 +1463,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             }
         }
 
-        // And do the merge 
+        // And do the merge of this claim
         merge_base.modules[claim.id.branch] = claim.id.version;
         let cl_tables = claim.___tables;
         for (let t in cl_tables) {
@@ -1501,7 +1501,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                             // An existing column 
                             let col_owner = m_col?.___branch || m_tbl?.___branch;
                             if (col_owner != claim.id.branch) {
-                                errors.push(`${t}:${c_name} - This column is owned by module: ${col_owner} - not the claim: ${claim.id.branch}`);
+                                errors.push(`${t}:${c_name} - This column is owned by module: ${col_owner} - not the claim: ${claim.id.branch} - cannot modify`);
                                 continue;
                             }
                         }
@@ -1554,6 +1554,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                                 }
                                             }
                                             break;
+
                                         case "max_length":
                                         case "numeric_precision":
                                         case "numeric_scale":
@@ -1562,6 +1563,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                             if (m_col_ts[k] && col[k] < m_col_ts[k])
                                                 reason = `Unsafe target value: ${col[k]} should be more than: ${m_col_ts[k]}`;
                                             break;
+
                                         case "is_primary_key":
                                         case "has_auto_increment":
                                         case "is_unique":
@@ -1572,11 +1574,13 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                                     reason = `Type <${col.data_type}> cannot use <has_auto_increment>`;
                                             }
                                             break;
+
                                         case "is_nullable":
                                             // We allow to go back to nullable - DB is fine w that 
                                             if (!col[k])
                                                 reason = "Cannot add constraint <NOT NULLABLE> now";
                                             break;
+
                                         case "foreign_key":
                                             let fk = col.foreign_key;
                                             let tgt: ColumnProps;
@@ -1610,6 +1614,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                                 }
                                             }
                                             break;
+                                            
                                         default:
                                             break;
                                     }
