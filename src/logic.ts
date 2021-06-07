@@ -1488,8 +1488,8 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         if (!m_col || isString(m_col)) {
                             // A new column - accept the various properties 
                             // Check that not an invalid ref 
-                            if (col.ref_data_type || !col.data_type) {
-                                errors.push(`${t}:${c_name} - Declaring a reference but column does not exist`);
+                            if (!col.data_type) {
+                                errors.push(`${t}:${c_name} - A new column needs to have a data_type: ${JSON.stringify(col)}`);
                             }
                             // A known type ? 
                             else if (getTypeGroup(col.data_type)) {
@@ -1514,6 +1514,9 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                             errors.push(err);
                                             continue;
                                         }
+                                        // Make a ref in the target, so that column cannot be dropped
+                                        tgt.___refs ||= {};
+                                        tgt.___refs["fk-"+claim.id.branch] = { data_type: col.data_type };
                                     }
                                     // Accept column declaration in its fullness
                                     let col_props: ColumnProps = { ...col };
