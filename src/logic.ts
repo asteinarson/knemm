@@ -4,7 +4,7 @@ import {
     objectMap, append, objectPrune, deepCopy, findValueOf, isNumber
 } from './utils';
 
-import { db_column_flags, db_column_words, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
+import { db_always_declarable, db_column_flags, db_column_words, db_create_non_trivial, db_may_auto_increment, db_ref_lockable, db_types_with_args, db_type_args, getTypeGroup, typeContainsLoose } from './db-props';
 
 import { BTDict3, ClaimId, ClaimState, Claim, State, TableProps, ColumnProps, ForeignKey, isClaimState, isState, isTableProps, Tables, BTDict2, BTDict1, RefColumnProps, BaseColumnProps, versionOf } from "./types";
 
@@ -1377,7 +1377,6 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
             let tables = claim.depends[module];
             let version = versionOf(tables);
             let e_cnt = errors.length;
-            // ___version is not easily expressed in TS as we want. 
             if (version == undefined)
                 errors.push(`mergeClaims - verify deps - ${claim_id_s} - Ref to <${module}> lacks ___version`);
             else {
@@ -1485,7 +1484,150 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                     let col = cols[c_name];
                     let m_col = m_tbl[c_name];
                     if (isDict(col)) {
+                        let e_cnt = errors.length;
+                        let is_new_col = false;
+                        // A new column ? 
                         if (!m_col || isString(m_col)) {
+                            if (!col.data_type) errors.push(``);
+                            else if (!getTypeGroup(col.data_type)) errors.push(`${t}:${c_name} - New column lacks data_type`);
+                            if (errors.length == e_cnt) {
+                                m_col = {};
+                                is_new_col = true;
+                            }
+                            else continue;
+                        }
+                        else {
+                            // An existing column 
+                            let col_owner = m_col?.___branch || m_tbl?.___branch;
+                            if (col_owner != claim.id.branch) {
+                                errors.push(`${t}:${c_name} - This column is owned by module: ${col_owner} - not the claim: ${claim.id.branch}`);
+                                continue;
+                            }
+                        }
+                        // ! A TypeScript issue, it looses specialization of m_col, from above test, in the loop
+                        let m_col_ts: ColumnProps = m_col;
+                        for (let k in col) {
+                            if (db_column_words[k]) {
+                                if (!propEqual(m_col_ts[k], col[k])) {
+                                    if (!m_col_ts[k]) {
+                                        // The property was not there before - so it cannot be reffed 
+                                        if (db_always_declarable[k]) {
+                                            m_col_ts[k] = col[k];
+                                            continue;
+                                        }
+                                        // For a new column, only a few props needs checking 
+                                        if (is_new_col && !db_create_non_trivial[k]) {
+                                            m_col_ts[k] = col[k];
+                                            continue;
+                                        }
+                                    }
+
+                                    // If it is a referred property we cannot change it 
+                                    let reason: string;
+                                    if (m_col_ts.___refs && db_ref_lockable[k]) {
+                                        let path: string[] = [];
+                                        let ref_val = findValueOf(k, m_col_ts.___refs, path);
+                                        if (ref_val !== undefined) {
+                                            reason = `The value of ${k} is locked by a reference from: ${dArrAt(path, -1)} with value: ${ref_val}`;
+                                            errors.push(reason);
+                                            continue;
+                                        }
+                                    }
+
+                                    // Check various properties individually 
+                                    switch (k) {
+                                        case "data_type":
+                                            // We can widen the data type 
+                                            if (!typeContainsLoose(col.data_type, m_col_ts.data_type)) {
+                                                // ... but refuse to go to a more narrow type 
+                                                reason = `Cannot safely go from type: ${m_col_ts.data_type} to ${col.data_type}`;
+                                            }
+                                            else {
+                                                // If new type has no arg, need to clean those away 
+                                                if (!db_types_with_args[col.data_type]) {
+                                                    for (let ta in db_type_args)
+                                                        delete m_col_ts[ta];
+                                                }
+                                                else {
+                                                    // Even w type args, we may need to delete non used type args
+                                                }
+                                            }
+                                            break;
+                                        case "max_length":
+                                        case "numeric_precision":
+                                        case "numeric_scale":
+                                            // For these, we can increase the value, as long as that 
+                                            // is inline also with reference to this prop 
+                                            if (m_col_ts[k] && col[k] < m_col_ts[k])
+                                                reason = `Unsafe target value: ${col[k]} should be more than: ${m_col_ts[k]}`;
+                                            break;
+                                        case "is_primary_key":
+                                        case "has_auto_increment":
+                                        case "is_unique":
+                                            if (col[k]) {
+                                                if (!is_new_col)
+                                                    reason = `Cannot safely add constraint <${k}> now`;
+                                                else if (k == "has_auto_increment" && !db_may_auto_increment[col.data_type])
+                                                    reason = `Type <${col.data_type}> cannot use <has_auto_increment>`;
+                                            }
+                                            break;
+                                        case "is_nullable":
+                                            // We allow to go back to nullable - DB is fine w that 
+                                            if (!col[k])
+                                                reason = "Cannot add constraint <NOT NULLABLE> now";
+                                            break;
+                                        case "foreign_key":
+                                            let fk = col.foreign_key;
+                                            let tgt: ColumnProps;
+                                            if (fk != "*NOT") {
+                                                if (isDict(merge[fk.table]))
+                                                    tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
+                                                if (!tgt)
+                                                    reason = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
+                                                else if (tgt.data_type != col.data_type)
+                                                    reason = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
+                                                if (!reason) {
+                                                    // Make a ref in the target, so that column cannot be dropped
+                                                    tgt.___refs ||= {};
+                                                    tgt.___refs["fk-" + claim.id.branch] = { data_type: col.data_type };
+                                                }
+                                            }
+                                            else {
+                                                // Remove it !
+                                                let fk = m_col_ts.foreign_key;
+                                                if (fk && fk != "*NOT") {
+                                                    if (isDict(merge[fk.table]))
+                                                        tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
+                                                    if (!tgt)
+                                                        reason = `${t}:${c_name} - Foreign key - *NOT - target not found: ${fk.table}:${fk.column}`;
+                                                    else {
+                                                        // Remove our ref here 
+                                                        if (tgt.___refs)
+                                                            delete tgt.___refs["fk-" + claim.id.branch];
+                                                        //m_col = "*NOT";
+                                                    }
+                                                }
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    if (!reason)
+                                        m_col_ts[k] = col[k];
+                                    else {
+                                        errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${col[k]} ` +
+                                            `(${reason})`);
+                                    }
+                                }
+                            }
+                            else errors.push(`mergeOwnColumnClaim - Unknown column keyword: ${k}`);
+                        }
+
+                        // All properties went well ? 
+                        if (errors.length == e_cnt)
+                            m_tbl[c_name] = m_col;
+
+                        {
                             // A new column - accept the various properties 
                             // Check that not an invalid ref 
                             if (!col.data_type) {
@@ -1623,15 +1765,28 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
 // but not that which would likely cause loss of data. 
 // TODO: Provide a path to narrow and add constraints, by application 
 // specific migration/preparation methods.
-function mergeOwnColumnClaim(m_col: ColumnProps, claim: ColumnProps, options: Dict<any>): string[] {
+function mergeColumnClaim(m_col: ColumnProps, col: ColumnProps, options: Dict<any>, merge: Tables, claim: Claim): string[] {
     let r: Dict<any> = {};
     let errors: string[] = [];
-    for (let k in claim) {
+    let is_new_col = !firstKey(m_col);
+    for (let k in col) {
         if (db_column_words[k]) {
-            // All other column props
-            if (!propEqual(m_col[k], claim[k])) {
-                let reason: string;
+            if (!propEqual(m_col[k], col[k])) {
+                if (!m_col[k]) {
+                    // The property was not there before - so it cannot be reffed 
+                    if (db_always_declarable[k]) {
+                        r[k] = col[k];
+                        continue;
+                    }
+                    // For a new column, only a few props needs checking 
+                    if (is_new_col && !db_create_non_trivial[k]) {
+                        r[k] = col[k];
+                        continue;
+                    }
+                }
+
                 // If it is a referred property we cannot change it 
+                let reason: string;
                 if (m_col.___refs && db_ref_lockable[k]) {
                     let path: string[] = [];
                     let ref_val = findValueOf(k, m_col.___refs, path);
@@ -1644,13 +1799,13 @@ function mergeOwnColumnClaim(m_col: ColumnProps, claim: ColumnProps, options: Di
                 switch (k) {
                     case "data_type":
                         // We can widen the data type 
-                        if (!typeContainsLoose(claim.data_type, m_col.data_type)) {
+                        if (!typeContainsLoose(col.data_type, m_col.data_type)) {
                             // ... but refuse to go to a more narrow type 
-                            reason = `Cannot safely go from type: ${m_col.data_type} to ${claim.data_type}`;
+                            reason = `Cannot safely go from type: ${m_col.data_type} to ${col.data_type}`;
                         }
                         else {
                             // If new type has no arg, need to clean those away 
-                            if (!db_types_with_args[claim.data_type]) {
+                            if (!db_types_with_args[col.data_type]) {
                                 for (let ta in db_type_args)
                                     delete m_col[ta];
                             }
@@ -1664,25 +1819,48 @@ function mergeOwnColumnClaim(m_col: ColumnProps, claim: ColumnProps, options: Di
                     case "numeric_scale":
                         // For these, we can increase the value, as long as that 
                         // is inline also with reference to this prop 
-                        if (claim[k] < m_col[k])
-                            reason = `Unsafe target value: ${claim[k]} should be more than: ${m_col[k]}`;
+                        if (col[k] < m_col[k])
+                            reason = `Unsafe target value: ${col[k]} should be more than: ${m_col[k]}`;
                         break;
                     case "is_primary_key":
                     case "has_auto_increment":
                     case "is_unique":
-                        if (claim[k]) reason = `Cannot safely add constraint ${k} now`;
+                        if (col[k]) reason = `Cannot safely add constraint <${k}> now`;
                         break;
                     case "is_nullable":
                         // We allow to go back to nullable - DB is fine w that 
-                        if (!claim[k]) reason = "Cannot add constraint NOT NULLABLE now";
+                        if (!col[k]) reason = "Cannot add constraint <NOT NULLABLE> now";
+                        break;
+                    case "foreign_key":
+                        let fk = col.foreign_key;
+                        if (fk != "*NOT") {
+                            let tgt: ColumnProps;
+                            let err: string;
+                            if (isDict(merge[fk.table]))
+                                tgt = (merge[fk.table] as Dict<ColumnProps>)[fk.column];
+                            if (!tgt)
+                                err = `${t}:${c_name} - Foreign key ref - target not found: ${fk.table}:${fk.column}`;
+                            else if (tgt.data_type != col.data_type)
+                                err = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
+                            if (err) {
+                                errors.push(err);
+                                continue;
+                            }
+                            // Make a ref in the target, so that column cannot be dropped
+                            tgt.___refs ||= {};
+                            tgt.___refs["fk-" + claim.id.branch] = { data_type: col.data_type };
+                        }
+                        else {
+
+                        }
                         break;
                     default:
                         break;
                 }
                 if (!reason)
-                    r[k] = claim[k];
+                    r[k] = col[k];
                 else {
-                    errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${claim[k]} ` +
+                    errors.push(`mergeOwnColumnClaim - Skipping modification: ${k}: ${m_col[k]} => ${col[k]} ` +
                         `(${reason})`);
                 }
             }

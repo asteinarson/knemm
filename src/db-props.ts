@@ -25,7 +25,7 @@ export let db_types_with_args: Dict<1> = {
 export let db_with_args: Dict<string> = {
     comment: "comment",
     default: "default",
-    ref_data_type: "ref",
+    //ref_data_type: "ref",
 };
 
 export let db_column_words: Dict<string | number> = {
@@ -42,17 +42,32 @@ export let db_ref_lockable: Dict<any> = {
     ...db_column_flags,
     is_nullable: 1,
     foreign_key: 1,
-    db_with_args
+    ...db_with_args
+};
+
+export let db_always_declarable: Dict<any> = {
+    data_type: 1,
+    is_nullable: 1,
+    ...db_with_args
+};
+
+export let db_create_non_trivial: Dict<any> = {
+    has_auto_increment: 1,
+    foreign_key: 1,
+};
+
+export const db_may_auto_increment: Dict<1> = {
+    smallint: 1, int: 1, bigint: 1,
+    smallint_u: 1, int_u: 1, bigint_u: 1,
 };
 
 // The valid (and different) base numeric types 
-const numerics_w_smallint: Dict<1> = {
-    smallint: 1, int: 1, bigint: 1,
-    smallint_u: 1, int_u: 1, bigint_u: 1,
+export const numerics_w_smallint: Dict<1> = {
+    ...db_may_auto_increment,
     float: 1, double: 1,
     decimal: 1,
 };
-const numerics: Dict<1> = {
+export const numerics: Dict<1> = {
     int: 1, bigint: 1,
     int_u: 1, bigint_u: 1,
     float: 1, double: 1,
