@@ -127,12 +127,12 @@ describe("describe - extend state", () => {
 });
 
 claimsToFile([claim_p3, claim_use_p3, claim_use_p3_err, claim_p4]);
-describe("describe - extend state 2", () => {
-    test("cmd join - extend state 2", async () => {
+describe("describe - extend state 1.1", () => {
+    test("cmd join - extend state 1.1", async () => {
         // We got the wrong one of this state otherwise
         claimsToFile([claim_use_p2]);
 
-        let state_dir = pJoin(tmpdir(), "state2");
+        let state_dir = pJoin(tmpdir(), "state1");
         let m_yaml = pJoin(state_dir, "___merge.yaml");
         expect(existsSync(m_yaml)).toBeTruthy();
 
@@ -172,9 +172,9 @@ describe("describe - extend state 2", () => {
 
 
 claimsToFile([claim_p5, claim_use_p5, claim_p6, claim_p7]);
-describe("describe - extend state 3", () => {
-    test("cmd join - extend state 3", async () => {
-        let state_dir = pJoin(tmpdir(), "state3");
+describe("describe - extend state 1.3", () => {
+    test("cmd join - extend state 1.3", async () => {
+        let state_dir = pJoin(tmpdir(), "state1");
         let m_yaml = pJoin(state_dir, "___merge.yaml");
         expect(existsSync(m_yaml)).toBeTruthy();
 
