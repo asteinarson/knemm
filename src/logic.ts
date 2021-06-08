@@ -1594,6 +1594,8 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                                     reason = `${t}:${c_name} - Foreign key ref - type mismatch: ${col.data_type} != ${tgt.data_type}`;
                                                 if (!reason) {
                                                     // Make a ref in the target, so that column cannot be dropped
+                                                    // We don't require a separate <dependa> for this as this 
+                                                    // FK declaration is by itself a dep declaration.
                                                     tgt.___refs ||= {};
                                                     tgt.___refs["fk-" + claim.id.branch] = { data_type: col.data_type };
                                                 }
