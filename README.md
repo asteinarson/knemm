@@ -290,7 +290,7 @@ It can be noted that a given DB can either lag behind the merge state, it can be
 
 One module (say **sales-order**) is the primary authority on the tables and columns it declares itself. But... it can depend on tables and columns from other modules (say **catalog-product**) and specify minimum database requirements it needs from that other module. 
 
-`Knemm` will then check those requirements, and either the combination works out just fine, or it fails, and we get an error message when attempting to merge / apply the claims. 
+`Knemm` will then check those requirements, and either the combination works out just fine, or it fails, and we get a clear error message when attempting to merge / apply a given claim. 
 
 So we have a declarative way of letting loosely coupled software modules depend on each other, and to know beforehand if their database expectations will work out - or not. 
 
@@ -300,24 +300,6 @@ The two **'m'**:s in *Knemm* stands for - *multi-migrations*. That is, several c
 
 Say we want to be able to classify persons in various groups (like `client`, `supplier`, `contractor`, ...). Obviously one group can have many persons, but say that for our example, a person can only be in one group. 
 To demonstrate **module** functionality, we do this with a `person_group` module, that depends on `person`: 
-
-```yaml
-id: PersonGroup_1
-depends: 
-  Person: 2   # We don't need anything from Person_3
-___tables:
-    # This is a new table of ours 
-    group: 
-      id: int pk auto_inc
-      name: varchar(255)
-    # Here we combine making claims on the dependency module, with declaring an additional column 
-    person:
-      id: ref(int) pk     # We say we need 'int' at least, and they need to be primary keys
-      first_name: ref(varchar)  # We say the name should be some string. We can accept any length.
-      second_name: ref(varchar) # Same
-      email: unique       # Here 'email' is a typeless ref. We say we want it unique, that's all. 
-      group_id: int foreign_key(group,id)  # A new column, a foreign key, to the table declared above.
-```
 
 ```yaml
 id: PersonGroup_1
@@ -339,6 +321,8 @@ ___tables:
     person:
       group_id: int foreign_key(group,id)  # A new column, a foreign key, to the table declared above.
 ```
+The exact requirements the module `PersonGroup` wants from `Person` are given under the **depends** section above. Then comes a new table (`group`) and we also declare our own column in the `person` table. 
+
 We will implement this differently below, directly in the `person` module. Both approaches are valid, but since the functionality is quite generic, it fits well to implement it directly there.  
 
 ### Why the reference properties ? 
@@ -353,7 +337,7 @@ Actually, as long as another module has a reference on a column in another modul
 modify that column in minor ways - and it cannot drop it. 
 
 ## An e-commerce example - with modules
-A slightly more complex example is that of a simple e-commerce backend. It will consist of these loosely coupled modules:
+A bit more complex example is that of a simple e-commerce backend. It will consist of these loosely coupled modules:
   * `person`
   * `catalog_product`
   * `group_price`

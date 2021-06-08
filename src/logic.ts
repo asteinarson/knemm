@@ -578,7 +578,11 @@ export function normalizeClaim(
                 return errorRv(`normalizeClaim: No version for dependency: ${module}`);
             let ver = versionOf(dep);
             if (!ver) return errorRv(`normalizeClaim: Cannot parse version for dependency: ${module} - ${dep.___version}`);
-            dep.___version = ver as any;
+            //dep.___version = ver as any;
+            delete dep.___version;
+            let dep_fmt = reformatTables(dep,format);
+            dep_fmt.___version = ver as any;
+            deps[module] = dep_fmt;
         }
     }
     else r.depends = {};
