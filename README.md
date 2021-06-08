@@ -29,6 +29,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
     - [CatalogProduct](#catalogproduct)
     - [GroupPrice](#groupprice)
     - [QuoteOrder](#quoteorder)
+    - [Tying it all together](#tying-it-all-together)
 
 # Installing 
 ### Via NPM
@@ -334,7 +335,7 @@ wants from another one, we get a way to clearly and directly know of this, when 
 is installed (upgraded) within the application. 
 
 Actually, as long as another module has a reference on a column in another module, that module can only 
-modify that column in minor ways - and it cannot drop it. 
+modify its column in minor ways - and it cannot drop it. 
 
 ## An e-commerce example - with modules
 A bit more complex example is that of a simple e-commerce backend. It will consist of these loosely coupled modules:
@@ -458,4 +459,78 @@ ___tables:
       product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
       qty: int not_null
       row_price: double 
+```
+
+### Tying it all together
+Since the module dependencies are all expressed within **depends** sections, we can generate a state simply by giving the top-most claim: 
+```bash 
+$ knemm join -s ecomm-backend
+# It generates the state to stdout ... 
+$ ls ecomm-backend/ 
+CatalogProduct_1.yaml  Person_1.yaml  Person_3.yaml  QuoteOrder_1.yaml
+GroupPrice_1.yaml      Person_2.yaml  Person_4.yaml  ___merge.yaml
+```
+
+Let's create a database and generate this schema in it: 
+```bash 
+$ knedb create ?my_pass:ecomm_backend :
+Database <ecomm_backend> on client type <pg> was created.
+$ knemm connect -s ecomm-backend/ ?my_pass:ecomm_backend  
+State in <ecomm-backend/> was connected to DB info in <?my_pass:ecomm_backend>
+apply - DB synced with existing state
+```
+
+The `connect` command above associates a given state with a particular database (so we don't have to keep 
+re-entering the database connection string). 
+
+Lastly lets check in PSQL that the tables were generated: 
+```bash 
+$ psql 
+psql (12.6 (Ubuntu 12.6-0ubuntu0.20.04.1))
+Type "help" for help.
+
+arst=# \c ecomm_backend 
+You are now connected to database "ecomm_backend" as user "arst".
+ecomm_backend=# \dt 
+           List of relations
+ Schema |     Name     | Type  | Owner 
+--------+--------------+-------+-------
+ public | category     | table | arst
+ public | group        | table | arst
+ public | group_price  | table | arst
+ public | person       | table | arst
+ public | person_group | table | arst
+ public | product      | table | arst
+ public | quote        | table | arst
+ public | quote_item   | table | arst
+(8 rows)
+
+ecomm_backend=# 
+``` 
+And lets look at two of the created tables: 
+
+```bash 
+ecomm_backend-# \d+ group_price   
+                                      Table "public.group_price"
+   Column   |       Type       | Collation | Nullable | Default | Storage | Stats target | Description 
+------------+------------------+-----------+----------+---------+---------+--------------+-------------
+ group_id   | integer          |           |          |         | plain   |              | 
+ product_id | integer          |           |          |         | plain   |              | 
+ price      | double precision |           | not null |         | plain   |              | 
+Foreign-key constraints:
+    "group_price_group_id_foreign" FOREIGN KEY (group_id) REFERENCES "group"(id)
+    "group_price_product_id_foreign" FOREIGN KEY (product_id) REFERENCES product(id)
+Access method: heap
+
+ecomm_backend-# \d+ quote_item   
+                                           Table "public.quote_item"
+   Column    |          Type          | Collation | Nullable | Default | Storage  | Stats target | Description 
+-------------+------------------------+-----------+----------+---------+----------+--------------+-------------
+ quote_id    | integer                |           |          |         | plain    |              | 
+ product_sku | character varying(255) |           |          |         | extended |              | 
+ qty         | integer                |           | not null |         | plain    |              | 
+ row_price   | double precision       |           |          |         | plain    |              | 
+Foreign-key constraints:
+    "quote_item_quote_id_foreign" FOREIGN KEY (quote_id) REFERENCES quote(id)
+Access method: heap
 ```
