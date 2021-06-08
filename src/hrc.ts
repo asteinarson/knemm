@@ -33,6 +33,10 @@ function string_arg_decode(s: string) {
 let re_get_args = /^([a-z_A-Z]+)\(([^,]+)(,([^,]+))?\)$/;
 import { all_data_types, db_column_flags, db_type_args, db_with_args, isNumeric, isString } from './db-props';
 
+let rhs_directives:Dict<1> = {
+    "*NOT": 1, 
+    "*UNREF": 1
+}
 
 // Expand any nested data flattened to a string  
 export function formatInternal(tables: Dict<any>): Dict<any> {
@@ -47,6 +51,7 @@ export function formatInternal(tables: Dict<any>): Dict<any> {
                 s = col?.["*"];
             } else {
                 s = table[col_name];
+                if( rhs_directives[s] ) continue;
                 col = {};
             }
             // Have a string to expand ? 
