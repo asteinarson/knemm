@@ -35,7 +35,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 ### Via NPM
 Install with: 
 ```bash
-$ npm i --global knea mm
+$ npm i --global knemm
 ```
 Now there should be two new commands available: 
  - `knemm`: This is the main command to manage schema. 
@@ -477,6 +477,7 @@ $ knedb create ?my_pass:ecomm_backend :
 Database <ecomm_backend> on client type <pg> was created.
 $ knemm connect -s ecomm-backend/ ?my_pass:ecomm_backend  
 State in <ecomm-backend/> was connected to DB info in <?my_pass:ecomm_backend>
+$ knemm apply -s ecomm-backend 
 apply - DB synced with existing state
 ```
 
