@@ -1445,7 +1445,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                         else {
                             // *UNREF on the column 
                             if (!isString(m_col) && m_col.___refs) {
-                                delete m_col.___refs[module];
+                                delete m_col.___refs[claim.id.branch];
                             }
                         }
                     }
