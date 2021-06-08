@@ -570,14 +570,14 @@ export function normalizeClaim(
     let deps = r.depends;
     if (deps) {
         if (!isDict(deps))
-            return errorRv(`normalizeClaim: Unknown format for dependency: ${deps}`);
+            return errorRv(`normalizeClaim: Unknown format for dependency: ${deps} (in ${file})`);
 
         for (let module in deps) {
             let dep = deps[module];
             if (!dep.___version)
-                return errorRv(`normalizeClaim: No version for dependency: ${module}`);
+                return errorRv(`normalizeClaim: No version for dependency: ${module}  (in ${file})`);
             let ver = versionOf(dep);
-            if (!ver) return errorRv(`normalizeClaim: Cannot parse version for dependency: ${module} - ${dep.___version}`);
+            if (!ver) return errorRv(`normalizeClaim: Cannot parse version for dependency: ${module} - ${dep.___version}  (in ${file})`);
             //dep.___version = ver as any;
             delete dep.___version;
             let dep_fmt = reformatTables(dep,format);
@@ -663,7 +663,7 @@ export async function toStateClaim(file_or_db: string, options: Dict<any>): Prom
             }
         }
         if (!r) {
-            return errorRv(`toStateClaim - File not found: ${file_or_db}`);
+            return errorRv(`toStateClaim - Could not load: ${file_or_db}`);
         }
     }
 
