@@ -424,8 +424,6 @@ Here is an implementation:
 id: QuoteOrder_1 
 
 depends: 
-  Person: 4
-  CatalogProduct: 1 
   GroupPrice: 
     ___version: 1
     # QuoteOrder needs to access these fields in group_price:   
