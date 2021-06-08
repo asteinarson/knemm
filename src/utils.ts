@@ -57,6 +57,7 @@ export function preferGet<T>(k: string, dict1: Dict<T>, dict2: Dict<T>, fallback
     return tryGet(k, dict2, fallback_value);
 }
 
+// Get the first key of an object, optionally excluding one or several keys 
 export function firstKey(o: object, exclude_keys?: string | Dict<any>): any {
     if (typeof o == "object") {
         if (isString(exclude_keys))
