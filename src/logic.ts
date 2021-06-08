@@ -1394,6 +1394,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
 
             // Iterate the tables in this module we depend on
             for (let t in tables) {
+                if( t=="___version" ) continue;
                 let table = tables[t];
                 let m_tbl = merge[t];
                 if (isDict(table)) {
@@ -1614,7 +1615,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                                 }
                                             }
                                             break;
-                                            
+
                                         default:
                                             break;
                                     }
