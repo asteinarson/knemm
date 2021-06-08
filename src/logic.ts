@@ -1524,7 +1524,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                         }
                                     }
 
-                                    // If it is a referred property we cannot change it 
+                                    // If it is a fixed referred property we cannot change it 
                                     let reason: string;
                                     if (m_col_ts.___refs && db_ref_lockable[k]) {
                                         let path: string[] = [];

@@ -11,7 +11,7 @@ import { jestLogCaptureStart, jestLogGet, claimsToFile, fileOf, jestWarnCaptureS
 
 jestLogCaptureStart();
 
-import { claim_p1, claim_p2, claim_p3, claim_p4, claim_use_p1, claim_use_p2, claim_use_p3, claim_use_p3_err, claim_use_p3_ok } from './claims';
+import { claim_p1, claim_p2, claim_p3, claim_p4, claim_p5, claim_p6, claim_p7, claim_use_p1, claim_use_p2, claim_use_p3, claim_use_p3_err, claim_use_p3_ok, claim_use_p5 } from './claims';
 import { tmpdir } from 'os';
 import { existsSync, rmSync } from 'fs';
 import { Tables } from '../types';
@@ -132,7 +132,7 @@ describe("describe - extend state 2", () => {
         // We got the wrong one of this state otherwise
         claimsToFile([claim_use_p2]);
 
-        let state_dir = pJoin(tmpdir(), "state1");
+        let state_dir = pJoin(tmpdir(), "state2");
         let m_yaml = pJoin(state_dir, "___merge.yaml");
         expect(existsSync(m_yaml)).toBeTruthy();
 
@@ -167,6 +167,28 @@ describe("describe - extend state 2", () => {
             { internal: true });
         expect(r).toBe(0);
 
+    });
+});
+
+
+claimsToFile([claim_p5, claim_use_p5, claim_p6, claim_p7]);
+describe("describe - extend state 3", () => {
+    test("cmd join - extend state 3", async () => {
+        let state_dir = pJoin(tmpdir(), "state3");
+        let m_yaml = pJoin(state_dir, "___merge.yaml");
+        expect(existsSync(m_yaml)).toBeTruthy();
+
+        // This should succeed - can expand data_type, even if reffed 
+        let r = await handleOneArgCmd("join",
+            [fileOf(claim_p6), fileOf(claim_use_p5)],
+            { internal: true });
+        expect(r).toBe(0);
+
+        // This should fail - Cannot drop column when reffed 
+        r = await handleOneArgCmd("join",
+            [fileOf(claim_p7), fileOf(claim_use_p5)],
+            { internal: true });
+        expect(r).not.toBe(0);
     });
 });
 

@@ -4,7 +4,7 @@ test("claims dummy test", () => {
     expect(1).toBe(1);
 });
 
-import {Claim, State} from "../types";
+import { Claim, State } from "../types";
 import { deepCopy } from "../utils";
 
 export let claim_p1: Claim = {
@@ -163,9 +163,9 @@ export let claim_use_p3_err: Claim = {
             ___version: 3,
             person: {
                 yob: {
-                // Wrong ref, both type and property
-                data_type: "bigint",
-                is_nullable: true,
+                    // Wrong ref, both type and property
+                    data_type: "bigint",
+                    is_nullable: true,
                 },
             },
         }
@@ -210,6 +210,73 @@ export let claim_use_p3_ok: Claim = {
         }
     },
     ___tables: {
+    }
+};
+
+export let claim_p5: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 5
+    },
+    ___tables: {
+        person: {
+            // Recreate column 
+            age: {
+                data_type: "int"
+            },
+        },
+    }
+};
+
+export let claim_use_p5: Claim = {
+    format: "internal",
+    id: {
+        branch: "up",
+        version: 5
+    },
+    depends: {
+        p: {
+            ___version: 5,
+            person: {
+                // Make a ref to it 
+                age: {
+                    data_type: "int"
+                },
+            },
+        }
+    },
+    ___tables: {
+    }
+};
+
+export let claim_p6: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 6
+    },
+    ___tables: {
+        person: {
+            // Widen field, should work, even if reffed 
+            age: {
+                data_type: "bigint"
+            },
+        },
+    }
+};
+
+export let claim_p7: Claim = {
+    format: "internal",
+    id: {
+        branch: "p",
+        version: 7
+    },
+    ___tables: {
+        person: {
+            // Try to drop reffed field, should fail 
+            age: "*NOT"
+        },
     }
 };
 
