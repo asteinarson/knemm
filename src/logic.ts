@@ -1415,7 +1415,7 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                     // of this particular module. Then that can be used when deciding 
                                     // what the module itself can / cannot modify.
                                     // Make a copy of ref_col, as we manipulate and maybe discard
-                                    let ref_col = m_col.___refs[module] || {};
+                                    let ref_col = m_col.___refs?.[module] || {};
                                     ref_col = { ...ref_col, ...col, ___version: claim.id.version };
                                     let e_cnt = errors.length;
                                     for (let p in col) {
