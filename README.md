@@ -454,7 +454,7 @@ ___tables:
       is_paid: boolean      # Payed or not ? 
       is_shipped: boolean   # Shipped or not ? 
     quote_item:
-      quote_id: int foreign_key(quote,id)  # The quote this row belongs to 
+      quote_id: int foreign_key(quote,id)  # The quote that this row belongs to 
       product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
       qty: int not_null
       row_price: double 
