@@ -373,7 +373,7 @@ ___tables:
 ```
 
 ### GroupPrice
-For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (that requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4:th claim there: 
+For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (which requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4:th claim there: 
 
 ```yaml
 id: Person_4
@@ -391,19 +391,23 @@ and the `CatalogProduct` modules:
 
 ```yaml
 id: GroupPrice_1 
+
 depends: 
-  Person: 4
-  CatalogProduct: 1 
-___tables:
-    # This is a table ref (making claims on a dependency):
+  CatalogProduct: 
+    ___version: 1
+    # This is a table ref to CatalogProduct :
     product: # Below two columns are our explicit dependencies for products 
-      id: ref(int) pk            # We need the ID to be unique integers 
-      sku: ref(varchar) unique   # varchar (with no length) is the simplest string datatype. 
-      price: ref(float)          # float is enough for us, it allows for double or decimal as well
-    # This is also a table ref: 
+      id: int pk            # We need the ID to be unique integers 
+      sku: varchar unique   # varchar (with no length) is the simplest string datatype. 
+      price: float          # float is enough for us, it allows for double or decimal as well
+  Person: 
+    ___version: 4
+    # We depend on the group table in Person: 
     group: # Below two columns are our explicit dependencies for the group functionality 
-      id: ref(int) pk  
-      name: ref(varchar)
+      id: int pk  
+      name: varchar
+
+___tables:
     # This is a table being declared in this module
     group_price:
       group_id: int foreign_key(group,id)
@@ -415,6 +419,48 @@ ___tables:
 An order is an object tied to a customer (`person`) with order rows, each with a product, with a quantity field, and a `row_price` field. 
 Quotes (or carts) are very similar to orders, only that they have not yet been placed. 
 Here is an implementation: 
+
+```yaml
+id: QuoteOrder_1 
+
+depends: 
+  Person: 4
+  CatalogProduct: 1 
+  GroupPrice: 
+    ___version: 1
+    # QuoteOrder needs to access these fields in group_price:   
+    group_price:
+      group_id: int
+      product_id: int
+      price: double not_null 
+    # Since Person is a dependency of GroupPrice, it is automatically pulled in:
+    person: 
+      id: int pk
+    group: # Below two columns are our explicit dependencies for the group functionality 
+      id: int pk  
+      name: varchar
+    # Since CatalogProduct is also a dependency of GroupPrice, it is automatically pulled in:
+    product: 
+      id: int pk 
+      sku: varchar unique
+      price: float
+
+___tables:
+    # These are tables being declared in this module 
+    quote:
+      id: int pk auto_inc  
+      person_id: int foreign_key(person,id)
+      email: text
+      total_price: double 
+      is_order: boolean     # This field separates placed orders from quotes 
+      is_paid: boolean      # Payed or not ? 
+      is_shipped: boolean   # Shipped or not ? 
+    quote_item:
+      quote_id: int foreign_key(quote,id)  # The quote this row belongs to 
+      product_sku: varchar(255)   # It is a reference to the product column, but we don't make it a FK
+      qty: int not_null
+      row_price: double 
+```
 
 ```yaml
 id: QuoteOrder_1 

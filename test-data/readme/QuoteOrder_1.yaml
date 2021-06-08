@@ -1,24 +1,28 @@
 id: QuoteOrder_1 
+
 depends: 
   Person: 4
   CatalogProduct: 1 
-  GroupPrice: 1
-___tables:
-    # Similar references as in the example above:
-    person: 
-      id: ref(int) pk 
-    product: 
-      id: ref(int) pk 
-      sku: ref(varchar) unique
-      price: ref(float)       
-    group: # Below two columns are our explicit dependencies for the group functionality 
-      id: ref(int) pk  
-      name: ref(varchar)
-    # From perspective of this module, below columns are refs 
+  GroupPrice: 
+    ___version: 1
+    # QuoteOrder needs to access these fields in group_price:   
     group_price:
-      group_id: ref(int)
-      product_id: ref(int)
-      price: ref(double) not_null 
+      group_id: int
+      product_id: int
+      price: double not_null 
+    # Since Person is a dependency of GroupPrice, it is automatically pulled in:
+    person: 
+      id: int pk
+    group: # Below two columns are our explicit dependencies for the group functionality 
+      id: int pk  
+      name: varchar
+    # Since CatalogProduct is also a dependency of GroupPrice, it is automatically pulled in:
+    product: 
+      id: int pk 
+      sku: varchar unique
+      price: float
+
+___tables:
     # These are tables being declared in this module 
     quote:
       id: int pk auto_inc  
