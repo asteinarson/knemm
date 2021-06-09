@@ -58,7 +58,7 @@ This is example of a connection file, `my_db.json`
 ```json 
 {
     "host": "localhost",
-    "host": "client",
+    "client": "mysql",
     "user": "arst",
     "password": "the_password",
     "database": "all_products"
