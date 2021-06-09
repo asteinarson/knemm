@@ -1,3 +1,5 @@
+## [Back to docs](./index.md) <!-- omit in toc -->
+
 # Database connection specifier <!-- omit in toc -->
 To be able to specify connection details for a specific database from the CLI, a simple syntax was 
 developed. This example tests if a database `my_db` exists on the PostgresQL client:  
@@ -8,7 +10,6 @@ no
 The dbspec string format is used in all `knedb` commands and also in any of the `knemm` commands 
 that interface a database. 
 
-## [Back to docs](./index.md) <!-- omit in toc -->
 
 ## Contents <!-- omit in toc --> 
 - [Lookup order](#lookup-order)
