@@ -10,10 +10,10 @@ These are links to per topic documentation. For an introduction and overview, go
   - [rebuild](rebuild.md)
   - [connect](connect.md)
   - [apply](apply.md)
-  - [info](connect.md)
   - [diff](diff.md)
   - [possible](possible.md)
   - [fulfills](fulfills.md)
+  - [info](connect.md)
 - Commands, `knedb`
   - Introduction to [database specifier](dbspec.md)
   - [echo](echo.md)

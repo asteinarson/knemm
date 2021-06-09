@@ -1,34 +1,32 @@
 ## [Back to index](index.md)
 
-# apply
+# echo
 
 ```
-knemm apply [options] [claims...]
+knedb echo [options] <db_spec> [name_of_db]
 ```
-The command  of: 
-  * A **state** 
-  * A number of **claims** 
+The command will echo all resulting connection information based on the **dbspec** and additional fallback configuration - [more information here](dbspec.md).
 
+The command can be used to check that the connection data really is what one expects, one can test the connection (`-t`) with it, and one can generate connection files from it (`-o` option). 
+
+The last argument `name_of_db` is optional. 
 
 ## Example
 ```
-$ knemm apply -s my-app-state Person_2.yaml Product_4.yaml 
+$ knedb echo @mysql:my-app  
+client: mysql
+connection:
+  host: localhost
+  user: arst
 ```
-
-The example will look for a state (a `___merge.yaml`) in directory `my-app-state` and merge any claims in the `Person` and `Product` modules (up to version 2 and 4). Since we have not specified a directory to write the resulting state, it is echoed to **stdout**. 
-
-If we want to read and store the state on disk, we use the `-s` option, with a directory name: 
-
-```
-$ knemm join -s my-app-state/ Person_2.yaml Product_4.yaml 
-```
-
-If the state did not exist before, the directory is initialized as an empty state, before merging the claims. 
 
 ## Options
 
 | Short form | Long form | Explanation | 
 | --- | --- | --- | 
-| `-s <dir>` | `--state <dir>` | Where to read and store the joined state | 
-| `-p <paths>` | `--path <paths>` | Additional paths, where to look for dependency claims. |
+| `-t` | `--test` | Test the connection - with a simple 'SELECT 1+1' | 
+| `-j` | `--json` | Generate output in JSON - not in YAML | 
+| `-o` | `--outfile` | Outputs a new DB file for the DB connection | 
+
+
 

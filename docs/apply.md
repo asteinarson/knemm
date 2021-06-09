@@ -6,8 +6,8 @@
 knemm apply [options] [claims...]
 ```
 
-The command does the same as `join` except that it as a last step applies any changes to a
-database. 
+The command does the same as `join` except that as a last step applies all changes to a
+database schema. 
 
 ## Example
 ```
@@ -23,7 +23,7 @@ the [connect](connect.md) command).
 Most options for [join](join.md) also are valid for `apply`. Here are the `apply` specific ones: 
 | Short form | Long form | Explanation | 
 | --- | --- | --- | 
-| `-d <db_spec>` | `--database <db_spec>` | The database to sync with the state. [dbspec docs](dbspec.md) | 
+| `-d <db_spec>` | `--database <db_spec>` | The database to sync with the state. [dbspec docs.](dbspec.md) | 
 | `-Q ` | `--show-queries` | Show generated SQL queries (instead of executing them). |
 
 
