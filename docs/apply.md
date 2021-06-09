@@ -5,30 +5,25 @@
 ```
 knemm apply [options] [claims...]
 ```
-The command  of: 
-  * A **state** 
-  * A number of **claims** 
 
+The command does the same as `join` except that it as a last step applies any changes to a
+database. 
 
 ## Example
 ```
-$ knemm apply -s my-app-state Person_2.yaml Product_4.yaml 
+$ knemm apply -s my-app-state -d @pg:my-app Person_2.yaml Product_4.yaml 
 ```
 
-The example will look for a state (a `___merge.yaml`) in directory `my-app-state` and merge any claims in the `Person` and `Product` modules (up to version 2 and 4). Since we have not specified a directory to write the resulting state, it is echoed to **stdout**. 
-
-If we want to read and store the state on disk, we use the `-s` option, with a directory name: 
-
-```
-$ knemm join -s my-app-state/ Person_2.yaml Product_4.yaml 
-```
-
-If the state did not exist before, the directory is initialized as an empty state, before merging the claims. 
+The command will apply given claims onto `my-app-state` and then sync the database specified
+by `@pg:my-app`. (To associate a given state with a particular database, use 
+the [connect](connect.md) command).
 
 ## Options
 
+Most options for [join](join.md) also are valid for `apply`. Here are the `apply` specific ones: 
 | Short form | Long form | Explanation | 
 | --- | --- | --- | 
-| `-s <dir>` | `--state <dir>` | Where to read and store the joined state | 
-| `-p <paths>` | `--path <paths>` | Additional paths, where to look for dependency claims. |
+| `-d <db_spec>` | `--database <db_spec>` | The database to sync with the state. [dbspec docs](dbspec.md) | 
+| `-Q ` | `--show-queries` | Show generated SQL queries (instead of executing them). |
+
 
