@@ -49,8 +49,8 @@ If the state did not exist before, the directory is initialized as an empty stat
 | `-T <xti file>` | `--xti <xti file>` | Read extra type info from this file. This is usually automatichally handled.  | 
 | `-i` | `--internal` | Generate output in **internal** format (not **hrc**)  | 
 | `-j` | `--json` | Generate output in **JSON** format (not **YAML**)  | 
-| `-X <patterns>` | `--exclude <patterns>` | Exclude tables/columns based on these patterns | 
-| `-I <patterns>` | `--include <patterns>` | Include tables/columns based on these patterns | 
+| `-X <patterns>` | `--exclude <patterns>` | Exclude tables/columns based on these patterns - **NOT TESTED** | 
+| `-I <patterns>` | `--include <patterns>` | Include tables/columns based on these patterns - **NOT TESTED** | 
 | `-D` | `--dry` | Do not modify the state after merging  | 
 
 ## Result
