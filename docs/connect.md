@@ -1,34 +1,18 @@
 ## [Back to index](index.md)
 
-# apply
-
+# connect
 ```
-knemm apply [options] [claims...]
+knemm connect -s <state dir> <db_spec>
 ```
-The command  of: 
-  * A **state** 
-  * A number of **claims** 
+The command will connect a state with a specific database. [Documentation on dbspec here](dbspec.md).
 
 
 ## Example
 ```
-$ knemm apply -s my-app-state Person_2.yaml Product_4.yaml 
+$ knemm connect -s my-app-state @pg:my-app 
 ```
 
-The example will look for a state (a `___merge.yaml`) in directory `my-app-state` and merge any claims in the `Person` and `Product` modules (up to version 2 and 4). Since we have not specified a directory to write the resulting state, it is echoed to **stdout**. 
-
-If we want to read and store the state on disk, we use the `-s` option, with a directory name: 
-
-```
-$ knemm join -s my-app-state/ Person_2.yaml Product_4.yaml 
-```
-
-If the state did not exist before, the directory is initialized as an empty state, before merging the claims. 
+The example will create a file `my-app-state/___db.yaml`. It will store `pg` as client type and `my-app` as the database in it.  
 
 ## Options
-
-| Short form | Long form | Explanation | 
-| --- | --- | --- | 
-| `-s <dir>` | `--state <dir>` | Where to read and store the joined state | 
-| `-p <paths>` | `--path <paths>` | Additional paths, where to look for dependency claims. |
-
+None except for `-s` - which is mandatory.
