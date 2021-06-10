@@ -30,7 +30,7 @@ The command will compare two states (or claims), and show the diff required for 
 
 ## Example
 The states above are described in `Person_1.yaml` and `Person_2.yaml`. However the last is a claim
-building on the first one. To get the a state from that we do: 
+building on the first one. To get the a state from that claim we do: 
 ```
 $ knemm join -s Person_2-state Person_2.yaml
 ```
