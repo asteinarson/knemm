@@ -5,7 +5,7 @@
 ```
 knemm diff [options] <candidate> <target>
 ```
-The command will compare two states (or claims), and show the diff `candidate` fulfills the `target`. To illustrate the comparison done, we can use two versions of the same table: 
+The command will compare two states (or claims), and show the diff required for `candidate` to fulfill `target`. To illustrate the comparison done, we can use two versions of the same table: 
 
 ### The candidate:
 | Column | Type | 
