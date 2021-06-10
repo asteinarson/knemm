@@ -1,7 +1,6 @@
 ## [Back to index](index.md)
 
 # echo
-
 ```
 knedb echo [options] <db_spec> [name_of_db]
 ```
@@ -12,7 +11,7 @@ The command can be used to check that the connection data really is what one exp
 The last argument `name_of_db` is optional. 
 
 ## Example
-```
+```bash
 $ knedb echo @mysql:my-app  
 client: mysql
 connection:
