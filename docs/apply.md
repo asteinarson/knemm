@@ -6,8 +6,8 @@
 knemm apply [options] [claims...]
 ```
 
-The command does the same as `join` except that as a last step applies all changes to a
-database schema. 
+The command does the same as `join` except that as a last step applies all changes to an 
+actual database schema. I.e. it applies generated SQL schema statements, representing a diff, on the database. 
 
 ## Example
 ```

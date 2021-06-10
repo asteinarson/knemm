@@ -22,4 +22,4 @@ my-app-state/___merge.yaml
 
 ## Options
 
-None. 
+Only the `-s` option which is mandatory. 

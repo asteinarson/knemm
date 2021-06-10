@@ -2,7 +2,7 @@
 
 These are links to per topic documentation. For an introduction and overview, go to the [readme](../README.md).
 
-**NOTE:** This is work in progress. All topic pages below do not exist. 
+**NOTE:** This is work in progress. Some page(s) below may not be complete. 
 
 ## Topics
 - Commands - **`knemm`**

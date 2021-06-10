@@ -46,7 +46,7 @@ If the state did not exist before, the directory is initialized as an empty stat
 | `-p <paths>` | `--path <paths>` | Additional paths, where to look for dependency claims. (By default all directories given in claim paths are searched - so this is rarely needed) | 
 | `-N ` | `--no-deps` | Skip looking for dependencies in merge phase (usually for debug) | 
 | `-L` | `--loose-names` | Allow arbitrarily named claims (the name is declared inside the claim). This can decrease performance as it forces `knemm` to try to parse any YAML/JSON file in known directories. | 
-| `-T <xti file>` | `--xti <xti file>` | Read extra type info from this file. This is usually automatichally handled.  | 
+| `-T <xti file>` | `--xti <xti file>` | Read extra type info from this file. This is usually automatically handled.  | 
 | `-i` | `--internal` | Generate output in **internal** format (not **hrc**)  | 
 | `-j` | `--json` | Generate output in **JSON** format (not **YAML**)  | 
 | `-X <patterns>` | `--exclude <patterns>` | Exclude tables/columns based on these patterns - **NOT TESTED** | 
