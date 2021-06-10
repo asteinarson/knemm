@@ -7,7 +7,7 @@ developed. This example tests if a database `my_db` exists on the PostgresQL cli
 $ knedb exists @pg:my_db   
 no
 ```
-The dbspec string format is used in all `knedb` commands and also in any of the `knemm` commands 
+The `dbspec` string format is used in all `knedb` commands and also in those `knemm` commands 
 that interface a database. 
 
 
@@ -25,20 +25,20 @@ For most clients, more information than the database name is needed. It can eith
 in the DB specifier string, or if not there, two fallback levels are used, to look for default values. 
 The whole lookup process, for connection data becomes: 
 
- 1. Anything specified in the dbspec string has highest priority.
+ 1. Anything specified in the `dbspec` string has highest priority.
  2. If the DB spec gives a JSON/YAML file to consult, it next looks in that.
  3. It lastly looks in environment variables (including parsing the `.env` file).
 
 ## Syntax of the DB spec string
 Different "rare" characters are used to mark the beginning of each field. They are: 
  - `%` - This marks that the name of a JSON/YAML file will follow next. Example:
-   - `%new_shop-stage.json` 
+   - `%new_shop-staging.json` 
    - If no filename is given, an attemt is used to load one of `%.json` or `%.yaml` 
- - `:` - This specifies the database name
+ - `:` - This specifies the database name:
    - `:my_app_name` 
  - `@` - The client type name follows:
    - `@mysql`
- - `=` - A host name or IP address follows 
+ - `=` - A host name or IP address follows: 
    - `=192.168.0.123`
   
 ### User and password specification:

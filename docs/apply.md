@@ -15,8 +15,9 @@ $ knemm apply -s my-app-state -d @pg:my-app Person_2.yaml Product_4.yaml
 ```
 
 The command will apply given claims onto `my-app-state` and then sync the database specified
-by `@pg:my-app`. (To associate a given state with a particular database, use 
-the [connect](connect.md) command).
+by `@pg:my-app`. 
+
+To associate a given state with a particular database, use the [connect](connect.md) command.
 
 ## Options
 
