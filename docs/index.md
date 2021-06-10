@@ -5,7 +5,7 @@ These are links to per topic documentation. For an introduction and overview, go
 **NOTE:** This is work in progress. All topic pages below do not exist. 
 
 ## Topics
-- Commands - `knemm`
+- Commands - **`knemm`**
   - [join](join.md)
   - [rebuild](rebuild.md)
   - [connect](connect.md)
@@ -14,10 +14,10 @@ These are links to per topic documentation. For an introduction and overview, go
   - [possible](possible.md)
   - [fulfills](fulfills.md)
   - [info](connect.md)
-- Commands, `knedb`
+- Commands - **`knedb`**
   - Introduction to [database specifier](dbspec.md)
   - [echo](echo.md)
   - [exists](exists.md)
   - [create](create.md)
   - [drop](drop.md)
-- 
+  
