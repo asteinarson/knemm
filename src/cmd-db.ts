@@ -12,7 +12,7 @@ function addOutputOptions(cmd: cmder.Command) {
 }
 
 function addCreatedbOptions(cmd: cmder.Command) {
-    cmd.option("--replace", "Together with a state (-s), instructs to replace the current db connection");
+    cmd.option("-r --replace", "Together with a state (-s), instructs to replace the current db connection");
     addOutputOptions(cmd);
 }
 

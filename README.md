@@ -4,6 +4,7 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
 
 **STATUS:** `knemm` is still in early development. The most central concepts (claims, states, modules) and basic commands should remain stable. Features and details are very much still stabilizing. Feedback and contribution is welcome.  
 
+## Contents <!-- omit in toc --> 
 - [Installing](#installing)
     - [Via NPM](#via-npm)
     - [Via git repo](#via-git-repo)
@@ -31,17 +32,20 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
     - [QuoteOrder](#quoteorder)
     - [Tying it all together](#tying-it-all-together)
 
-# Installing 
-### Via NPM
+### Documentation 
+This file is an overview, an introduction. For per topic documentation - [go here](docs/index.md).
+
+# Installing  
+### Via NPM 
 Install with: 
 ```bash
 $ npm i --global knemm
 ```
 Now there should be two new commands available: 
- - `knemm`: This is the main command to manage schema. 
+ - `knemm`: This is the main command to manage DB schema. 
  - `knedb`: This is a companion command to handle/create/drop databases. 
 
-Interfaces for PostgresQL (pg), MySQL and Sqlite3 are enabled by default in the package. 
+Interfaces for PostgresQL (pg), MariaDB / MySQL and Sqlite3 are enabled by default in the package. 
 
 ### Via git repo
 Clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the TypeScript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
@@ -55,7 +59,7 @@ under Windows).
 # Claims
 Knemm uses a declarative YAML (or JSON) syntax (termed a **claim**), specifying what tables should exist and what is expected of named columns. A claim gives a minimum requirement that a database (or a collection of other claims - a **state**) should satisfy. 
 
-Here's what a claim can look like (the example below uses this stored in a file `Person_1.yaml`): 
+Here's what a claim, stored in a file `Person_1.yaml`, can look like: 
 ```yaml
 id:
   branch: Person
@@ -246,7 +250,7 @@ $ knemm join -s person-app
 ```
 
 ## The purpose of states
-Maybe you see now that `knemm` primarily builds and manages a JSON tree representing database requirements. Claims are usually not applied directly to databases. 
+Maybe you see now that `knemm` primarily builds and manages JSON trees representing database requirements. Claims are usually not applied directly to databases. 
 
 The key to why this works is that every database schema can be converted into a state (a YAML/JSON tree). And from there we can process, compare and generate diffs. These diffs can then be applied back on an actual DB.
 
