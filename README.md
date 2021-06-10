@@ -48,7 +48,7 @@ Now there should be two new commands available:
 Interfaces for PostgresQL (pg), MariaDB / MySQL and Sqlite3 are enabled by default in the package. 
 
 ### Via git repo
-Clone this repository (to a Linux/Unix host). Then run `npm install`. After that, build the TypeScript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
+Clone this repository. Then run `npm install`. After that, build the TypeScript sources, using `tsc`. Then there should be a global command `knemm` available in the terminal. (Try `npm link` if NPM has not generated exec stubs).
 
 ### Launchers in package.json
 `knemm` is compiled as an ESM module. Because of Node internals, it needs an extra launch step 
