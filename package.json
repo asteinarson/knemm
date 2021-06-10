@@ -1,6 +1,6 @@
 {
   "name": "knemm",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Intuitive SQL schema management with declarative YAML",
   "main": "cmd.js",
   "type": "module",

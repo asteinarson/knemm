@@ -10,12 +10,13 @@ of the new database is included in `dbspec` (as maybe when refering to a JSON/YA
 [More info on `dbspec` here.](dbspec.md)
 
 ## Example
+First we try: 
 ```bash 
 $ knedb drop arst?the_pass@pg:test14 : 
 knedb - drop: The --force option is required to drop the DB
 ```
 
-So we add the `--force` option: 
+No success. So we add the `--force` option: 
 
 ```bash 
 $ knedb drop --force arst?the_pass@pg:test14 : 
