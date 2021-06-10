@@ -1,0 +1,44 @@
+id:
+  branch: CatalogProduct
+  version: 1
+___tables:
+  category:
+    id:
+      data_type: int
+      is_primary_key: true
+      has_auto_increment: true
+    name:
+      max_length: 255
+      data_type: varchar
+    parent_id:
+      data_type: int
+      foreign_key:
+        table: category
+        column: id
+  product:
+    id:
+      data_type: int
+      is_primary_key: true
+      has_auto_increment: true
+    sku:
+      max_length: 255
+      data_type: varchar
+      is_unique: true
+      is_nullable: false
+    name:
+      max_length: 255
+      data_type: varchar
+    price:
+      data_type: double
+      is_nullable: false
+    category_id:
+      data_type: int
+      foreign_key:
+        table: category
+        column: id
+source: '*file'
+file: CatalogProduct_1.yaml
+format: internal
+depends: {}
+___dependee:
+  GroupPrice: 1

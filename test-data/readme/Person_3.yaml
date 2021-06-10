@@ -1,0 +1,11 @@
+___tables:
+  person:
+    email:
+      data_type: text
+format: internal
+id:
+  branch: Person
+  version: 3
+source: '*file'
+file: Person_3.yaml
+depends: {}

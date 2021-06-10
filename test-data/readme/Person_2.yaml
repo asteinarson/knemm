@@ -1,0 +1,12 @@
+___tables:
+  person:
+    second_name:
+      max_length: 64
+      data_type: varchar
+format: internal
+id:
+  branch: Person
+  version: 2
+source: '*file'
+file: Person_2.yaml
+depends: {}

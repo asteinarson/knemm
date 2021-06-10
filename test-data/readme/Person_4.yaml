@@ -1,0 +1,29 @@
+id:
+  branch: Person
+  version: 4
+___tables:
+  group:
+    id:
+      data_type: int
+      is_primary_key: true
+      has_auto_increment: true
+    name:
+      max_length: 255
+      data_type: varchar
+  person_group:
+    person_id:
+      data_type: int
+      foreign_key:
+        table: person
+        column: id
+    group_id:
+      data_type: int
+      foreign_key:
+        table: group
+        column: id
+source: '*file'
+file: Person_4.yaml
+format: internal
+depends: {}
+___dependee:
+  GroupPrice: 1
