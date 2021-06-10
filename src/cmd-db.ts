@@ -18,7 +18,6 @@ function addCreatedbOptions(cmd: cmder.Command) {
 
 function addDropdbOptions(cmd: cmder.Command) {
     cmd.option("-F --force", "Use force. The database will not be dropped without it");
-    addOutputOptions(cmd);
 }
 
 import { CmdDesc, addBaseOptions } from './cmd-handlers';
