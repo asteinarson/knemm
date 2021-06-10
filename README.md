@@ -378,7 +378,7 @@ ___tables:
 ```
 
 ### GroupPrice
-For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (which requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4:th claim there: 
+For `group_price` we want to create customer (`person`) groups, with labels. We want to expand the previous approach, and enable a person to belong to several groups (which requires a dedicated table). On closer thought, this is quite a generic concept, and it can be useful to implement it directly in the `Person` module. We make the 4:th claim in the `Person` module: 
 
 ```yaml
 id: Person_4
@@ -401,7 +401,7 @@ depends:
   CatalogProduct: 
     ___version: 1
     # This is a table ref to CatalogProduct :
-    product: # Below two columns are our explicit dependencies for products 
+    product: # Below three columns are our explicit dependencies for products 
       id: int pk            # We need the ID to be unique integers 
       sku: varchar unique   # varchar (with no length) is the simplest string datatype. 
       price: float          # float is enough for us, it allows for double or decimal as well
@@ -421,8 +421,9 @@ ___tables:
 ```
 
 ### QuoteOrder 
-An order is an object tied to a customer (`person`) with order rows, each with a product, with a quantity field, and a `row_price` field. 
-Quotes (or carts) are very similar to orders, only that they have not yet been placed. 
+An order is an object tied to a customer (`person`) with order rows. Each such row refers to a product, it has a quantity field, and a `row_price` field. 
+
+Quotes (or carts) are very similar to orders, only that they have not yet been placed. We can use a **boolean** flag for that. 
 Here is an implementation: 
 
 ```yaml
@@ -468,7 +469,7 @@ ___tables:
 ### Tying it all together
 Since the module dependencies are all expressed within **depends** sections, we can generate a state simply by giving the top-most claim: 
 ```bash 
-$ knemm join -s ecomm-backend
+$ knemm join -s ecomm-backend QuoteOrder_1.yaml 
 # It generates the state to stdout ... 
 $ ls ecomm-backend/ 
 CatalogProduct_1.yaml  Person_1.yaml  Person_3.yaml  QuoteOrder_1.yaml
@@ -477,16 +478,16 @@ GroupPrice_1.yaml      Person_2.yaml  Person_4.yaml  ___merge.yaml
 
 Let's create a database and generate this schema in it: 
 ```bash 
-$ knedb create ?my_pass:ecomm_backend :
+$ knedb create me?my_pass@pg:ecomm_backend :
 Database <ecomm_backend> on client type <pg> was created.
-$ knemm connect -s ecomm-backend/ ?my_pass:ecomm_backend  
-State in <ecomm-backend/> was connected to DB info in <?my_pass:ecomm_backend>
+$ knemm connect -s ecomm-backend/ me?my_pass@pg:ecomm_backend  
+State in <ecomm-backend/> was connected to DB info in <me?my_pass@pg:ecomm_backend>
 $ knemm apply -s ecomm-backend 
 apply - DB synced with existing state
 ```
 
-The `connect` command above associates a given state with a particular database (so we don't have to keep 
-re-entering the database connection string). 
+The `connect` command above associates a given state with a particular database (so we don't 
+have to keep re-entering the database connection string). 
 
 Lastly lets check in PSQL that the tables were generated: 
 ```bash 
