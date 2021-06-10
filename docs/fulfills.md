@@ -1,34 +1,18 @@
 ## [Back to index](index.md)
 
-# apply
-
+# fulfills 
+**The fulfills command is still preliminary!** 
 ```
-knemm apply [options] [claims...]
+knemm fulfills  [options] <candidate> <target>
 ```
-The command  of: 
-  * A **state** 
-  * A number of **claims** 
+The command checks if one state (or claim) - the **candidate** - fulfills another one - the
+**target**. If it does so, no output is printed. If it does not fulfill it, the diff required
+to go from **candidate** to **target** is echoed back. 
 
+More docs available on [the diff command](diff.md).
 
-## Example
-```
-$ knemm apply -s my-app-state Person_2.yaml Product_4.yaml 
-```
-
-The example will look for a state (a `___merge.yaml`) in directory `my-app-state` and merge any claims in the `Person` and `Product` modules (up to version 2 and 4). Since we have not specified a directory to write the resulting state, it is echoed to **stdout**. 
-
-If we want to read and store the state on disk, we use the `-s` option, with a directory name: 
-
-```
-$ knemm join -s my-app-state/ Person_2.yaml Product_4.yaml 
-```
-
-If the state did not exist before, the directory is initialized as an empty state, before merging the claims. 
 
 ## Options
 
-| Short form | Long form | Explanation | 
-| --- | --- | --- | 
-| `-s <dir>` | `--state <dir>` | Where to read and store the joined state | 
-| `-p <paths>` | `--path <paths>` | Additional paths, where to look for dependency claims. |
+The options are mostly the same as for the [join command](join.md). 
 

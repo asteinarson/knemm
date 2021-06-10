@@ -29,9 +29,15 @@ The command will compare two states (or claims), and show the diff required for 
 **NOTE:** `diff` is not symmetrical. It says what is required to change one state (the **candidate**) to match another state (the **target**). 
 
 ## Example
-The states above are described in `Person_1.yaml` and `Person_2.yaml`. Let's try it out: 
+The states above are described in `Person_1.yaml` and `Person_2.yaml`. However the last is a claim
+building on the first one. To get the a state from that we do: 
 ```
-$ knemm diff Person_1.yaml Person_2.yaml
+$ knemm join -s Person_2-state Person_2.yaml
+```
+
+Now we can now compare them: 
+```
+$ knemm diff Person_1.yaml Person_2-state
 person:
   second_name:
     max_length: 64
@@ -40,10 +46,10 @@ person:
 
 Then we try reversing the order: 
 ```bash
-$ knemm diff Person_2.yaml Person_1.yaml
+$ knemm diff Person_2-state Person_1.yaml
 {}
 ```
-We got an empty diff back. It means that `Person_2` actually matches `Person_1` as it already is. This makes sense as `Person_2` is just a simple addition to `Person_1`.
+We got an empty diff back. It means that `Person_2` (as a state) actually matches `Person_1` as it already is. This makes sense as `Person_2` is just a simple addition to `Person_1`.
 
 
 ## Options
