@@ -16,6 +16,11 @@ function addCreatedbOptions(cmd: cmder.Command) {
     addOutputOptions(cmd);
 }
 
+function addDropdbOptions(cmd: cmder.Command) {
+    cmd.option("-F --force", "Use force. The database will not be dropped without it");
+    addOutputOptions(cmd);
+}
+
 import { CmdDesc, addBaseOptions } from './cmd-handlers';
 
 let cmds_db: CmdDesc[] = [
@@ -48,7 +53,7 @@ let cmds_db: CmdDesc[] = [
               "If there is a DB specified by <db_spec> the name of the new DB can be given as ':'." ,
         a1: "db_spec",
         a2: "*name_of_db",
-        options: [addBaseOptions]
+        options: [addDropdbOptions, addBaseOptions]
     }
 ];
 

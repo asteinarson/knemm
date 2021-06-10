@@ -1,6 +1,6 @@
 import {
     toStateClaim, matchDiff, dependencySort, mergeClaims, getStateDir, storeState,
-    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim, 
+    toState, rebuildState, reformatTables, connectState, createDb, syncDbWith, fileToClaim,
     sortMergeStoreState, dropDb, existsDb, parseDbSpec, getInitialState, parseDbFile, SyncResult
 } from './logic';
 
@@ -64,7 +64,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
         files = a1 as string[];
         let dirs = getDirsFromFileList(files);
         if (!options.path) options.path = dirs;
-        else options.path = Object.keys(toLut(append(options.path, dirs),1));
+        else options.path = Object.keys(toLut(append(options.path, dirs), 1));
         // Trim paths 
         for (let ix in options.path)
             options.path[ix] = options.path[ix].trim();
@@ -133,9 +133,9 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     parseDbFile(path.join(state_dir, "___db.yaml"));
                 if (!isDict(conn_info)) return errorRv("The <apply> command requires a connected (or specified) database (see <connect>)", 10);
                 // Query logging implies dry running
-                if (options.showQueries==true) options.dry = true;
+                if (options.showQueries == true) options.dry = true;
 
-                function handleSyncResult(rs:SyncResult){
+                function handleSyncResult(rs: SyncResult) {
                     if (rs.type == "queries") {
                         console.log("### Query log");
                         rs.r.forEach(q => console.log(q));
@@ -149,7 +149,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     // repeated twice (with modifying code below).
                     let rs = await syncDbWith(state_base, conn_info, options);
                     if (rs == true) console.log("apply - DB synced with existing state");
-                    else if( handleSyncResult(rs) ) return 100;
+                    else if (handleSyncResult(rs)) return 100;
                 }
 
                 // Apply new claims on state 
@@ -158,11 +158,11 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     let es: string[] = [];
                     for (let f of files) {
                         let r = await toStateClaim(f, options);
-                        if (r){
-                            if( isClaim(r) )
+                        if (r) {
+                            if (isClaim(r))
                                 file_dicts[f] = r;
-                            else 
-                                es.push("apply - only accepts claim: " + f + " found: "+r.source);
+                            else
+                                es.push("apply - only accepts claim: " + f + " found: " + r.source);
                         }
                         else es.push("apply - failed parsing claim: " + f);
                     }
@@ -174,7 +174,7 @@ export async function handleOneArgCmd(cmd: string, a1: string | string[], option
                     // See that DB fulfills those claims
                     let rs = await syncDbWith(state_base, conn_info, options);
                     if (rs == true) console.log("apply - DB synced with new claims merged into state");
-                    else if( handleSyncResult(rs) ) return 103;
+                    else if (handleSyncResult(rs)) return 103;
                 }
                 rc = 0;
                 break;
@@ -289,6 +289,11 @@ export async function handleDbCmd(cmd: string, db_spec: string, dbname: string, 
             }
         case "drop":
             {
+                if (!options.force) {
+                    console.log("knedb - drop: The --force option is required to drop the DB");
+                    rc = 11;
+                    break;
+                }
                 let r = await dropDb(conn_info, dbname);
                 if (!isDict(r)) {
                     console.log("knedb - failed: " + r);
