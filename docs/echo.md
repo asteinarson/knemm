@@ -27,6 +27,3 @@ connection:
 | `-t` | `--test` | Test the connection - with a simple 'SELECT 1+1' | 
 | `-j` | `--json` | Generate output in JSON - not in YAML | 
 | `-o` | `--outfile` | Outputs a new DB file for the DB connection | 
-
-
-
