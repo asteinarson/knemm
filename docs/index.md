@@ -5,7 +5,13 @@ These are links to per topic documentation. For an introduction and overview, go
 **NOTE:** This is work in progress. Some page(s) below may not be complete. 
 
 ## Topics
-- Commands - **`knemm`**
+
+- Declarative YAML/JSON specification
+  - [Table/column declaration syntax](syntax.md)
+  - [Dependencies](dependencies.md)
+  - [Claim IDs](claimIds.md)
+  - [The database specifier](dbspec.md)
+- **`knemm`** - commands
   - [join](join.md)
   - [rebuild](rebuild.md)
   - [connect](connect.md)
@@ -14,8 +20,7 @@ These are links to per topic documentation. For an introduction and overview, go
   - [possible](possible.md)
   - [fulfills](fulfills.md)
   - [info](connect.md)
-- Commands - **`knedb`**
-  - Introduction to [database specifier](dbspec.md)
+- **`knedb`** - commands
   - [echo](echo.md)
   - [exists](exists.md)
   - [create](create.md)
