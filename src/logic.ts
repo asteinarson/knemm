@@ -1628,12 +1628,12 @@ export function mergeClaims(claims: Claim[], merge_base: State | null, options: 
                                     if (!reason)
                                         m_col_ts[k] = col[k];
                                     else {
-                                        errors.push(`mergeClaim - Skipping modification: ${k}: ${m_col[k]} => ${col[k]} ` +
+                                        errors.push(`mergeClaims - Skipping modification: ${k}: ${m_col[k]} => ${col[k]} ` +
                                             `(${reason})`);
                                     }
                                 }
                             }
-                            else errors.push(`mergeClaim - Unknown column keyword: ${k}`);
+                            else errors.push(`mergeClaims - Unknown column keyword: ${k}`);
                         }
 
                         // All properties went well ? 
