@@ -11,6 +11,7 @@ These are links to per topic documentation. For an introduction and overview, go
   - [Dependencies](dependencies.md)
   - [Claim IDs](claimIds.md)
   - [The database specifier](dbspec.md)
+  - [Extended type information (xti)](xti.md)
 - **`knemm`** - commands
   - [join](join.md)
   - [rebuild](rebuild.md)

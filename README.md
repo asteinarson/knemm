@@ -16,8 +16,6 @@ for an app that wants to manage its DB schema in a declarative way. It relies la
   - [Claim invariability](#claim-invariability)
     - [Invariability - Example](#invariability---example)
   - [Claims used for migration](#claims-used-for-migration)
-  - [Claim ID:s](#claim-ids)
-    - [Explicit / implicit claim ID:s](#explicit--implicit-claim-ids)
 - [States](#states)
   - [The purpose of states](#the-purpose-of-states)
     - [Database to state - an example](#database-to-state---an-example)
@@ -199,38 +197,6 @@ With `knemm` it is relaxed/simplified to:
   * After: **B** <= **DB state** 
 
 With `knemm` we say that after applying the claim, the database satisifies that claim. 
-
-## Claim ID:s 
-
-The ID is a name and a version number. The version number can be either an integer: 1, 3, 14, ... or a decimal number: 1.32, 1.33, 1.321, 1.5, 2, 2.1... In ordinary situations, using integer numbers is enough. 
-
-There can be holes between version numbers, so this if just these claims exist, it is just fine: 
-
-  * Person_1 
-  * Person_2 
-  * Person_4
-  * Person_7 
-
-### Explicit / implicit claim ID:s
-A claim ID can either be explicitly declared:
-```yaml
-id:
-  branch: Person
-  version: 4
-```
-or the ID can be contained in their filenames: 
-```shell
-$ ls Person*.yaml 
-Person_1.yaml  Person_2.yaml  Person_4.yaml Person_7.yaml
-```
-In the latter case, one can omit the ID from the internal YAML - and optionally leave out the whole YAML/JSON top level, and end up with the content of `Person_1.yaml` being: 
-```yaml
-person:
-    id: int pk auto_inc
-    email: varchar(255) unique
-    first_name: varchar(64)
-```
-The file just contains the **___tables** section. So we then have a very compact way of expressing DB claims. 
 
 # States
 So far we have specified claims as inputs and had `knemm` check and merge them and then print the result to stdout. However, if we have an application, we likely want to store its DB schema more persistently. To achieve this, we can specify a state directory, via `-s` to `knemm`:
