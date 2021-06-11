@@ -10,8 +10,6 @@ These are links to per topic documentation. For an introduction and overview, go
   - [Table/column declaration syntax](syntax.md)
   - [Dependencies](dependencies.md)
   - [Claim IDs](claimIds.md)
-  - [The database specifier](dbspec.md)
-  - [Extended type information (xti)](xti.md)
 - **`knemm`** - commands
   - [join](join.md)
   - [rebuild](rebuild.md)
@@ -26,4 +24,7 @@ These are links to per topic documentation. For an introduction and overview, go
   - [exists](exists.md)
   - [create](create.md)
   - [drop](drop.md)
+- Other topics
+  - [The database specifier](dbspec.md)
+  - [Extended type information (xti)](xti.md)
   

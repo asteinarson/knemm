@@ -1,3 +1,4 @@
+## [Back to index](index.md)
 # Claim ID:s 
 
 The claim ID is a name and a version number. The version number can be either an integer: 1, 3, 14, ... or a decimal number: 1.32, 2.1, 3.5, ... In ordinary situations, using integer numbers 
@@ -40,3 +41,5 @@ that of course can be inefficient.
 ### What if ID is both in filename and inside the YAML file? 
 If the is declared inside the claim file it must be the same as in the filename itself. 
 Otherwise it is reported as an error. 
+
+## [Back to index](index.md)
