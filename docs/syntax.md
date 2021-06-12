@@ -1,5 +1,17 @@
 ## [Back to docs](./index.md) <!-- omit in toc -->
+This page goes through the core YAML/JSON syntax for database schema. 
 
+## Contents <!-- omit in toc --> 
+- [Table/column declaration syntax](#tablecolumn-declaration-syntax)
+    - [Sufficient guarantee](#sufficient-guarantee)
+  - [Negative properties (dropping)](#negative-properties-dropping)
+    - [Dropping a foreign key property](#dropping-a-foreign-key-property)
+  - [Column properties](#column-properties)
+    - [Recreating a column](#recreating-a-column)
+  - [Internal and Hrc formats](#internal-and-hrc-formats)
+    - [Reading input claims](#reading-input-claims)
+ 
+ 
 # Table/column declaration syntax
 The tables that are being added (or modified) by a module are declared under the `___tables` key
 at the top level: 
@@ -30,15 +42,50 @@ column already had (say like **comment**). For the other properties declared in 
 on the column, if they were not already there. 
 
 ### Sufficient guarantee 
-One could say that the model of `knemm` is _sufficient compatibily_. It is similar to what in
-many languages are called an **interface** - a contract to have at least some capability. It puts 
-a basic requirement to fulfill, but allows it to be fulfilled over a wider range, with more 
-precision than asked for. 
+One could say that the model of `knemm` is _sufficient compatibily_. It is similar to **interfaces** 
+in many languages - a contract to have at least some capability. It puts a basic requirement to
+fulfill, but allows it to be fulfilled over a wider range, with more precision than asked for. 
 
 An example from a related domain is in the implementation of the type **boolean** in `MySQL`. 
 When asked to create a **boolean** column it actually creates a **tinyint** column (8 bits
 wide). However, this **tinyint** number can fulfill the **boolean** requirement (one bit) 
 just fine. 
+
+## Negative properties (dropping)
+There is also the possibility for a claim to say that something (a table, a column, a property) 
+should not exist: 
+```yaml 
+___tables:
+  category:
+    id:
+      data_type: int
+      # ...
+    sku: "*NOT" 
+```
+We say that there should **not** be a column named `sku` in the table `category`. We can also 
+do the same on a whole table: 
+
+```yaml 
+___tables:
+  category:
+    id:
+      data_type: int
+    # ...
+  root_category: "*NOT" 
+```
+The logic of *fulfilling* is the similar here as for the positive claims: 
+  * If the table (column / property) does not exist - then nothing is done 
+  * If it exists, it is dropped 
+
+### Dropping a foreign key property 
+If we have a column `category_id` as a foreign key, we can just drop the key (and keep the column)
+via: 
+```yaml 
+___tables:
+  product:
+    category_id:
+      foreign_key: "*NOT*"
+```
 
 ## Column properties
 These are the basic column properties:
@@ -69,42 +116,6 @@ These are the basic column properties:
   * **max_length** - for strings
   * **numeric_scale** - for **decimal**
   * **numeric_precision** - for **decimal**
-
-## Negative properties (dropping)
-There is also the possibility for a claim to say that something (a table, a column, a property) 
-should not exist: 
-```yaml 
-___tables:
-  category:
-    id:
-      data_type: int
-      # ...
-    sku: "*NOT" 
-```
-We say that there should **not** be a column named `sku` in the table `category`. We can also 
-do the same on a whole table: 
-
-```yaml 
-___tables:
-  category:
-    id:
-      data_type: int
-    # ...
-  root_category: "*NOT" 
-```
-The logic of *fulfilling* is the similar here as for the positive claims: 
-  * If the table (column / property) does not exist - then nothing is done 
-  * If it exists, it is dropped 
-
-### dropping a foreign key property 
-If we have a column `category_id` as a foreign key, we can just drop the key (and keep the column)
-via: 
-```yaml 
-___tables:
-  product:
-    category_id:
-      foreign_key: "*NOT*"
-```
 
 ### Recreating a column
 If we fully want to recreate a column (rather than widen it) we can do that through:
