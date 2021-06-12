@@ -2,7 +2,6 @@ id:
   branch: Person
   version: 1
 ___tables:
-<<<<<<< HEAD
     person:
         id:
             data_type: int
@@ -15,21 +14,3 @@ ___tables:
         first_name:
             data_type: varchar
             max_length: 64
-=======
-  person:
-    id:
-      data_type: int
-      is_primary_key: true
-      has_auto_increment: true
-    email:
-      data_type: varchar
-      max_length: 255
-      is_unique: true
-    first_name:
-      data_type: varchar
-      max_length: 64
-source: '*file'
-file: Person_1.yaml
-format: internal
-depends: {}
->>>>>>> docs
